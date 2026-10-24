@@ -1,0 +1,8 @@
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+# Generated / cache (not covered by prettier's root .gitignore handling)
+# Inlang regenerates everything in its project folder except settings.json
+project.inlang/*
+!project.inlang/settings.json
+src/routeTree.gen.ts

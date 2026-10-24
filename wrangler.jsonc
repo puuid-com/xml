@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "web-template",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/server.ts",
+  "observability": {
+    "enabled": true,
+  },
+  // Public, non-secret values. Secrets go in .dev.vars locally and
+  // `wrangler secret put` in production. Run `bun run cf-typegen` after edits.
+  "vars": {},
+}

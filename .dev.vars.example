@@ -1,0 +1,4 @@
+# Local secrets for `bun run dev`. Copy to .dev.vars (gitignored).
+# Declare each one in src/env.server.ts and set it in production with
+# `wrangler secret put NAME`.
+# CONTACT_FORM_TO=you@example.com

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "site_description": "Un gabarit de site web TanStack Start.",
+  "skip_to_content": "Aller au contenu",
+  "nav_home": "Accueil",
+  "nav_about": "À propos",
+  "language_label": "Langue",
+  "home_title": "Commencez à construire",
+  "home_lede": "Modifiez src/routes/index.tsx pour remplacer cette page.",
+  "about_title": "À propos",
+  "about_body": "Décrivez le site, son propriétaire et comment le joindre.",
+  "not_found_title": "Page introuvable",
+  "not_found_body": "La page que vous cherchez n’existe pas ou a été déplacée.",
+  "error_title": "Une erreur est survenue",
+  "error_body": "Une erreur inattendue s’est produite. Réessayez ou retournez à l’accueil.",
+  "try_again": "Réessayer",
+  "go_home": "Retour à l’accueil",
+  "footer_rights": "© {year} {name}"
+}
