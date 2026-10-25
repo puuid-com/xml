@@ -217,33 +217,40 @@ function TreeRowView({
           )}
           <span
             className={cn(
-              'shrink-0 font-medium',
-              color ? 'mx-0.5 hl-chip' : 'text-syntax-tag',
+              'flex min-w-0 shrink items-center gap-1',
+              color && 'hl-tag mx-0.5 px-1',
             )}
             style={
               color ? ({ '--hl': color } as React.CSSProperties) : undefined
             }
           >
-            {el.name}
-          </span>
-          {el.attrs.slice(0, 3).map((attr) => (
             <span
-              key={attr.name}
-              className="flex min-w-0 shrink items-center truncate"
+              className={cn(
+                'shrink-0 font-medium',
+                color ? 'hl-ink' : 'text-syntax-tag',
+              )}
             >
-              <span className="text-syntax-attr">{attr.name}</span>
-              <span className="text-syntax-punct">=</span>
-              <VarText
-                text={attr.value}
-                className="max-w-32 text-syntax-value"
-              />
+              {el.name}
             </span>
-          ))}
-          {el.attrs.length > 3 && (
-            <span className="shrink-0 text-muted-foreground">
-              +{el.attrs.length - 3}
-            </span>
-          )}
+            {el.attrs.slice(0, 3).map((attr) => (
+              <span
+                key={attr.name}
+                className="flex min-w-0 shrink items-center truncate"
+              >
+                <span className="text-syntax-attr">{attr.name}</span>
+                <span className="text-syntax-punct">=</span>
+                <VarText
+                  text={attr.value}
+                  className="max-w-32 text-syntax-value"
+                />
+              </span>
+            ))}
+            {el.attrs.length > 3 && (
+              <span className="shrink-0 text-muted-foreground">
+                +{el.attrs.length - 3}
+              </span>
+            )}
+          </span>
           {leaf && !el.selfClosing && (
             <LeafValue path={el.path} value={leafValue(el)} />
           )}

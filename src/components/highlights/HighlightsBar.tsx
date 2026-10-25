@@ -107,7 +107,7 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
             className={cn(
               'px-0.5',
               rule.enabled
-                ? 'hl-chip'
+                ? 'hl-tag hl-ink'
                 : 'rounded-[2px] text-muted-foreground line-through ring-1 ring-(--hl)',
             )}
           >

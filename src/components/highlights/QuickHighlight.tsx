@@ -61,7 +61,7 @@ export function QuickHighlight() {
               <span
                 className={
                   rule
-                    ? 'hl-chip px-0.5 font-mono'
+                    ? 'hl-tag hl-ink px-0.5 font-mono'
                     : 'font-mono text-syntax-tag'
                 }
                 style={

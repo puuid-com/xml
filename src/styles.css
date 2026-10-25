@@ -70,6 +70,8 @@
   --hl-green: oklch(0.62 0.16 150);
   --hl-teal: oklch(0.62 0.11 190);
   --hl-gray: oklch(0.6 0 0);
+  /* Lightness of highlight-coloured text, from the colour's own `l`. */
+  --hl-ink-l: min(l - 0.1, 0.56);
 }
 
 .dark {
@@ -128,6 +130,7 @@
   --hl-green: oklch(0.74 0.16 152);
   --hl-teal: oklch(0.76 0.11 190);
   --hl-gray: oklch(0.68 0 0);
+  --hl-ink-l: max(l + 0.04, 0.74);
 }
 
 @theme inline {
@@ -196,23 +199,24 @@
 
 @layer components {
   /*
-   * A tag name painted as a solid chip in its highlight colour (`--hl`).
-   * Text flips to near-black or near-white depending on the fill's lightness;
-   * the spread shadow pads it without shifting monospace columns.
+   * A highlighted tag: the whole `<name attr="…">` sits on a faint wash of its
+   * highlight colour (`--hl`) with a hairline ring. The ring is a shadow so
+   * monospace columns don't shift.
    */
-  .hl-chip {
-    background-color: var(--hl);
-    color: oklch(
-      from var(--hl) clamp(0.2, round(1.12 - l), 0.99) calc(c * 0.25) h
-    );
-    box-shadow: 0 0 0 1.5px var(--hl);
-    border-radius: 2px;
+  .hl-tag {
+    background-color: color-mix(in oklch, var(--hl) 11%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--hl) 40%, transparent);
+    border-radius: 3px;
   }
 }
 
-/* Unlayered so it beats CodeMirror's syntax colours inside a chip. */
-.hl-chip span {
-  color: inherit;
+/*
+ * Tag name and brackets in a shade of `--hl` that reads on the background.
+ * Unlayered so it beats CodeMirror's syntax colours inside the mark.
+ */
+.hl-ink,
+.hl-ink span {
+  color: oklch(from var(--hl) var(--hl-ink-l) c h);
 }
 
 @media (prefers-reduced-motion: reduce) {

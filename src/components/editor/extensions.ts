@@ -22,7 +22,7 @@ import {
 } from '@codemirror/language'
 import { lintGutter, linter } from '@codemirror/lint'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
-import { Compartment, Facet, StateField } from '@codemirror/state'
+import { Compartment, Facet, Prec, StateField } from '@codemirror/state'
 import {
   Decoration,
   EditorView,
@@ -219,45 +219,69 @@ export const tagHighlightsFacet = Facet.define<
 
 export const tagHighlightsCompartment = new Compartment()
 
-function buildTagHighlights(view: EditorView): DecorationSet {
+const tagBrackets = new Set([
+  'StartTag',
+  'StartCloseTag',
+  'EndTag',
+  'SelfCloseEndTag',
+])
+
+interface TagHighlights {
+  /** Wash over the whole tag, brackets and attributes included. */
+  tags: DecorationSet
+  /** Highlight-coloured text for the tag name and its brackets. */
+  inks: DecorationSet
+}
+
+function buildTagHighlights(view: EditorView): TagHighlights {
   const rules = view.state.facet(tagHighlightsFacet)
-  if (rules.size === 0) return Decoration.none
+  if (rules.size === 0) return { tags: Decoration.none, inks: Decoration.none }
   const doc = view.state.doc
   const tree = syntaxTree(view.state)
-  const decos: Array<Range<Decoration>> = []
+  const tags: Array<Range<Decoration>> = []
+  const inks: Array<Range<Decoration>> = []
   for (const { from, to } of view.visibleRanges) {
     tree.iterate({
       from,
       to,
       enter(node) {
         if (node.name !== 'TagName') return
-        const parent = node.node.parent?.name
+        const tag = node.node.parent
         if (
-          parent !== 'OpenTag' &&
-          parent !== 'CloseTag' &&
-          parent !== 'SelfClosingTag'
+          !tag ||
+          (tag.name !== 'OpenTag' &&
+            tag.name !== 'CloseTag' &&
+            tag.name !== 'SelfClosingTag')
         ) {
           return
         }
         const color = rules.get(doc.sliceString(node.from, node.to))
         if (!color) return
-        decos.push(
-          Decoration.mark({
-            class: 'hl-chip',
-            attributes: { style: `--hl: ${color}` },
-          }).range(node.from, node.to),
+        const attributes = { style: `--hl: ${color}` }
+        tags.push(
+          Decoration.mark({ class: 'hl-tag', attributes }).range(
+            tag.from,
+            tag.to,
+          ),
         )
+        const ink = Decoration.mark({ class: 'hl-ink', attributes })
+        inks.push(ink.range(node.from, node.to))
+        for (let child = tag.firstChild; child; child = child.nextSibling) {
+          if (tagBrackets.has(child.name) && child.to > child.from) {
+            inks.push(ink.range(child.from, child.to))
+          }
+        }
       },
     })
   }
-  return Decoration.set(decos, true)
+  return { tags: Decoration.set(tags, true), inks: Decoration.set(inks, true) }
 }
 
 const tagHighlighter = ViewPlugin.fromClass(
   class {
-    decorations: DecorationSet
+    highlights: TagHighlights
     constructor(view: EditorView) {
-      this.decorations = buildTagHighlights(view)
+      this.highlights = buildTagHighlights(view)
     }
     update(update: ViewUpdate) {
       if (
@@ -267,11 +291,24 @@ const tagHighlighter = ViewPlugin.fromClass(
         update.startState.facet(tagHighlightsFacet) !==
           update.state.facet(tagHighlightsFacet)
       ) {
-        this.decorations = buildTagHighlights(update.view)
+        this.highlights = buildTagHighlights(update.view)
       }
     }
   },
-  { decorations: (v) => v.decorations },
+  {
+    provide: (plugin) => [
+      // Lower-precedence marks wrap higher ones, so the lowest keeps each
+      // wash one span around the syntax tokens instead of a box per token.
+      Prec.lowest(
+        EditorView.decorations.of(
+          (view) => view.plugin(plugin)?.highlights.tags ?? Decoration.none,
+        ),
+      ),
+      EditorView.decorations.of(
+        (view) => view.plugin(plugin)?.highlights.inks ?? Decoration.none,
+      ),
+    ],
+  },
 )
 
 interface Marker {
