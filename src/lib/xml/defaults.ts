@@ -50,6 +50,18 @@ export function isDefaultAttr(index: DefaultIndex, attr: XmlAttr) {
   return index.attrs.get(attr.name) === attr.value
 }
 
+/** Whether a leaf element has a default its value doesn't equal. */
+export function leafDiffers(index: DefaultIndex, el: XmlElement) {
+  const value = leafDefault(index, el)
+  return value !== undefined && leafValue(el) !== value
+}
+
+/** Whether an attribute has a default its value doesn't equal. */
+export function attrDiffers(index: DefaultIndex, attr: XmlAttr) {
+  const value = index.attrs.get(attr.name)
+  return value !== undefined && attr.value !== value
+}
+
 /**
  * Changes that apply `rules` to the document. Values already in place are
  * skipped, so the result is empty when nothing would change. The changes

@@ -46,7 +46,13 @@ import {
   setValue,
 } from '#/lib/document'
 import { cn } from '#/lib/utils'
-import { defaultIndex, isDefaultAttr, isDefaultLeaf } from '#/lib/xml/defaults'
+import {
+  attrDiffers,
+  defaultIndex,
+  isDefaultAttr,
+  isDefaultLeaf,
+  leafDiffers,
+} from '#/lib/xml/defaults'
 import {
   allElements,
   ancestorPaths,
@@ -275,7 +281,12 @@ function TreeRowView({
                 ) : (
                   <VarText
                     text={attr.value}
-                    className="max-w-32 text-syntax-value"
+                    className={cn(
+                      'max-w-32 text-syntax-value',
+                      attrDiffers(defaults, attr) &&
+                        attr.value !== '' &&
+                        'default-differs leading-5',
+                    )}
                   />
                 )}
               </span>
@@ -291,6 +302,7 @@ function TreeRowView({
               path={el.path}
               value={leafValue(el)}
               defaultKey={isDefaultLeaf(defaults, el) ? el.name : undefined}
+              differs={leafDiffers(defaults, el)}
             />
           )}
           {leaf && el.selfClosing && <span className="flex-1" />}
@@ -369,11 +381,14 @@ function LeafValue({
   path,
   value,
   defaultKey,
+  differs,
 }: {
   path: string
   value: string
   /** Set when the value equals the default for this key. */
   defaultKey?: string
+  /** Whether the value differs from the default for this key. */
+  differs: boolean
 }) {
   const [editing, setEditing] = useState(false)
   const draft = useDraft(value, (next) =>
@@ -418,7 +433,10 @@ function LeafValue({
           {m.node_empty()}
         </span>
       ) : (
-        <VarText text={value.trim()} />
+        <VarText
+          text={value.trim()}
+          className={cn(differs && 'default-differs leading-5')}
+        />
       )}
     </button>
   )

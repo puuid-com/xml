@@ -257,8 +257,11 @@
   }
 }
 
-/* A value that differs from its default value. */
-.cm-default-differs {
+/*
+ * A value that differs from its default value. In the tree, give it a 20px
+ * line height so `truncate` doesn't clip the underline.
+ */
+.default-differs {
   text-decoration: underline wavy var(--syntax-default);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
