@@ -66,6 +66,7 @@ export async function importFiles(list: FileList | Array<File>) {
       last = created.id
     } catch (error) {
       toast.error(m.file_import_failed({ name: file.name }), {
+        duration: 4000,
         description: error instanceof Error ? error.message : undefined,
       })
     }

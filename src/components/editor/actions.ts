@@ -23,6 +23,7 @@ function replaceDoc(next: string, userEvent: string) {
 function applyFormat(result: FormatResult, userEvent: string) {
   if (!result.ok) {
     toast.error(m.format_failed(), {
+      duration: 4000,
       description: result.errors[0]?.message,
     })
     return

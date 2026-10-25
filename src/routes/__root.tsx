@@ -94,7 +94,7 @@ function RootLayout() {
         {m.skip_to_content()}
       </a>
       <Outlet />
-      <Toaster position="bottom-right" />
+      <Toaster position="bottom-right" duration={1500} />
     </TooltipProvider>
   )
 }
