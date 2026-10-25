@@ -82,11 +82,14 @@ export interface DefaultMatch {
   key: string
   from: number
   to: number
+  /** Whether the value differs from the default instead of equaling it. */
+  differs: boolean
 }
 
 /**
- * Source ranges of values that already equal their default, in document
- * order. Empty values are left out since there is nothing to mark.
+ * Source ranges of values that a default rule covers, in document order,
+ * flagged by whether they differ from the default. Empty values are left out
+ * since there is nothing to mark.
  */
 export function defaultMatches(
   nodes: Array<XmlNode>,
@@ -96,17 +99,22 @@ export function defaultMatches(
   const matches: Array<DefaultMatch> = []
   for (const el of allElements(nodes)) {
     for (const attr of el.attrs) {
-      if (isDefaultAttr(index, attr) && attr.valueTo > attr.valueFrom) {
+      const value = index.attrs.get(attr.name)
+      if (value !== undefined && attr.valueTo > attr.valueFrom) {
         matches.push({
           key: `@${attr.name}`,
           from: attr.valueFrom,
           to: attr.valueTo,
+          differs: attr.value !== value,
         })
       }
     }
-    if (!isDefaultLeaf(index, el)) continue
+    const value = leafDefault(index, el)
+    if (value === undefined) continue
     const range = valueRange(el)
-    if (range && range.to > range.from) matches.push({ key: el.name, ...range })
+    if (range && range.to > range.from) {
+      matches.push({ key: el.name, ...range, differs: leafValue(el) !== value })
+    }
   }
   return matches
 }

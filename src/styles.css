@@ -257,6 +257,13 @@
   }
 }
 
+/* A value that differs from its default value. */
+.cm-default-differs {
+  text-decoration: underline wavy var(--syntax-default);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
 /* A tag that holds other elements; leaf tags keep `--syntax-leaf`. */
 .cm-tag-parent {
   color: var(--syntax-tag);

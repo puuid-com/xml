@@ -311,11 +311,14 @@ const defaultMarks = StateField.define<DecorationSet>({
     for (const effect of tr.effects) {
       if (!effect.is(setDefaultMarks)) continue
       marks = Decoration.set(
-        effect.value.map(({ key, from, to }) =>
-          Decoration.mark({
-            class: 'cm-default default-chip',
-            attributes: { title: m.default_tooltip({ key }) },
-          }).range(from, to),
+        effect.value.map(({ key, from, to, differs }) =>
+          (differs
+            ? Decoration.mark({ class: 'cm-default-differs' })
+            : Decoration.mark({
+                class: 'cm-default default-chip',
+                attributes: { title: m.default_tooltip({ key }) },
+              })
+          ).range(from, to),
         ),
         true,
       )

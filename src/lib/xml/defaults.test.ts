@@ -67,10 +67,28 @@ describe('defaults', () => {
       { key: 'b', value: 'x' },
       { key: '@v', value: '1' },
     ])
-    expect(matches.map((m) => [m.key, text.slice(m.from, m.to)])).toEqual([
-      ['@v', '1'],
-      ['a', 'x'],
-      ['a', 'x'],
+    expect(
+      matches.map((m) => [m.key, text.slice(m.from, m.to), m.differs]),
+    ).toEqual([
+      ['@v', '1', false],
+      ['a', 'x', false],
+      ['a', 'y', true],
+      ['a', 'x', false],
+    ])
+  })
+
+  it('flags values that differ from their default', () => {
+    const text = '<r v="2"><a>y</a><c v="1"/></r>'
+    const matches = defaultMatches(parseXml(text).nodes, [
+      { key: 'a', value: 'x' },
+      { key: '@v', value: '1' },
+    ])
+    expect(
+      matches.map((m) => [m.key, text.slice(m.from, m.to), m.differs]),
+    ).toEqual([
+      ['@v', '2', true],
+      ['a', 'y', true],
+      ['@v', '1', false],
     ])
   })
 
