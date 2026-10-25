@@ -16,7 +16,6 @@ import { StatusBar } from './StatusBar'
 import { TabStrip } from './TabStrip'
 import { setPaletteOpen, uiStore } from './ui-store'
 import { CodeEditor } from '#/components/editor/CodeEditor'
-import { HighlightsBar } from '#/components/highlights/HighlightsBar'
 import { QuickHighlight } from '#/components/highlights/QuickHighlight'
 import { Button } from '#/components/ui/button'
 import {
@@ -118,7 +117,6 @@ export function EditorApp() {
         ) : (
           <div className="flex-1" />
         )}
-        {activeId && <HighlightsBar />}
       </AppHeader>
       <main id="main" className="min-h-0 flex-1">
         {activeId ? (

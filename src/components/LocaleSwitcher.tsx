@@ -18,7 +18,7 @@ const localeNames: Record<Locale, string> = {
   fr: 'Français',
 }
 
-export function LocaleSwitcher() {
+export function LocaleSwitcher({ className }: { className?: string }) {
   const currentLocale = getLocale()
 
   return (
@@ -26,7 +26,11 @@ export function LocaleSwitcher() {
       value={currentLocale}
       onValueChange={(locale) => setLocale(locale as Locale)}
     >
-      <SelectTrigger size="sm" aria-label={m.language_label()}>
+      <SelectTrigger
+        size="sm"
+        aria-label={m.language_label()}
+        className={className}
+      >
         <SelectValue>{localeNames[currentLocale]}</SelectValue>
       </SelectTrigger>
       <SelectContent position="popper" align="end">

@@ -46,20 +46,15 @@ export function useDefaults() {
   return data
 }
 
-/** "Apply defaults" beside Format, with a popover to manage the rules. */
-export function DefaultsControls({ disabled }: { disabled: boolean }) {
+/** "Apply defaults" in the bottom bar, with a popover to manage the rules. */
+export function DefaultsControls() {
   const rules = useDefaults()
 
   return (
     <ButtonGroup>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={disabled}
-            onClick={applyDefaultsActive}
-          >
+          <Button variant="ghost" size="xs" onClick={applyDefaultsActive}>
             <IconReplace />
             <span className="hidden md:inline">{m.defaults_apply()}</span>
           </Button>
@@ -76,13 +71,13 @@ export function DefaultsControls({ disabled }: { disabled: boolean }) {
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon-xs"
             aria-label={m.defaults_title()}
           >
             <IconChevronDown className="text-muted-foreground" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-96 gap-0 p-0">
+        <PopoverContent side="top" align="end" className="w-96 gap-0 p-0">
           <PopoverHeader className="px-3 py-2.5">
             <PopoverTitle>{m.defaults_title()}</PopoverTitle>
             <PopoverDescription>{m.defaults_description()}</PopoverDescription>

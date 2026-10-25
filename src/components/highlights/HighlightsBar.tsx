@@ -58,7 +58,7 @@ export function useTagCounts(): ReadonlyMap<string, number> {
   return counts
 }
 
-/** Legend of highlight rules beside the tabs; each chip cycles through its matches. */
+/** Legend of highlight rules in the bottom bar; each chip cycles through its matches. */
 export function HighlightsBar() {
   const rules = useHighlights()
   const counts = useTagCounts()
@@ -67,7 +67,7 @@ export function HighlightsBar() {
     <div
       role="toolbar"
       aria-label={m.highlights_title()}
-      className="hidden h-full max-w-[45%] min-w-0 shrink-0 items-center md:flex gap-1 overflow-x-auto border-l px-2 [scrollbar-width:none]"
+      className="hidden h-full max-w-[40%] min-w-0 shrink items-center gap-1 overflow-x-auto [scrollbar-width:none] md:flex"
     >
       <IconHighlight
         aria-hidden
@@ -81,7 +81,7 @@ export function HighlightsBar() {
         existing={rules.map((r) => r.tag)}
       />
       {rules.length === 0 && (
-        <span className="hidden truncate text-xs text-muted-foreground xl:inline">
+        <span className="hidden truncate xl:inline">
           {m.highlights_hint_prefix()} <Kbd>{alt}H</Kbd>{' '}
           {m.highlights_hint_suffix()}
         </span>
@@ -186,7 +186,7 @@ function AddRulePopover({
           <IconPlus />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72">
+      <PopoverContent side="top" align="end" className="w-72">
         <PopoverHeader>
           <PopoverTitle>{m.highlight_add_tag()}</PopoverTitle>
           <PopoverDescription>{m.highlights_description()}</PopoverDescription>

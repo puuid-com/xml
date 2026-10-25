@@ -5,12 +5,18 @@ import {
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 
+import { FormatControls } from './FormatControls'
 import {
   editorStore,
   getText,
   revealRange,
 } from '#/components/editor/editor-store'
+import { DefaultsControls } from '#/components/defaults/DefaultsControls'
+import { HighlightsBar } from '#/components/highlights/HighlightsBar'
+import { LocaleSwitcher } from '#/components/LocaleSwitcher'
+import { Separator } from '#/components/ui/separator'
 import { cacheSize } from '#/lib/store/files'
+import { cn } from '#/lib/utils'
 import { allElements, displayPath } from '#/lib/xml/locate'
 import { findVars } from '#/lib/xml/vars'
 import { m } from '#/paraglide/messages'
@@ -21,6 +27,16 @@ function formatBytes(bytes: number) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+function Divider({ className }: { className?: string }) {
+  return (
+    <Separator
+      orientation="vertical"
+      className={cn('data-vertical:h-4 data-vertical:self-center', className)}
+    />
+  )
+}
+
+/** Bottom bar: document status on the left, then the editing tools and locale. */
 export function StatusBar() {
   const fileId = useSelector(editorStore, (s) => s.fileId)
   const doc = useSelector(editorStore, (s) => s.doc)
@@ -35,7 +51,7 @@ export function StatusBar() {
   const first = doc.errors.at(0)
 
   return (
-    <footer className="flex h-7 shrink-0 items-center gap-4 border-t px-3 text-[11px] text-muted-foreground">
+    <footer className="flex h-8 shrink-0 items-center gap-3 border-t pr-1 pl-3 text-[11px] whitespace-nowrap text-muted-foreground">
       {fileId && (
         <>
           {first ? (
@@ -53,7 +69,7 @@ export function StatusBar() {
               {m.status_valid()}
             </span>
           )}
-          <span className="tabular-nums">
+          <span className="hidden tabular-nums sm:inline">
             {m.status_position({ line, col })}
           </span>
           {selectedPath && (
@@ -66,20 +82,36 @@ export function StatusBar() {
       <div className="flex-1" />
       {fileId && (
         <>
-          <span className="hidden sm:inline">
+          <span className="hidden lg:inline">
             {m.status_elements({ count: elementCount })}
           </span>
           {varCount > 0 && (
-            <span className="text-syntax-var">
+            <span className="hidden text-syntax-var lg:inline">
               {m.status_vars({ count: varCount })}
             </span>
           )}
         </>
       )}
-      <span className="flex items-center gap-1" title={m.status_cache_hint()}>
+      <span
+        className="hidden items-center gap-1 sm:flex"
+        title={m.status_cache_hint()}
+      >
         <IconDatabase className="size-3.5" />
         {formatBytes(cacheSize())}
       </span>
+      {fileId && (
+        <>
+          <Divider />
+          <HighlightsBar />
+          <Divider className="hidden md:block" />
+          <div className="flex items-center text-foreground">
+            <FormatControls />
+            <DefaultsControls />
+          </div>
+        </>
+      )}
+      <Divider />
+      <LocaleSwitcher className="h-6! border-none bg-transparent! px-1.5 text-[11px] text-muted-foreground hover:text-foreground" />
     </footer>
   )
 }
