@@ -23,7 +23,6 @@ import {
   downloadFile,
   formatActive,
 } from '#/components/editor/actions'
-import { HighlightsPopover } from '#/components/highlights/HighlightsPopover'
 import { LocaleSwitcher } from '#/components/LocaleSwitcher'
 import { Button } from '#/components/ui/button'
 import { ButtonGroup } from '#/components/ui/button-group'
@@ -50,15 +49,11 @@ import {
   formatSettingsStore,
   setFormatSetting,
 } from '#/lib/store/format-settings'
+import { alt, mod } from '#/lib/platform'
 import { sessionStore, setInspectorOpen } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 import { site } from '#/site'
 import type { SortOrder } from '#/lib/xml/format'
-
-const isMac =
-  typeof navigator !== 'undefined' && /Mac|iP(hone|ad)/.test(navigator.platform)
-const mod = isMac ? '⌘' : 'Ctrl'
-const alt = isMac ? '⌥' : 'Alt'
 
 export function AppHeader({
   activeId,
@@ -150,7 +145,6 @@ export function AppHeader({
 
       <div className="flex-1" />
 
-      <HighlightsPopover />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button

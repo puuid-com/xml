@@ -5,12 +5,22 @@ interface UiState {
   paletteOpen: boolean
   renameId: string | null
   deleteId: string | null
+  /** Tag whose colour picker is open next to the editor cursor. */
+  quickHighlight: QuickHighlight | null
+}
+
+export interface QuickHighlight {
+  tag: string
+  /** Viewport coordinates to anchor the picker at. */
+  x: number
+  y: number
 }
 
 export const uiStore = new Store<UiState>({
   paletteOpen: false,
   renameId: null,
   deleteId: null,
+  quickHighlight: null,
 })
 
 export function setPaletteOpen(paletteOpen: boolean) {
@@ -23,4 +33,8 @@ export function askRename(renameId: string | null) {
 
 export function askDelete(deleteId: string | null) {
   uiStore.setState((s) => ({ ...s, deleteId }))
+}
+
+export function setQuickHighlight(quickHighlight: QuickHighlight | null) {
+  uiStore.setState((s) => ({ ...s, quickHighlight }))
 }

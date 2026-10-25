@@ -194,11 +194,6 @@ function TreeRowView({
             top,
             height: ROW_HEIGHT,
             paddingLeft: 6 + depth * INDENT,
-            boxShadow: color ? `inset 2px 0 0 ${color}` : undefined,
-            backgroundColor:
-              color && !selected
-                ? `color-mix(in oklch, ${color} 6%, transparent)`
-                : undefined,
           }}
         >
           {hasChildren ? (
@@ -221,8 +216,13 @@ function TreeRowView({
             <span className="size-4 shrink-0" />
           )}
           <span
-            className={cn('shrink-0 font-medium', !color && 'text-syntax-tag')}
-            style={color ? { color } : undefined}
+            className={cn(
+              'shrink-0 font-medium',
+              color ? 'mx-0.5 hl-chip' : 'text-syntax-tag',
+            )}
+            style={
+              color ? ({ '--hl': color } as React.CSSProperties) : undefined
+            }
           >
             {el.name}
           </span>

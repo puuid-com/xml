@@ -3,14 +3,18 @@ import {
   IconFileCode,
   IconFilePlus,
   IconFolderOpen,
+  IconHighlight,
   IconSparkles,
 } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
+import { useState } from 'react'
 
 import { activate, loadSample, neighbour, newFile } from './files'
 import { askDelete, askRename, setPaletteOpen, uiStore } from './ui-store'
+import { highlightAtCursor } from '#/components/editor/actions'
 import { dropEditorState } from '#/components/editor/CodeEditor'
+import { useTagCounts } from '#/components/highlights/HighlightsBar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +27,7 @@ import {
 } from '#/components/ui/alert-dialog'
 import { Button } from '#/components/ui/button'
 import {
+  Command,
   CommandDialog,
   CommandEmpty,
   CommandGroup,
@@ -30,6 +35,7 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
+  CommandShortcut,
 } from '#/components/ui/command'
 import {
   Dialog,
@@ -42,7 +48,10 @@ import {
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { useAllFiles } from '#/hooks/use-files'
+import { useHighlights } from '#/hooks/use-highlights'
+import { alt } from '#/lib/platform'
 import { deleteFile, filesCollection, renameFile } from '#/lib/store/files'
+import { setHighlight } from '#/lib/store/highlights'
 import { sessionStore, setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 
@@ -62,12 +71,6 @@ export function FilePalette({
   onOpenFromDisk: () => void
 }) {
   const open = useSelector(uiStore, (s) => s.paletteOpen)
-  const files = useAllFiles()
-
-  const run = (fn: () => void) => {
-    setPaletteOpen(false)
-    fn()
-  }
 
   return (
     <CommandDialog
@@ -76,7 +79,35 @@ export function FilePalette({
       title={m.palette_title()}
       description={m.palette_description()}
     >
-      <CommandInput placeholder={m.palette_placeholder()} />
+      <PaletteCommands onOpenFromDisk={onOpenFromDisk} />
+    </CommandDialog>
+  )
+}
+
+// Mounted only while the dialog is open, so the search resets each time.
+function PaletteCommands({ onOpenFromDisk }: { onOpenFromDisk: () => void }) {
+  const files = useAllFiles()
+  const counts = useTagCounts()
+  const highlighted = new Set(useHighlights().map((r) => r.tag))
+  const [search, setSearch] = useState('')
+  // Tags only show once you type, so they don't bury files and actions.
+  const tags = search.trim()
+    ? [...counts.keys()].filter((t) => !highlighted.has(t)).sort()
+    : []
+
+  const run = (fn: () => void) => {
+    setPaletteOpen(false)
+    // Let the dialog hand focus back to the editor before fn moves it.
+    requestAnimationFrame(fn)
+  }
+
+  return (
+    <Command>
+      <CommandInput
+        placeholder={m.palette_placeholder()}
+        value={search}
+        onValueChange={setSearch}
+      />
       <CommandList>
         <CommandEmpty>{m.palette_empty()}</CommandEmpty>
         {files.length > 0 && (
@@ -113,9 +144,33 @@ export function FilePalette({
             <IconSparkles />
             {m.file_sample()}
           </CommandItem>
+          <CommandItem onSelect={() => run(() => void highlightAtCursor())}>
+            <IconHighlight />
+            {m.highlight_at_cursor()}
+            <CommandShortcut>{alt}H</CommandShortcut>
+          </CommandItem>
         </CommandGroup>
+        {tags.length > 0 && (
+          <CommandGroup heading={m.highlights_title()}>
+            {tags.map((tag) => (
+              <CommandItem
+                key={tag}
+                value={`highlight ${tag}`}
+                onSelect={() => run(() => setHighlight(tag))}
+              >
+                <IconHighlight />
+                <span className="truncate">
+                  {m.highlight_tag({ name: tag })}
+                </span>
+                <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
+                  {counts.get(tag)}
+                </span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
       </CommandList>
-    </CommandDialog>
+    </Command>
   )
 }
 

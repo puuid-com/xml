@@ -194,6 +194,27 @@
   }
 }
 
+@layer components {
+  /*
+   * A tag name painted as a solid chip in its highlight colour (`--hl`).
+   * Text flips to near-black or near-white depending on the fill's lightness;
+   * the spread shadow pads it without shifting monospace columns.
+   */
+  .hl-chip {
+    background-color: var(--hl);
+    color: oklch(
+      from var(--hl) clamp(0.2, round(1.12 - l), 0.99) calc(c * 0.25) h
+    );
+    box-shadow: 0 0 0 1.5px var(--hl);
+    border-radius: 2px;
+  }
+}
+
+/* Unlayered so it beats CodeMirror's syntax colours inside a chip. */
+.hl-chip span {
+  color: inherit;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

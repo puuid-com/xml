@@ -3,7 +3,7 @@ import { EditorView } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
-import { formatActive, saveActive } from './actions'
+import { formatActive, highlightAtCursor, saveActive } from './actions'
 import { publishCursor, publishParse, setView } from './editor-store'
 import {
   editorExtensions,
@@ -47,6 +47,7 @@ function sharedExtensions(highlights: ReadonlyMap<string, string>) {
       keys: [
         { key: 'Shift-Alt-f', run: formatActive, preventDefault: true },
         { key: 'Mod-s', run: saveActive, preventDefault: true },
+        { key: 'Alt-h', run: highlightAtCursor, preventDefault: true },
       ],
     },
     highlights,

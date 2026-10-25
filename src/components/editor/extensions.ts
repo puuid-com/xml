@@ -58,6 +58,8 @@ export const fileIdField = StateField.define<string>({
 const theme = EditorView.theme({
   '&': {
     height: '100%',
+    // Keeps gutter and marker z-indexes from escaping above dialogs.
+    isolation: 'isolate',
     fontSize: '13px',
     color: 'var(--foreground)',
     backgroundColor: 'var(--background)',
@@ -146,21 +148,28 @@ const theme = EditorView.theme({
     color: 'var(--foreground)',
     backgroundImage: 'none',
   },
-  // Same treatment as tag highlights, in the variable colour.
+  // Ticks over the scrollbar track where highlighted tags open.
+  '.cm-hl-markers': {
+    position: 'absolute',
+    top: '0',
+    right: '0',
+    bottom: '0',
+    width: '6px',
+    pointerEvents: 'none',
+    zIndex: '201',
+  },
+  '.cm-hl-markers > div': {
+    position: 'absolute',
+    left: '0',
+    right: '0',
+    height: '2px',
+  },
+  // <<variables>> get a tinted pill so they stand out from markup.
   '.cm-var': {
     color: 'var(--syntax-var)',
     backgroundColor: 'color-mix(in oklch, var(--syntax-var) 20%, transparent)',
     boxShadow: 'inset 0 -1.5px 0 var(--syntax-var)',
     borderRadius: '3px',
-  },
-  '.cm-tag-hl': {
-    backgroundColor: 'color-mix(in oklch, var(--hl) 20%, transparent)',
-    boxShadow: 'inset 0 -1.5px 0 var(--hl)',
-    borderRadius: '3px',
-  },
-  '.cm-line.cm-tag-hl-line': {
-    boxShadow: 'inset 2px 0 0 var(--hl)',
-    backgroundColor: 'color-mix(in oklch, var(--hl) 5%, transparent)',
   },
 })
 
@@ -232,27 +241,12 @@ function buildTagHighlights(view: EditorView): DecorationSet {
         }
         const color = rules.get(doc.sliceString(node.from, node.to))
         if (!color) return
-        const style = `--hl: ${color}`
         decos.push(
-          Decoration.mark({ class: 'cm-tag-hl', attributes: { style } }).range(
-            node.from,
-            node.to,
-          ),
+          Decoration.mark({
+            class: 'hl-chip',
+            attributes: { style: `--hl: ${color}` },
+          }).range(node.from, node.to),
         )
-        // Mark the element's lines once, from its open tag.
-        if (parent === 'CloseTag') return
-        const element = node.node.parent?.parent
-        if (!element) return
-        const first = doc.lineAt(Math.max(element.from, from)).number
-        const last = doc.lineAt(Math.min(element.to, to)).number
-        for (let n = first; n <= last; n++) {
-          decos.push(
-            Decoration.line({
-              class: 'cm-tag-hl-line',
-              attributes: { style },
-            }).range(doc.line(n).from),
-          )
-        }
       },
     })
   }
@@ -278,6 +272,81 @@ const tagHighlighter = ViewPlugin.fromClass(
     }
   },
   { decorations: (v) => v.decorations },
+)
+
+interface Marker {
+  /** Fraction of the document height. */
+  top: number
+  color: string
+}
+
+function collectMarkers(view: EditorView): Array<Marker> {
+  const rules = view.state.facet(tagHighlightsFacet)
+  if (rules.size === 0) return []
+  if (view.contentHeight <= view.scrollDOM.clientHeight) return []
+  const doc = view.state.doc
+  const seen = new Set<string>()
+  const markers: Array<Marker> = []
+  syntaxTree(view.state).iterate({
+    enter(node) {
+      if (node.name !== 'TagName') return
+      const parent = node.node.parent?.name
+      if (parent !== 'OpenTag' && parent !== 'SelfClosingTag') return
+      const color = rules.get(doc.sliceString(node.from, node.to))
+      if (!color) return
+      const top = view.lineBlockAt(node.from).top / view.contentHeight
+      // Ticks closer than about a pixel would draw on top of each other.
+      const key = `${Math.round(top * 1000)}:${color}`
+      if (seen.has(key)) return
+      seen.add(key)
+      markers.push({ top, color })
+    },
+  })
+  return markers
+}
+
+const highlightMarkers = ViewPlugin.fromClass(
+  class {
+    dom: HTMLElement
+    constructor(readonly view: EditorView) {
+      this.dom = document.createElement('div')
+      this.dom.className = 'cm-hl-markers'
+      this.dom.setAttribute('aria-hidden', 'true')
+      view.dom.appendChild(this.dom)
+      this.schedule()
+    }
+    update(update: ViewUpdate) {
+      if (
+        update.docChanged ||
+        update.geometryChanged ||
+        update.heightChanged ||
+        syntaxTree(update.startState) !== syntaxTree(update.state) ||
+        update.startState.facet(tagHighlightsFacet) !==
+          update.state.facet(tagHighlightsFacet)
+      ) {
+        this.schedule()
+      }
+    }
+    schedule() {
+      this.view.requestMeasure({
+        key: this,
+        read: collectMarkers,
+        write: (markers) => {
+          this.dom.replaceChildren(
+            ...markers.map(({ top, color }) => {
+              const tick = document.createElement('div')
+              tick.style.top = `${top * 100}%`
+              tick.style.backgroundColor = color
+              return tick
+            }),
+          )
+        },
+      })
+    }
+    destroy() {
+      this.dom.remove()
+    }
+  },
 )
 
 export interface EditorCallbacks {
@@ -322,6 +391,7 @@ export function editorExtensions(
     varHighlighter,
     tagHighlightsCompartment.of(tagHighlightsFacet.of(highlights)),
     tagHighlighter,
+    highlightMarkers,
     // The linter doubles as the parse loop: it runs after typing pauses and
     // publishes the model the tree and status bar read.
     linter(

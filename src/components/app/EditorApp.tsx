@@ -16,6 +16,8 @@ import { StatusBar } from './StatusBar'
 import { TabStrip } from './TabStrip'
 import { setPaletteOpen, uiStore } from './ui-store'
 import { CodeEditor } from '#/components/editor/CodeEditor'
+import { HighlightsBar } from '#/components/highlights/HighlightsBar'
+import { QuickHighlight } from '#/components/highlights/QuickHighlight'
 import { Button } from '#/components/ui/button'
 import {
   Empty,
@@ -112,6 +114,7 @@ export function EditorApp() {
       />
       <AppHeader activeId={activeId} onOpenFromDisk={openFromDisk} />
       {files.length > 0 && <TabStrip files={files} activeId={activeId} />}
+      {activeId && <HighlightsBar />}
       <main id="main" className="min-h-0 flex-1">
         {activeId ? (
           <ResizablePanelGroup
@@ -145,6 +148,7 @@ export function EditorApp() {
       <FilePalette onOpenFromDisk={openFromDisk} />
       <RenameDialog />
       <DeleteDialog openIds={files.map((f) => f.id)} />
+      <QuickHighlight />
 
       <div
         aria-hidden={!dragging}

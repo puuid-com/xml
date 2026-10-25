@@ -1,12 +1,16 @@
+import { syntaxTree } from '@codemirror/language'
 import { toast } from 'sonner'
 
-import { getView } from './editor-store'
+import { editorStore, getView, revealElement } from './editor-store'
+import { setQuickHighlight } from '#/components/app/ui-store'
 import { filesCollection } from '#/lib/store/files'
 import { formatSettingsStore } from '#/lib/store/format-settings'
 import { highlightsCollection } from '#/lib/store/highlights'
 import { diffChange } from '#/lib/xml/edit'
 import { formatXml } from '#/lib/xml/format'
+import { allElements, elementAt } from '#/lib/xml/locate'
 import { m } from '#/paraglide/messages'
+import type { EditorView } from '@codemirror/view'
 import type { FormatResult } from '#/lib/xml/format'
 
 function replaceDoc(next: string, userEvent: string) {
@@ -72,4 +76,49 @@ export async function copyActive() {
   if (!view) return
   await navigator.clipboard.writeText(view.state.doc.toString())
   toast.success(m.copied())
+}
+
+const TAG_PARENTS = new Set(['OpenTag', 'CloseTag', 'SelfClosingTag'])
+
+/** Tag name under the cursor, else the element the cursor is in. */
+function tagAtCursor(view: EditorView) {
+  const pos = view.state.selection.main.head
+  const tree = syntaxTree(view.state)
+  for (const side of [-1, 1] as const) {
+    const node = tree.resolveInner(pos, side)
+    if (node.name === 'TagName' && TAG_PARENTS.has(node.parent?.name ?? '')) {
+      return { name: view.state.sliceDoc(node.from, node.to), at: node.from }
+    }
+  }
+  const el = elementAt(editorStore.state.doc.nodes, pos)
+  return el ? { name: el.name, at: pos } : null
+}
+
+/** Opens the colour picker for the tag at the cursor. */
+export function highlightAtCursor() {
+  const view = getView()
+  if (!view) return true
+  const tag = tagAtCursor(view)
+  const coords = tag && view.coordsAtPos(tag.at)
+  if (!tag || !coords) {
+    toast(m.highlight_no_tag(), { id: 'highlight-no-tag' })
+    return true
+  }
+  setQuickHighlight({ tag: tag.name, x: coords.left, y: coords.bottom })
+  return true
+}
+
+/** Moves the cursor to the next (or previous) element named `tag`, wrapping. */
+export function revealTag(tag: string, direction: 1 | -1) {
+  const matches = allElements(editorStore.state.doc.nodes).filter(
+    (el) => el.name === tag,
+  )
+  if (matches.length === 0) return
+  const pos = editorStore.state.pos
+  const target =
+    direction === 1
+      ? (matches.find((el) => el.from > pos) ?? matches[0])
+      : ([...matches].reverse().find((el) => el.from < pos) ??
+        matches[matches.length - 1])
+  revealElement(target, true)
 }
