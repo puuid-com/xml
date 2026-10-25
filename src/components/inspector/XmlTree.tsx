@@ -5,10 +5,12 @@ import {
   IconPin,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { toast } from 'sonner'
 
+import { treeKeyAction } from './tree-keys'
 import { useDraft } from './use-draft'
 import { useScrollSync } from './use-scroll-sync'
 import { VarText } from './VarText'
@@ -88,9 +90,18 @@ export function XmlTree() {
     [enabledDefaults],
   )
   const scrollRef = useRef<HTMLDivElement>(null)
+  // The row holding keyboard focus while focus is inside the tree.
+  const [focusedPath, setFocusedPath] = useState<string | null>(null)
 
   const collapsed = new Set(collapsedList)
   const rows = flattenVisible(doc.nodes, collapsed)
+  const indexOf = (path: string | null) =>
+    path === null ? -1 : rows.findIndex((r) => r.el.path === path)
+  // The single tabbable row (roving tabIndex): the focused row, else the
+  // selection, else the first row.
+  const focusedIndex = indexOf(focusedPath)
+  const activeIndex =
+    focusedIndex >= 0 ? focusedIndex : Math.max(0, indexOf(selectedPath))
 
   // TanStack Virtual is a known React Compiler opt-out; nothing it returns is
   // passed to a memoized child, so skipping compilation here is harmless.
@@ -100,6 +111,15 @@ export function XmlTree() {
     getScrollElement: () => scrollRef.current,
     estimateSize: () => ROW_HEIGHT,
     overscan: 16,
+    // Keep the tab stop mounted even when scrolled away, so Tab still lands
+    // in the tree and arrow keys can move focus from it.
+    rangeExtractor: (range) => {
+      const indexes = defaultRangeExtractor(range)
+      if (activeIndex >= rows.length || indexes.includes(activeIndex)) {
+        return indexes
+      }
+      return [...indexes, activeIndex].sort((a, b) => a - b)
+    },
   })
   useScrollSync(scrollRef, rows, ROW_HEIGHT, fileId)
 
@@ -121,6 +141,40 @@ export function XmlTree() {
   }, [selectedPath, fileId, rows.length])
 
   if (!fileId) return null
+
+  const focusRow = (index: number) => {
+    // Render first so the row is mounted and tabbable, then move focus to it.
+    flushSync(() => setFocusedPath(rows[index].el.path))
+    scrollRef.current
+      ?.querySelector<HTMLElement>(`[role="treeitem"][data-index="${index}"]`)
+      ?.focus({ preventScroll: true })
+    virtualizer.scrollToIndex(index, { align: 'auto' })
+  }
+
+  const onTreeKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement
+    if (target.getAttribute('role') !== 'treeitem') return
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+    const action = treeKeyAction(rows, activeIndex, e.key)
+    if (!action) return
+    e.preventDefault()
+    const { el } = rows[action.index]
+    switch (action.type) {
+      case 'focus':
+        focusRow(action.index)
+        break
+      case 'expand':
+      case 'collapse':
+        toggleCollapsed(fileId, el.path)
+        break
+      case 'reveal':
+        revealElement(el)
+        break
+      case 'edit':
+        target.querySelector<HTMLElement>('[data-edit-value]')?.click()
+        break
+    }
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -153,6 +207,10 @@ export function XmlTree() {
           role="tree"
           aria-label={m.tree_label()}
           className="min-h-0 flex-1 overflow-auto py-1"
+          onKeyDown={onTreeKeyDown}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setFocusedPath(null)
+          }}
         >
           <div
             className="relative w-full"
@@ -164,6 +222,9 @@ export function XmlTree() {
                 <TreeRowView
                   key={row.el.path}
                   row={row}
+                  index={item.index}
+                  active={item.index === activeIndex}
+                  onFocusRow={setFocusedPath}
                   fileId={fileId}
                   top={item.start}
                   defaults={defaults}
@@ -184,6 +245,9 @@ export function XmlTree() {
 
 function TreeRowView({
   row,
+  index,
+  active,
+  onFocusRow,
   fileId,
   top,
   defaults,
@@ -192,6 +256,10 @@ function TreeRowView({
   pinned,
 }: {
   row: TreeRow
+  index: number
+  /** Whether this row is the tree's single Tab stop. */
+  active: boolean
+  onFocusRow: (path: string) => void
   fileId: string
   top: number
   defaults: DefaultIndex
@@ -228,12 +296,16 @@ function TreeRowView({
       <ContextMenuTrigger asChild>
         <div
           role="treeitem"
+          data-index={index}
+          tabIndex={active ? 0 : -1}
           aria-level={depth + 1}
           aria-selected={selected}
           aria-expanded={hasChildren ? !collapsed : undefined}
+          aria-keyshortcuts={leaf && !el.selfClosing ? 'F2' : undefined}
+          onFocus={() => onFocusRow(el.path)}
           onClick={() => revealElement(el)}
           className={cn(
-            'group absolute left-0 flex w-full cursor-default items-center gap-1 pr-2 font-mono text-xs select-none hover:bg-muted/60',
+            'group absolute left-0 flex w-full cursor-default items-center gap-1 pr-2 font-mono text-xs outline-none select-none hover:bg-muted/60 focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset',
             selected && 'bg-muted',
           )}
           style={{
@@ -245,6 +317,7 @@ function TreeRowView({
           {hasChildren ? (
             <button
               type="button"
+              tabIndex={-1}
               aria-label={collapsed ? m.tree_expand() : m.tree_collapse()}
               className="grid size-4 shrink-0 place-items-center text-muted-foreground hover:text-foreground"
               onClick={(e) => {
@@ -436,8 +509,13 @@ function LeafValue({
           setEditing(false)
         }}
         onKeyDown={(e) => {
+          const row = e.currentTarget.closest<HTMLElement>('[role="treeitem"]')
           draft.onKeyDown(e)
-          if (e.key === 'Enter') setEditing(false)
+          if (e.key === 'Enter' || e.key === 'Escape') {
+            // Hand focus back to the row so keyboard navigation continues.
+            row?.focus({ preventScroll: true })
+            setEditing(false)
+          }
         }}
       />
     )
@@ -445,6 +523,8 @@ function LeafValue({
   return (
     <button
       type="button"
+      tabIndex={-1}
+      data-edit-value
       title={m.node_edit_text()}
       className="ml-1 flex h-5 min-w-0 flex-1 items-center truncate px-1 text-left text-foreground/80 hover:bg-background hover:ring-1 hover:ring-border"
       onClick={(e) => {
