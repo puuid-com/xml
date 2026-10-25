@@ -1,9 +1,10 @@
 import { useState } from 'react'
 
 import { leafAt } from './actions'
-import { getView } from './editor-store'
+import { editorStore, getView } from './editor-store'
 import { tagAt } from './syntax'
 import { notify } from '#/components/app/notice-store'
+import { CopyPathMenuItems } from '#/components/inspector/CopyPathMenuItems'
 import {
   HighlightMenuItems,
   PinMenuItem,
@@ -16,15 +17,19 @@ import {
   ContextMenuTrigger,
 } from '#/components/ui/context-menu'
 import { setDefault } from '#/lib/store/defaults'
+import { elementAt } from '#/lib/xml/locate'
 import { m } from '#/paraglide/messages'
+import type { XmlElement } from '#/lib/xml/model'
 
 /**
- * Right-click on a tag in the editor offers to highlight it. Anywhere else
- * the browser's own menu shows, so copy and paste stay at hand.
+ * Right-click on a tag in the editor offers to highlight it or copy its
+ * path. Anywhere else the browser's own menu shows, so copy and paste stay
+ * at hand.
  */
 export function TagContextMenu({ children }: { children: React.ReactNode }) {
   const [tag, setTag] = useState<string | null>(null)
   const [leaf, setLeaf] = useState<{ name: string; value: string } | null>(null)
+  const [element, setElement] = useState<XmlElement | null>(null)
 
   const onContextMenu = (e: React.MouseEvent) => {
     const view = getView()
@@ -38,6 +43,8 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
     setTag(name)
     const el = leafAt(pos)
     setLeaf(el?.name === name ? el : null)
+    const at = elementAt(editorStore.state.doc.nodes, pos)
+    setElement(at?.name === name ? at : null)
   }
 
   return (
@@ -57,6 +64,12 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
         }}
       >
         {tag && <HighlightMenuItems tag={tag} />}
+        {tag && element && (
+          <>
+            <ContextMenuSeparator />
+            <CopyPathMenuItems el={element} />
+          </>
+        )}
         {tag && leaf && (
           <>
             <ContextMenuSeparator />

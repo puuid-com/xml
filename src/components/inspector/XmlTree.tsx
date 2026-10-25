@@ -11,7 +11,7 @@ import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual'
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 
-import { notify } from '#/components/app/notice-store'
+import { CopyPathMenuItems } from './CopyPathMenuItems'
 import { treeKeyAction } from './tree-keys'
 import { Highlighted, SearchHighlightProvider } from './SearchHighlight'
 import { searchNeedle, searchTree } from './tree-search'
@@ -62,7 +62,7 @@ import {
   isDefaultLeaf,
   leafDiffers,
 } from '#/lib/xml/defaults'
-import { allElements, ancestorPaths, displayPath } from '#/lib/xml/locate'
+import { allElements, ancestorPaths } from '#/lib/xml/locate'
 import { hasName, isLeaf, isTextLeaf, leafValue } from '#/lib/xml/model'
 import { m } from '#/paraglide/messages'
 import type { DefaultIndex } from '#/lib/xml/defaults'
@@ -558,14 +558,7 @@ function TreeRowMenu({
           </ContextMenuItem>
         </>
       )}
-      <ContextMenuItem
-        onSelect={() => {
-          void navigator.clipboard.writeText(displayPath(el.path).join('/'))
-          notify.success(m.copied())
-        }}
-      >
-        {m.node_copy_path()}
-      </ContextMenuItem>
+      <CopyPathMenuItems el={el} />
       <ContextMenuSeparator />
       <ContextMenuItem
         variant="destructive"
