@@ -6,9 +6,8 @@
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/geist-mono';
 
-/* `.dark` is set on <html> by the inline script in __root.tsx, following the
-   system preference. Swap that script for a stored preference if a site needs
-   a manual toggle. */
+/* `.dark` is set on <html> by the inline script in __root.tsx, from the stored
+   toggle choice or else the system preference. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {

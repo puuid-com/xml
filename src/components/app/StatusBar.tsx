@@ -5,6 +5,7 @@ import { CommandMenuButton } from './CommandMenu'
 import { FormatButton, FormatOptions } from './FormatControls'
 import { noticeStore } from './notice-store'
 import { StatusNotice } from './StatusNotice'
+import { ThemeToggle } from './ThemeToggle'
 import { ToolbarButton } from './ToolbarButton'
 import { editorStore } from '#/components/editor/editor-store'
 import {
@@ -24,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useActiveProfile } from '#/hooks/use-profiles'
 import { m } from '#/paraglide/messages'
 
-/** Bottom bar: notices and highlight chips on the left, editing tools and search on the right. */
+/** Bottom bar: notices and highlight chips on the left, editing tools, search and the theme toggle on the right. */
 export function StatusBar() {
   const fileId = useSelector(editorStore, (s) => s.fileId)
   const hasNotice = useSelector(noticeStore, (n) => n !== null)
@@ -55,6 +56,7 @@ export function StatusBar() {
         </>
       )}
       <CommandMenuButton />
+      <ThemeToggle />
     </footer>
   )
 }

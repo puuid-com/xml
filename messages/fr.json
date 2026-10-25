@@ -134,6 +134,7 @@
   "defaults_confirm_count": "×{count}",
   "defaults_confirm_count_label": "Valeurs à modifier : {count}",
   "defaults_tab": "Valeurs",
+  "theme_toggle": "Changer de thème",
   "editor_settings": "Réglages",
   "defaults_save_current": "Enregistrer comme valeur par défaut",
   "defaults_saved": "Valeur par défaut enregistrée pour <{name}>",
