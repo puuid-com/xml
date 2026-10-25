@@ -57,6 +57,7 @@
   --syntax-meta: oklch(0.58 0.14 60);
   --syntax-entity: oklch(0.55 0.2 355);
   --syntax-var: oklch(0.5 0 0);
+  --syntax-default: oklch(0.55 0.15 245);
   --syntax-gutter: oklch(0.72 0 0);
   --syntax-selection: oklch(0.53 0.19 257 / 16%);
   --syntax-active-line: oklch(0.145 0 0 / 3%);
@@ -119,6 +120,7 @@
   --syntax-meta: oklch(0.82 0.13 78);
   --syntax-entity: oklch(0.77 0.15 355);
   --syntax-var: oklch(0.7 0 0);
+  --syntax-default: oklch(0.74 0.12 245);
   --syntax-gutter: oklch(0.42 0 0);
   --syntax-selection: oklch(0.76 0.13 250 / 22%);
   --syntax-active-line: oklch(1 0 0 / 3%);
@@ -186,6 +188,7 @@
   --color-syntax-comment: var(--syntax-comment);
   --color-syntax-meta: var(--syntax-meta);
   --color-syntax-var: var(--syntax-var);
+  --color-syntax-default: var(--syntax-default);
 }
 
 @layer base {
@@ -214,15 +217,23 @@
 
   /*
    * A `<<variable>>`: neutral grey with a dashed ring and a leading `(x)` icon,
-   * so it never reads as one of the coloured tag highlights.
+   * so it never reads as one of the coloured tag highlights. A value that
+   * equals its default value uses the same chip in blue with the "Apply
+   * defaults" icon.
    */
-  .var-chip {
-    color: var(--syntax-var);
-    background-color: color-mix(in oklch, var(--syntax-var) 12%, transparent);
-    outline: 1px dashed color-mix(in oklch, var(--syntax-var) 60%, transparent);
+  .var-chip,
+  .default-chip {
+    --chip: var(--syntax-var);
+    color: var(--chip);
+    background-color: color-mix(in oklch, var(--chip) 12%, transparent);
+    outline: 1px dashed color-mix(in oklch, var(--chip) 60%, transparent);
     border-radius: 3px;
   }
-  .var-chip::before {
+  .default-chip {
+    --chip: var(--syntax-default);
+  }
+  .var-chip::before,
+  .default-chip::before {
     content: '';
     display: inline-block;
     width: 0.9em;
@@ -230,8 +241,19 @@
     margin-inline: 0.15em 0.2em;
     vertical-align: -0.1em;
     background-color: currentColor;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 21s-4-3-4-9 4-9 4-9'/%3E%3Cpath d='M16 3s4 3 4 9-4 9-4 9'/%3E%3Cpath d='M15 9l-6 6M9 9l6 6'/%3E%3C/svg%3E")
-      center / contain no-repeat;
+    mask: var(--chip-icon) center / contain no-repeat;
+  }
+  .var-chip::before {
+    --chip-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 21s-4-3-4-9 4-9 4-9'/%3E%3Cpath d='M16 3s4 3 4 9-4 9-4 9'/%3E%3Cpath d='M15 9l-6 6M9 9l6 6'/%3E%3C/svg%3E");
+  }
+  .default-chip::before {
+    --chip-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z'/%3E%3Cpath d='M15 16a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1z'/%3E%3Cpath d='M21 11V8a2 2 0 0 0-2-2h-6l3 3m0-6-3 3'/%3E%3Cpath d='M3 13v3a2 2 0 0 0 2 2h6l-3-3m0 6 3-3'/%3E%3C/svg%3E");
+  }
+  /* A variable inside a default value keeps the default's chip only. */
+  .default-chip .var-chip {
+    color: inherit;
+    background: none;
+    outline: none;
   }
 }
 

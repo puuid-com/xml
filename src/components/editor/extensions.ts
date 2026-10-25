@@ -22,7 +22,13 @@ import {
 } from '@codemirror/language'
 import { lintGutter, linter } from '@codemirror/lint'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
-import { Compartment, Facet, Prec, StateField } from '@codemirror/state'
+import {
+  Compartment,
+  Facet,
+  Prec,
+  StateEffect,
+  StateField,
+} from '@codemirror/state'
 import {
   Decoration,
   EditorView,
@@ -43,11 +49,13 @@ import { tags as t } from '@lezer/highlight'
 import { docLanguage } from './language'
 import { parseDocument } from '#/lib/document'
 import { decodeString } from '#/lib/json/parse'
+import { defaultMatches } from '#/lib/xml/defaults'
 import { varRegExp } from '#/lib/xml/vars'
 import { m } from '#/paraglide/messages'
 import type { Extension, Range, Text } from '@codemirror/state'
 import type { SyntaxNode } from '@lezer/common'
 import type { DecorationSet, KeyBinding, ViewUpdate } from '@codemirror/view'
+import type { DefaultMatch, DefaultRule } from '#/lib/xml/defaults'
 import type { XmlDocument } from '#/lib/xml/model'
 
 /** The cached file this editor state belongs to. */
@@ -282,6 +290,41 @@ export const tagHighlightsFacet = Facet.define<
 
 export const tagHighlightsCompartment = new Compartment()
 
+/** Enabled default-value rules, for marking values that already match. */
+export const defaultRulesFacet = Facet.define<
+  ReadonlyArray<DefaultRule>,
+  ReadonlyArray<DefaultRule>
+>({
+  combine: (values) => values.at(-1) ?? [],
+})
+
+export const defaultRulesCompartment = new Compartment()
+
+const setDefaultMarks = StateEffect.define<Array<DefaultMatch>>()
+
+// Built from the parsed model, so it only refreshes when the linter parses.
+// In between, the marks follow edits.
+const defaultMarks = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(marks, tr) {
+    marks = marks.map(tr.changes)
+    for (const effect of tr.effects) {
+      if (!effect.is(setDefaultMarks)) continue
+      marks = Decoration.set(
+        effect.value.map(({ key, from, to }) =>
+          Decoration.mark({
+            class: 'cm-default default-chip',
+            attributes: { title: m.default_tooltip({ key }) },
+          }).range(from, to),
+        ),
+        true,
+      )
+    }
+    return marks
+  },
+  provide: (field) => EditorView.decorations.from(field),
+})
+
 const tagBrackets = new Set([
   'StartTag',
   'StartCloseTag',
@@ -486,6 +529,7 @@ export interface EditorCallbacks {
 export function editorExtensions(
   callbacks: EditorCallbacks,
   highlights: ReadonlyMap<string, string>,
+  defaults: ReadonlyArray<DefaultRule>,
 ): Extension {
   return [
     lineNumbers(),
@@ -516,6 +560,8 @@ export function editorExtensions(
     theme,
     varHighlighter,
     tagHighlightsCompartment.of(tagHighlightsFacet.of(highlights)),
+    defaultRulesCompartment.of(defaultRulesFacet.of(defaults)),
+    defaultMarks,
     tagHighlighter,
     highlightMarkers,
     // The linter doubles as the parse loop: it runs after typing pauses and
@@ -528,6 +574,11 @@ export function editorExtensions(
           view.state.facet(docLanguage),
         )
         callbacks.onParse(fileId, doc)
+        view.dispatch({
+          effects: setDefaultMarks.of(
+            defaultMatches(doc.nodes, view.state.facet(defaultRulesFacet)),
+          ),
+        })
         return doc.errors.map((error) => ({
           from: error.from,
           to: Math.min(error.to, view.state.doc.length),
@@ -535,7 +586,13 @@ export function editorExtensions(
           message: error.message,
         }))
       },
-      { delay: 150 },
+      {
+        delay: 150,
+        // New rules need a fresh parse to mark matching values.
+        needsRefresh: (update) =>
+          update.startState.facet(defaultRulesFacet) !==
+          update.state.facet(defaultRulesFacet),
+      },
     ),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {

@@ -19,11 +19,14 @@ import {
 import { docLanguage, languageCompartment, languageExtension } from './language'
 import { TagContextMenu } from './TagContextMenu'
 import {
+  defaultRulesCompartment,
+  defaultRulesFacet,
   editorExtensions,
   fileIdField,
   tagHighlightsCompartment,
   tagHighlightsFacet,
 } from './extensions'
+import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
 import { languageOf } from '#/lib/document'
 import { filesCollection, saveContent } from '#/lib/store/files'
@@ -31,6 +34,7 @@ import { writerId } from '#/lib/store/session'
 import { diffChange } from '#/lib/xml/edit'
 import { m } from '#/paraglide/messages'
 import type { Extension } from '@codemirror/state'
+import type { DefaultRule } from '#/lib/xml/defaults'
 import type { ViewUpdate } from '@codemirror/view'
 
 /** Marks changes that came from another browser tab, so they are not saved back. */
@@ -48,7 +52,10 @@ function publishCursorFrom(state: EditorState) {
 
 let extensions: Extension | null = null
 
-function sharedExtensions(highlights: ReadonlyMap<string, string>) {
+function sharedExtensions(
+  highlights: ReadonlyMap<string, string>,
+  defaults: ReadonlyArray<DefaultRule>,
+) {
   extensions ??= editorExtensions(
     {
       onParse: (fileId, doc) => publishParse(fileId, doc),
@@ -65,11 +72,16 @@ function sharedExtensions(highlights: ReadonlyMap<string, string>) {
       ],
     },
     highlights,
+    defaults,
   )
   return extensions
 }
 
-function stateFor(fileId: string, highlights: ReadonlyMap<string, string>) {
+function stateFor(
+  fileId: string,
+  highlights: ReadonlyMap<string, string>,
+  defaults: ReadonlyArray<DefaultRule>,
+) {
   const file = filesCollection.get(fileId)
   const content = file?.content ?? ''
   const cached = states.get(fileId)
@@ -89,7 +101,7 @@ function stateFor(fileId: string, highlights: ReadonlyMap<string, string>) {
       languageCompartment.of(
         languageExtension(languageOf(file?.name ?? '', content)),
       ),
-      sharedExtensions(highlights),
+      sharedExtensions(highlights, defaults),
     ],
   })
 }
@@ -113,6 +125,8 @@ export function CodeEditor({ fileId }: { fileId: string }) {
   const viewRef = useRef<EditorView | null>(null)
   const highlights = useHighlightMap()
   const highlightsRef = useRef(highlights)
+  const defaults = useEnabledDefaults()
+  const defaultsRef = useRef(defaults)
   const activeName = useRef<string | null>(null)
 
   useEffect(() => {
@@ -174,15 +188,20 @@ export function CodeEditor({ fileId }: { fileId: string }) {
     if (previous === fileId) return
     if (previous) states.set(previous, view.state)
 
-    const state = stateFor(fileId, highlightsRef.current)
+    const state = stateFor(fileId, highlightsRef.current, defaultsRef.current)
     view.setState(state)
     activeName.current = filesCollection.get(fileId)?.name ?? null
     // A cached state keeps the language it had; the file may since be renamed.
     if (activeName.current) syncLanguage(view, activeName.current)
     view.dispatch({
-      effects: tagHighlightsCompartment.reconfigure(
-        tagHighlightsFacet.of(highlightsRef.current),
-      ),
+      effects: [
+        tagHighlightsCompartment.reconfigure(
+          tagHighlightsFacet.of(highlightsRef.current),
+        ),
+        defaultRulesCompartment.reconfigure(
+          defaultRulesFacet.of(defaultsRef.current),
+        ),
+      ],
     })
     publishCursorFrom(view.state)
     publishParse(fileId, parseActive())
@@ -197,6 +216,15 @@ export function CodeEditor({ fileId }: { fileId: string }) {
       ),
     })
   }, [highlights])
+
+  useEffect(() => {
+    defaultsRef.current = defaults
+    viewRef.current?.dispatch({
+      effects: defaultRulesCompartment.reconfigure(
+        defaultRulesFacet.of(defaults),
+      ),
+    })
+  }, [defaults])
 
   return (
     <TagContextMenu>

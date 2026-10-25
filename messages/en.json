@@ -126,5 +126,6 @@
   "defaults_unchanged": "Every value already matches its default.",
   "defaults_applied": "Values set: {count}",
   "defaults_save_current": "Save value as default",
-  "defaults_saved": "Default saved for <{name}>"
+  "defaults_saved": "Default saved for <{name}>",
+  "default_tooltip": "Default value for {key}"
 }

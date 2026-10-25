@@ -1,6 +1,5 @@
 import { IconChevronDown, IconReplace, IconTrash } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form'
-import { useLiveQuery } from '@tanstack/react-db'
 import { useSelector } from '@tanstack/react-store'
 
 import { applyDefaultsActive } from '#/components/editor/actions'
@@ -24,9 +23,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '#/components/ui/tooltip'
+import { useDefaults } from '#/hooks/use-defaults'
 import { alt } from '#/lib/platform'
 import {
-  defaultsCollection,
   removeDefault,
   setDefault,
   toggleDefault,
@@ -35,16 +34,6 @@ import {
 import { defaultKeys } from '#/lib/xml/defaults'
 import { m } from '#/paraglide/messages'
 import type { DefaultValue } from '#/lib/store/defaults'
-
-/** All default-value rules, oldest first. */
-export function useDefaults() {
-  const { data } = useLiveQuery((q) =>
-    q
-      .from({ rule: defaultsCollection })
-      .orderBy(({ rule }) => rule.createdAt, 'asc'),
-  )
-  return data
-}
 
 /** "Apply defaults" in the bottom bar, with a popover to manage the rules. */
 export function DefaultsControls() {

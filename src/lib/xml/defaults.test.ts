@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultChanges, defaultKeys } from './defaults'
+import { defaultChanges, defaultKeys, defaultMatches } from './defaults'
+import { parseJson } from '#/lib/json/parse'
 import { parseXml } from './parse'
 import type { TextChange } from './edit'
 import type { DefaultRule } from './defaults'
@@ -57,5 +58,33 @@ describe('defaults', () => {
   it('lists leaf names and attributes as keys', () => {
     const text = '<r id="1"><a/><b x="1">t</b></r>'
     expect(defaultKeys(parseXml(text).nodes)).toEqual(['@id', '@x', 'a', 'b'])
+  })
+
+  it('finds values that already match their default', () => {
+    const text = '<r v="1" w="2"><a>x</a><a>y</a><b><a>x</a></b></r>'
+    const matches = defaultMatches(parseXml(text).nodes, [
+      { key: 'a', value: 'x' },
+      { key: 'b', value: 'x' },
+      { key: '@v', value: '1' },
+    ])
+    expect(matches.map((m) => [m.key, text.slice(m.from, m.to)])).toEqual([
+      ['@v', '1'],
+      ['a', 'x'],
+      ['a', 'x'],
+    ])
+  })
+
+  it('skips empty values and marks JSON strings without quotes', () => {
+    expect(
+      defaultMatches(parseXml('<r><a/><a></a></r>').nodes, [
+        { key: 'a', value: '' },
+      ]),
+    ).toEqual([])
+    const json = '{"a": "x", "n": 1, "l": ["x"]}'
+    const matches = defaultMatches(parseJson(json).nodes, [
+      { key: 'a', value: 'x' },
+      { key: 'n', value: '1' },
+    ])
+    expect(matches.map((m) => json.slice(m.from, m.to))).toEqual(['x', '1'])
   })
 })

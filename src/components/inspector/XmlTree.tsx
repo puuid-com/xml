@@ -5,7 +5,7 @@ import {
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useDraft } from './use-draft'
@@ -27,6 +27,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '#/components/ui/context-menu'
+import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
 import {
   findHighlight,
@@ -45,6 +46,7 @@ import {
   setValue,
 } from '#/lib/document'
 import { cn } from '#/lib/utils'
+import { defaultIndex, isDefaultAttr, isDefaultLeaf } from '#/lib/xml/defaults'
 import {
   allElements,
   ancestorPaths,
@@ -53,6 +55,7 @@ import {
 } from '#/lib/xml/locate'
 import { isLeaf, leafValue } from '#/lib/xml/model'
 import { m } from '#/paraglide/messages'
+import type { DefaultIndex } from '#/lib/xml/defaults'
 import type { TreeRow } from '#/lib/xml/locate'
 
 const ROW_HEIGHT = 26
@@ -67,6 +70,11 @@ export function XmlTree() {
     fileId ? (s.collapsed[fileId] ?? NO_COLLAPSED) : NO_COLLAPSED,
   )
   const highlights = useHighlightMap()
+  const enabledDefaults = useEnabledDefaults()
+  const defaults = useMemo(
+    () => defaultIndex(enabledDefaults),
+    [enabledDefaults],
+  )
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const collapsed = new Set(collapsedList)
@@ -140,6 +148,7 @@ export function XmlTree() {
                   row={row}
                   fileId={fileId}
                   top={item.start}
+                  defaults={defaults}
                   selected={row.el.path === selectedPath}
                   color={
                     row.el.json?.item ? undefined : highlights.get(row.el.name)
@@ -158,12 +167,14 @@ function TreeRowView({
   row,
   fileId,
   top,
+  defaults,
   selected,
   color,
 }: {
   row: TreeRow
   fileId: string
   top: number
+  defaults: DefaultIndex
   selected: boolean
   color: string | undefined
 }) {
@@ -257,10 +268,16 @@ function TreeRowView({
               >
                 <span className="text-syntax-attr">{attr.name}</span>
                 <span className="text-syntax-punct">=</span>
-                <VarText
-                  text={attr.value}
-                  className="max-w-32 text-syntax-value"
-                />
+                {isDefaultAttr(defaults, attr) ? (
+                  <DefaultChip name={`@${attr.name}`} className="max-w-32">
+                    <VarText text={attr.value} />
+                  </DefaultChip>
+                ) : (
+                  <VarText
+                    text={attr.value}
+                    className="max-w-32 text-syntax-value"
+                  />
+                )}
               </span>
             ))}
             {el.attrs.length > 3 && (
@@ -270,7 +287,11 @@ function TreeRowView({
             )}
           </span>
           {leaf && !el.selfClosing && (
-            <LeafValue path={el.path} value={leafValue(el)} />
+            <LeafValue
+              path={el.path}
+              value={leafValue(el)}
+              defaultKey={isDefaultLeaf(defaults, el) ? el.name : undefined}
+            />
           )}
           {leaf && el.selfClosing && <span className="flex-1" />}
           {empty && <span className="ml-1 text-syntax-punct">{empty}</span>}
@@ -344,7 +365,16 @@ function TreeRowView({
 }
 
 /** Leaf text shown inline; click to edit in place. */
-function LeafValue({ path, value }: { path: string; value: string }) {
+function LeafValue({
+  path,
+  value,
+  defaultKey,
+}: {
+  path: string
+  value: string
+  /** Set when the value equals the default for this key. */
+  defaultKey?: string
+}) {
   const [editing, setEditing] = useState(false)
   const draft = useDraft(value, (next) =>
     editAtPath(path, (el) => setValue(el, next)),
@@ -379,7 +409,11 @@ function LeafValue({ path, value }: { path: string; value: string }) {
         setEditing(true)
       }}
     >
-      {value.trim() === '' ? (
+      {defaultKey !== undefined && value !== '' ? (
+        <DefaultChip name={defaultKey}>
+          <VarText text={value.trim()} />
+        </DefaultChip>
+      ) : value.trim() === '' ? (
         <span className="text-muted-foreground/60 italic">
           {m.node_empty()}
         </span>
@@ -387,5 +421,25 @@ function LeafValue({ path, value }: { path: string; value: string }) {
         <VarText text={value.trim()} />
       )}
     </button>
+  )
+}
+
+/** Marks a value that equals its default, like the editor does. */
+function DefaultChip({
+  name,
+  className,
+  children,
+}: {
+  name: string
+  className?: string
+  children: React.ReactNode
+}) {
+  return (
+    <span
+      title={m.default_tooltip({ key: name })}
+      className={cn('default-chip flex min-w-0 items-center pr-0.5', className)}
+    >
+      {children}
+    </span>
   )
 }

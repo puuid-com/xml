@@ -126,5 +126,6 @@
   "defaults_unchanged": "Toutes les valeurs correspondent déjà.",
   "defaults_applied": "Valeurs modifiées : {count}",
   "defaults_save_current": "Enregistrer comme valeur par défaut",
-  "defaults_saved": "Valeur par défaut enregistrée pour <{name}>"
+  "defaults_saved": "Valeur par défaut enregistrée pour <{name}>",
+  "default_tooltip": "Valeur par défaut de {key}"
 }
