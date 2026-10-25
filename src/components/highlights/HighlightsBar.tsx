@@ -221,7 +221,8 @@ function AddRuleForm({
       onDone()
     },
   })
-  const suggestions = tagNames.filter((t) => !existing.includes(t))
+  const taken = new Set(existing)
+  const suggestions = tagNames.filter((t) => !taken.has(t))
 
   return (
     <form

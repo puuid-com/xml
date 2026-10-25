@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 
 import { getView } from '#/components/editor/editor-store'
 import type { EditorView } from '@codemirror/view'
@@ -22,7 +22,9 @@ export function useScrollSync(
   fileId: string | null,
 ) {
   const rowsRef = useRef(rows)
-  rowsRef.current = rows
+  useLayoutEffect(() => {
+    rowsRef.current = rows
+  }, [rows])
   const hasRows = rows.length > 0
 
   useEffect(() => {
@@ -66,20 +68,15 @@ export function useScrollSync(
     }
     const fromEditor = driveFrom('editor')
     const fromTree = driveFrom('tree')
+    const controller = new AbortController()
+    const options = { passive: true, signal: controller.signal }
     for (const type of DRIVER_EVENTS) {
-      view.dom.addEventListener(type, fromEditor, { passive: true })
-      tree.addEventListener(type, fromTree, { passive: true })
+      view.dom.addEventListener(type, fromEditor, options)
+      tree.addEventListener(type, fromTree, options)
     }
-    editor.addEventListener('scroll', onEditorScroll, { passive: true })
-    tree.addEventListener('scroll', onTreeScroll, { passive: true })
-    return () => {
-      for (const type of DRIVER_EVENTS) {
-        view.dom.removeEventListener(type, fromEditor)
-        tree.removeEventListener(type, fromTree)
-      }
-      editor.removeEventListener('scroll', onEditorScroll)
-      tree.removeEventListener('scroll', onTreeScroll)
-    }
+    editor.addEventListener('scroll', onEditorScroll, options)
+    tree.addEventListener('scroll', onTreeScroll, options)
+    return () => controller.abort()
   }, [scrollRef, rowHeight, fileId, hasRows])
 }
 

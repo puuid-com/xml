@@ -127,9 +127,8 @@ function RuleRow({ rule }: { rule: DefaultValue }) {
 
 function AddDefaultForm({ existing }: { existing: Array<string> }) {
   const doc = useSelector(editorStore, (s) => s.doc)
-  const suggestions = defaultKeys(doc.nodes).filter(
-    (k) => !existing.includes(k),
-  )
+  const taken = new Set(existing)
+  const suggestions = defaultKeys(doc.nodes).filter((k) => !taken.has(k))
   const form = useForm({
     defaultValues: { key: '', value: '' },
     onSubmit: ({ value, formApi }) => {

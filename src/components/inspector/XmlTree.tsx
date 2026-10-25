@@ -92,6 +92,9 @@ export function XmlTree() {
   const collapsed = new Set(collapsedList)
   const rows = flattenVisible(doc.nodes, collapsed)
 
+  // TanStack Virtual is a known React Compiler opt-out; nothing it returns is
+  // passed to a memoized child, so skipping compilation here is harmless.
+  // react-doctor-disable-next-line react-hooks-js/incompatible-library
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
@@ -103,11 +106,13 @@ export function XmlTree() {
   // Follow the editor cursor: expand collapsed ancestors and scroll to it.
   useEffect(() => {
     if (!selectedPath || !fileId) return
-    const hidden = ancestorPaths(selectedPath).filter((p) => collapsed.has(p))
-    if (hidden.length > 0) {
+    const hidden = new Set(
+      ancestorPaths(selectedPath).filter((p) => collapsed.has(p)),
+    )
+    if (hidden.size > 0) {
       setCollapsed(
         fileId,
-        collapsedList.filter((p) => !hidden.includes(p)),
+        collapsedList.filter((p) => !hidden.has(p)),
       )
       return
     }
