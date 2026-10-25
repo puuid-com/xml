@@ -1,5 +1,7 @@
 import { Store } from '@tanstack/store'
 
+import type { DefaultSummary } from '#/lib/xml/defaults'
+
 // Transient dialog state for the editor screen.
 interface UiState {
   paletteOpen: boolean
@@ -7,6 +9,8 @@ interface UiState {
   closeId: string | null
   /** Tag whose colour picker is open next to the editor cursor. */
   quickHighlight: QuickHighlight | null
+  /** Defaults waiting for confirmation before they're written to the file. */
+  defaultsPreview: Array<DefaultSummary> | null
 }
 
 export interface QuickHighlight {
@@ -21,6 +25,7 @@ export const uiStore = new Store<UiState>({
   renameId: null,
   closeId: null,
   quickHighlight: null,
+  defaultsPreview: null,
 })
 
 export function setPaletteOpen(paletteOpen: boolean) {
@@ -37,4 +42,10 @@ export function askClose(closeId: string | null) {
 
 export function setQuickHighlight(quickHighlight: QuickHighlight | null) {
   uiStore.setState((s) => ({ ...s, quickHighlight }))
+}
+
+export function setDefaultsPreview(
+  defaultsPreview: Array<DefaultSummary> | null,
+) {
+  uiStore.setState((s) => ({ ...s, defaultsPreview }))
 }

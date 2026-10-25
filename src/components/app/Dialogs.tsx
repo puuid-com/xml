@@ -2,7 +2,8 @@ import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
 
 import { neighbour } from './files'
-import { askClose, askRename, uiStore } from './ui-store'
+import { askClose, askRename, setDefaultsPreview, uiStore } from './ui-store'
+import { commitDefaultsActive } from '#/components/editor/actions'
 import { dropEditorState } from '#/components/editor/CodeEditor'
 import {
   AlertDialog,
@@ -25,6 +26,7 @@ import {
 } from '#/components/ui/dialog'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
+import { mod } from '#/lib/platform'
 import { closeFile, filesCollection, renameFile } from '#/lib/store/files'
 import { sessionStore, setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
@@ -151,6 +153,61 @@ export function CloseDialog({ openIds }: { openIds: Array<string> }) {
           <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={confirm}>
             {m.close_confirm()}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+/** Lists the defaults that would change the active file before writing them. */
+export function DefaultsConfirmDialog() {
+  const preview = useSelector(uiStore, (s) => s.defaultsPreview)
+
+  return (
+    <AlertDialog
+      open={!!preview}
+      onOpenChange={(open) => {
+        if (!open) setDefaultsPreview(null)
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{m.defaults_confirm_title()}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {m.defaults_confirm_description({ mod })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <ul className="-mx-1 flex max-h-64 flex-col overflow-y-auto border-y py-1">
+          {preview?.map((rule) => (
+            <li
+              key={rule.key}
+              className="flex items-center gap-3 px-1 py-1.5 font-mono text-xs"
+            >
+              <span className="w-32 shrink-0 truncate" title={rule.key}>
+                {rule.key}
+              </span>
+              <span
+                className="min-w-0 flex-1 truncate text-muted-foreground"
+                title={rule.value}
+              >
+                {rule.value || m.defaults_confirm_empty()}
+              </span>
+              <span
+                className="shrink-0 text-muted-foreground tabular-nums"
+                aria-label={m.defaults_confirm_count_label({
+                  count: rule.count,
+                })}
+              >
+                {m.defaults_confirm_count({ count: rule.count })}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
+          <AlertDialogAction onClick={commitDefaultsActive}>
+            {m.defaults_confirm()}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -1,7 +1,6 @@
 import {
   IconArrowDown,
   IconArrowUp,
-  IconHighlight,
   IconPlus,
   IconTrash,
 } from '@tabler/icons-react'
@@ -68,12 +67,8 @@ export function HighlightsBar() {
     <div
       role="toolbar"
       aria-label={m.highlights_title()}
-      className="hidden h-full max-w-[40%] min-w-0 shrink items-center gap-1 overflow-x-auto [scrollbar-width:none] md:flex"
+      className="flex h-full min-w-0 shrink items-center gap-1 overflow-x-auto [scrollbar-width:none]"
     >
-      <IconHighlight
-        aria-hidden
-        className="mr-1 size-3.5 shrink-0 text-muted-foreground"
-      />
       {rules.map((rule) => (
         <RuleChip key={rule.id} rule={rule} count={counts.get(rule.tag) ?? 0} />
       ))}
@@ -82,7 +77,7 @@ export function HighlightsBar() {
         existing={rules.map((r) => r.tag)}
       />
       {rules.length === 0 && (
-        <span className="hidden truncate xl:inline">
+        <span className="hidden truncate sm:inline">
           {m.highlights_hint_prefix()} <Kbd>{alt}H</Kbd>{' '}
           {m.highlights_hint_suffix()}
         </span>

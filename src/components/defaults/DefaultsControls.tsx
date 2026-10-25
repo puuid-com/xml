@@ -1,21 +1,12 @@
-import { IconChevronDown, IconReplace, IconTrash } from '@tabler/icons-react'
+import { IconReplace, IconTrash } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
 
 import { applyDefaultsActive } from '#/components/editor/actions'
 import { editorStore } from '#/components/editor/editor-store'
 import { Button } from '#/components/ui/button'
-import { ButtonGroup } from '#/components/ui/button-group'
 import { Input } from '#/components/ui/input'
 import { Kbd, KbdGroup } from '#/components/ui/kbd'
-import {
-  Popover,
-  PopoverContent,
-  PopoverDescription,
-  PopoverHeader,
-  PopoverTitle,
-  PopoverTrigger,
-} from '#/components/ui/popover'
 import { Separator } from '#/components/ui/separator'
 import { Switch } from '#/components/ui/switch'
 import {
@@ -35,59 +26,54 @@ import { defaultKeys } from '#/lib/xml/defaults'
 import { m } from '#/paraglide/messages'
 import type { DefaultValue } from '#/lib/store/defaults'
 
-/** "Apply defaults" in the bottom bar, with a popover to manage the rules. */
-export function DefaultsControls() {
+/** Apply defaults button in the bottom bar; asks to confirm before writing. */
+export function DefaultsButton() {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label={m.defaults_apply()}
+          onClick={applyDefaultsActive}
+        >
+          <IconReplace />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent className="flex items-center gap-2">
+        {m.defaults_apply()}
+        <KbdGroup>
+          <Kbd>⇧</Kbd>
+          <Kbd>{alt}</Kbd>
+          <Kbd>D</Kbd>
+        </KbdGroup>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+/** Default value rules, shown in the bottom bar's settings popover. */
+export function DefaultsRules() {
   const rules = useDefaults()
 
   return (
-    <ButtonGroup>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="xs" onClick={applyDefaultsActive}>
-            <IconReplace />
-            <span className="hidden md:inline">{m.defaults_apply()}</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <KbdGroup>
-            <Kbd>⇧</Kbd>
-            <Kbd>{alt}</Kbd>
-            <Kbd>D</Kbd>
-          </KbdGroup>
-        </TooltipContent>
-      </Tooltip>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            aria-label={m.defaults_title()}
-          >
-            <IconChevronDown className="text-muted-foreground" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent side="top" align="end" className="w-96 gap-0 p-0">
-          <PopoverHeader className="px-3 py-2.5">
-            <PopoverTitle>{m.defaults_title()}</PopoverTitle>
-            <PopoverDescription>{m.defaults_description()}</PopoverDescription>
-          </PopoverHeader>
-          <Separator />
-          {rules.length > 0 ? (
-            <ul className="flex max-h-72 flex-col overflow-y-auto py-1">
-              {rules.map((rule) => (
-                <RuleRow key={rule.id} rule={rule} />
-              ))}
-            </ul>
-          ) : (
-            <p className="px-3 py-3 text-muted-foreground">
-              {m.defaults_empty()}
-            </p>
-          )}
-          <Separator />
-          <AddDefaultForm existing={rules.map((r) => r.key)} />
-        </PopoverContent>
-      </Popover>
-    </ButtonGroup>
+    <>
+      <p className="px-3 py-2.5 text-muted-foreground">
+        {m.defaults_description()}
+      </p>
+      <Separator />
+      {rules.length > 0 ? (
+        <ul className="flex max-h-72 flex-col overflow-y-auto py-1">
+          {rules.map((rule) => (
+            <RuleRow key={rule.id} rule={rule} />
+          ))}
+        </ul>
+      ) : (
+        <p className="px-3 py-3 text-muted-foreground">{m.defaults_empty()}</p>
+      )}
+      <Separator />
+      <AddDefaultForm existing={rules.map((r) => r.key)} />
+    </>
   )
 }
 

@@ -62,6 +62,31 @@ export function attrDiffers(index: DefaultIndex, attr: XmlAttr) {
   return value !== undefined && attr.value !== value
 }
 
+/** A value a default rule would change. */
+type DefaultTarget = { key: string; value: string } & (
+  { attr: XmlAttr } | { el: XmlElement }
+)
+
+/** Values that `rules` cover and don't already equal, in document order. */
+function* differingTargets(
+  nodes: Array<XmlNode>,
+  rules: ReadonlyArray<DefaultRule>,
+): Generator<DefaultTarget> {
+  const index = defaultIndex(rules)
+  for (const el of allElements(nodes)) {
+    for (const attr of el.attrs) {
+      const value = index.attrs.get(attr.name)
+      if (value !== undefined && attr.value !== value) {
+        yield { key: `@${attr.name}`, value, attr }
+      }
+    }
+    const value = leafDefault(index, el)
+    if (value !== undefined && leafValue(el) !== value) {
+      yield { key: el.name, value, el }
+    }
+  }
+}
+
 /**
  * Changes that apply `rules` to the document. Values already in place are
  * skipped, so the result is empty when nothing would change. The changes
@@ -72,21 +97,35 @@ export function defaultChanges(
   rules: ReadonlyArray<DefaultRule>,
   setValue: (el: XmlElement, value: string) => Array<TextChange> = setText,
 ): Array<TextChange> {
-  const index = defaultIndex(rules)
   const changes: Array<TextChange> = []
-  for (const el of allElements(nodes)) {
-    for (const attr of el.attrs) {
-      const value = index.attrs.get(attr.name)
-      if (value !== undefined && attr.value !== value) {
-        changes.push(...setAttr(attr, value))
-      }
-    }
-    const value = leafDefault(index, el)
-    if (value !== undefined && leafValue(el) !== value) {
-      changes.push(...setValue(el, value))
-    }
+  for (const target of differingTargets(nodes, rules)) {
+    changes.push(
+      ...('attr' in target
+        ? setAttr(target.attr, target.value)
+        : setValue(target.el, target.value)),
+    )
   }
   return changes
+}
+
+export interface DefaultSummary extends DefaultRule {
+  /** How many values the rule would change. */
+  count: number
+}
+
+/** The rules that would change something, with how many values each sets. */
+export function defaultSummary(
+  nodes: Array<XmlNode>,
+  rules: ReadonlyArray<DefaultRule>,
+): Array<DefaultSummary> {
+  const counts = new Map<string, number>()
+  for (const { key } of differingTargets(nodes, rules)) {
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return rules.flatMap((rule) => {
+    const count = counts.get(rule.key)
+    return count ? [{ ...rule, count }] : []
+  })
 }
 
 export interface DefaultMatch {

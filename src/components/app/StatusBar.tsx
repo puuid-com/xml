@@ -1,120 +1,91 @@
-import {
-  IconAlertCircle,
-  IconCircleCheck,
-  IconDatabase,
-} from '@tabler/icons-react'
+import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 
 import { CommandMenuButton } from './CommandMenu'
-import { FormatControls } from './FormatControls'
+import { FormatButton, FormatOptions } from './FormatControls'
+import { editorStore } from '#/components/editor/editor-store'
 import {
-  editorStore,
-  getText,
-  revealRange,
-} from '#/components/editor/editor-store'
-import { DefaultsControls } from '#/components/defaults/DefaultsControls'
+  DefaultsButton,
+  DefaultsRules,
+} from '#/components/defaults/DefaultsControls'
 import { HighlightsBar } from '#/components/highlights/HighlightsBar'
-import { LocaleSwitcher } from '#/components/LocaleSwitcher'
+import { Button } from '#/components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '#/components/ui/popover'
 import { Separator } from '#/components/ui/separator'
-import { cacheSize } from '#/lib/store/files'
-import { cn } from '#/lib/utils'
-import { allElements, displayPath } from '#/lib/xml/locate'
-import { findVars } from '#/lib/xml/vars'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '#/components/ui/tooltip'
 import { m } from '#/paraglide/messages'
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
-
-function Divider({ className }: { className?: string }) {
-  return (
-    <Separator
-      orientation="vertical"
-      className={cn('data-vertical:h-4 data-vertical:self-center', className)}
-    />
-  )
-}
-
-/** Bottom bar: command menu and document status on the left, then the editing tools and locale. */
+/** Bottom bar: highlight chips on the left, editing tools and search on the right. */
 export function StatusBar() {
   const fileId = useSelector(editorStore, (s) => s.fileId)
-  const doc = useSelector(editorStore, (s) => s.doc)
-  const line = useSelector(editorStore, (s) => s.line)
-  const col = useSelector(editorStore, (s) => s.col)
-  const selectedPath = useSelector(editorStore, (s) => s.selectedPath)
-  // Re-read on each parse; cheap compared to the parse itself.
-  useSelector(editorStore, (s) => s.revision)
-
-  const varCount = fileId ? findVars(getText()).length : 0
-  const elementCount = allElements(doc.nodes).length
-  const first = doc.errors.at(0)
 
   return (
-    <footer className="flex h-8 shrink-0 items-center gap-3 border-t pr-1 pl-3 text-[11px] whitespace-nowrap text-muted-foreground">
-      <CommandMenuButton />
-      <Divider />
-      {fileId && (
-        <>
-          {first ? (
-            <button
-              type="button"
-              className="flex items-center gap-1 text-destructive hover:underline"
-              onClick={() => revealRange(first.from, first.to)}
-            >
-              <IconAlertCircle className="size-3.5" />
-              {m.status_errors({ count: doc.errors.length })}
-            </button>
-          ) : (
-            <span className="flex items-center gap-1 text-syntax-value">
-              <IconCircleCheck className="size-3.5" />
-              {m.status_valid()}
-            </span>
-          )}
-          <span className="hidden tabular-nums sm:inline">
-            {m.status_position({ line, col })}
-          </span>
-          {selectedPath && (
-            <span className="hidden min-w-0 truncate font-mono md:inline">
-              {displayPath(selectedPath).join(' › ')}
-            </span>
-          )}
-        </>
-      )}
+    <footer className="flex h-8 shrink-0 items-center gap-1 border-t px-1.5 text-[11px] whitespace-nowrap text-muted-foreground">
+      {fileId && <HighlightsBar />}
       <div className="flex-1" />
       {fileId && (
         <>
-          <span className="hidden lg:inline">
-            {m.status_elements({ count: elementCount })}
-          </span>
-          {varCount > 0 && (
-            <span className="hidden text-syntax-var lg:inline">
-              {m.status_vars({ count: varCount })}
-            </span>
-          )}
-        </>
-      )}
-      <span
-        className="hidden items-center gap-1 sm:flex"
-        title={m.status_cache_hint()}
-      >
-        <IconDatabase className="size-3.5" />
-        {formatBytes(cacheSize())}
-      </span>
-      {fileId && (
-        <>
-          <Divider />
-          <HighlightsBar />
-          <Divider className="hidden md:block" />
           <div className="flex items-center text-foreground">
-            <FormatControls />
-            <DefaultsControls />
+            <FormatButton />
+            <DefaultsButton />
+            <SettingsPopover />
           </div>
+          <Separator
+            orientation="vertical"
+            className="mx-1 data-vertical:h-4 data-vertical:self-center"
+          />
         </>
       )}
-      <Divider />
-      <LocaleSwitcher className="h-6! border-none bg-transparent! px-1.5 text-[11px] text-muted-foreground hover:text-foreground" />
+      <CommandMenuButton />
     </footer>
+  )
+}
+
+function SettingsPopover() {
+  return (
+    <Popover>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              aria-label={m.editor_settings()}
+            >
+              <IconAdjustmentsHorizontal />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{m.editor_settings()}</TooltipContent>
+      </Tooltip>
+      <PopoverContent side="top" align="end" className="w-96 gap-0 p-0">
+        <Tabs defaultValue="format" className="gap-0">
+          <TabsList variant="line" className="w-full justify-start px-2">
+            <TabsTrigger value="format" className="flex-none px-2">
+              {m.action_format()}
+            </TabsTrigger>
+            <TabsTrigger value="defaults" className="flex-none px-2">
+              {m.defaults_tab()}
+            </TabsTrigger>
+          </TabsList>
+          <Separator />
+          <TabsContent value="format">
+            <FormatOptions />
+          </TabsContent>
+          <TabsContent value="defaults">
+            <DefaultsRules />
+          </TabsContent>
+        </Tabs>
+      </PopoverContent>
+    </Popover>
   )
 }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultChanges, defaultKeys, defaultMatches } from './defaults'
+import {
+  defaultChanges,
+  defaultKeys,
+  defaultMatches,
+  defaultSummary,
+} from './defaults'
 import { parseJson } from '#/lib/json/parse'
 import { parseXml } from './parse'
 import type { TextChange } from './edit'
@@ -53,6 +58,19 @@ describe('defaults', () => {
       { key: '@v', value: '2' },
     ]
     expect(defaultChanges(parseXml(text).nodes, rules)).toEqual([])
+  })
+
+  it('summarizes how many values each rule changes', () => {
+    const text = '<r v="1"><a>x</a><a>y</a><a/><b>z</b></r>'
+    const summary = defaultSummary(parseXml(text).nodes, [
+      { key: 'a', value: 'x' },
+      { key: 'b', value: 'z' },
+      { key: '@v', value: '2' },
+    ])
+    expect(summary).toEqual([
+      { key: 'a', value: 'x', count: 2 },
+      { key: '@v', value: '2', count: 1 },
+    ])
   })
 
   it('lists leaf names and attributes as keys', () => {

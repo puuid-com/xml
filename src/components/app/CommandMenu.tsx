@@ -8,6 +8,7 @@ import {
   IconFolderOpen,
   IconHighlight,
   IconJson,
+  IconLanguage,
   IconPencil,
   IconReplace,
   IconSearch,
@@ -24,6 +25,7 @@ import {
   highlightAtCursor,
 } from '#/components/editor/actions'
 import { useTagCounts } from '#/components/highlights/HighlightsBar'
+import { localeNames } from '#/components/LocaleSwitcher'
 import { Button } from '#/components/ui/button'
 import {
   Command,
@@ -50,6 +52,7 @@ import { alt, mod } from '#/lib/platform'
 import { setHighlight } from '#/lib/store/highlights'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
+import { getLocale, locales, setLocale } from '#/paraglide/runtime'
 
 /** Centered palette of files and actions, opened with ⌘K or the logo. */
 export function CommandMenu({
@@ -115,11 +118,12 @@ export function CommandMenuButton() {
     <Button
       variant="ghost"
       size="xs"
-      className="-ml-1.5 gap-1.5 px-1.5 text-[11px] font-normal text-muted-foreground hover:text-foreground"
+      aria-label={m.palette_open()}
+      title={m.palette_open()}
+      className="gap-1.5 px-1.5 text-[11px] font-normal text-muted-foreground hover:text-foreground"
       onClick={() => setPaletteOpen(true)}
     >
       <IconSearch className="size-3.5" />
-      {m.palette_open()}
       <Kbd className="h-4 min-w-4 bg-transparent px-0 text-[11px] font-normal">
         {mod}K
       </Kbd>
@@ -224,6 +228,23 @@ function FileCommands({
             {m.defaults_apply()}
             <CommandShortcut>⇧{alt}D</CommandShortcut>
           </CommandItem>
+        </CommandGroup>
+        <CommandSeparator />
+        <CommandGroup heading={m.language_label()}>
+          {locales.map((locale) => (
+            <CommandItem
+              key={locale}
+              value={`language ${localeNames[locale]}`}
+              lang={locale}
+              onSelect={() => run(() => void setLocale(locale))}
+            >
+              <IconLanguage />
+              {localeNames[locale]}
+              {locale === getLocale() && (
+                <IconCheck className="size-3 text-muted-foreground" />
+              )}
+            </CommandItem>
+          ))}
         </CommandGroup>
         {tags.length > 0 && (
           <CommandGroup heading={m.highlights_title()}>

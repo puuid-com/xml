@@ -8,13 +8,17 @@ import {
   parseActive,
   revealElement,
 } from './editor-store'
-import { setQuickHighlight } from '#/components/app/ui-store'
+import {
+  setDefaultsPreview,
+  setQuickHighlight,
+} from '#/components/app/ui-store'
 import { filesCollection } from '#/lib/store/files'
 import { enabledDefaults } from '#/lib/store/defaults'
 import { formatSettingsStore } from '#/lib/store/format-settings'
 import { highlightsCollection } from '#/lib/store/highlights'
 import { MIME_TYPES, documentDefaults, formatDocument } from '#/lib/document'
 import { decodeString } from '#/lib/json/parse'
+import { defaultSummary } from '#/lib/xml/defaults'
 import { diffChange } from '#/lib/xml/edit'
 import { allElements, elementAt } from '#/lib/xml/locate'
 import { isLeaf, leafValue } from '#/lib/xml/model'
@@ -61,7 +65,7 @@ export function formatActive() {
   return true
 }
 
-/** Writes every enabled default value into the active file, as one undo step. */
+/** Asks to confirm the enabled default values that would change the active file. */
 export function applyDefaultsActive() {
   const view = getView()
   if (!view) return true
@@ -70,19 +74,29 @@ export function applyDefaultsActive() {
     toast(m.defaults_none(), { id: 'defaults' })
     return true
   }
-  const changes = documentDefaults(
-    parseActive(view.state.doc.toString()),
-    rules,
-  )
-  if (changes.length === 0) {
+  const doc = parseActive(view.state.doc.toString())
+  const summary = defaultSummary(doc.nodes, rules)
+  if (summary.length === 0) {
     toast(m.defaults_unchanged(), { id: 'defaults' })
     return true
   }
+  setDefaultsPreview(summary)
+  return true
+}
+
+/** Writes every enabled default value into the active file, as one undo step. */
+export function commitDefaultsActive() {
+  const view = getView()
+  if (!view) return
+  const changes = documentDefaults(
+    parseActive(view.state.doc.toString()),
+    enabledDefaults(),
+  )
+  if (changes.length === 0) return
   view.dispatch({ changes, userEvent: 'input.defaults' })
   toast.success(m.defaults_applied({ count: changes.length }), {
     id: 'defaults',
   })
-  return true
 }
 
 /** Leaf element at `pos` with its current text, if any. */
