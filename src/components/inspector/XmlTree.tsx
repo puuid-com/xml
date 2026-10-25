@@ -13,7 +13,8 @@ import { flushSync } from 'react-dom'
 
 import { notify } from '#/components/app/notice-store'
 import { treeKeyAction } from './tree-keys'
-import { searchTree } from './tree-search'
+import { Highlighted, SearchHighlightProvider } from './SearchHighlight'
+import { searchNeedle, searchTree } from './tree-search'
 import { StructureBreadcrumb } from './StructureBreadcrumb'
 import { useDraft } from './use-draft'
 import { useScrollSync } from './use-scroll-sync'
@@ -299,32 +300,34 @@ export function XmlTree() {
             if (!e.currentTarget.contains(e.relatedTarget)) setFocusedPath(null)
           }}
         >
-          <div
-            className="relative w-full"
-            style={{ height: virtualizer.getTotalSize() }}
-          >
-            {virtualizer.getVirtualItems().map((item) => {
-              const row = rows[item.index]
-              const named = hasName(row.el)
-              return (
-                <TreeRowView
-                  key={row.el.path}
-                  row={row}
-                  index={item.index}
-                  active={item.index === activeIndex}
-                  onFocusRow={setFocusedPath}
-                  onEditingChange={setEditingPath}
-                  rowHeight={rowHeight}
-                  onCollapse={changeCollapsed}
-                  top={item.start}
-                  defaults={defaults}
-                  selected={row.el.path === selectedPath}
-                  color={named ? highlights.get(row.el.name) : undefined}
-                  pinned={named && pinned.has(row.el.name)}
-                />
-              )
-            })}
-          </div>
+          <SearchHighlightProvider needle={searchNeedle(query)}>
+            <div
+              className="relative w-full"
+              style={{ height: virtualizer.getTotalSize() }}
+            >
+              {virtualizer.getVirtualItems().map((item) => {
+                const row = rows[item.index]
+                const named = hasName(row.el)
+                return (
+                  <TreeRowView
+                    key={row.el.path}
+                    row={row}
+                    index={item.index}
+                    active={item.index === activeIndex}
+                    onFocusRow={setFocusedPath}
+                    onEditingChange={setEditingPath}
+                    rowHeight={rowHeight}
+                    onCollapse={changeCollapsed}
+                    top={item.start}
+                    defaults={defaults}
+                    selected={row.el.path === selectedPath}
+                    color={named ? highlights.get(row.el.name) : undefined}
+                    pinned={named && pinned.has(row.el.name)}
+                  />
+                )
+              })}
+            </div>
+          </SearchHighlightProvider>
         </div>
       )}
       <StructureBreadcrumb
@@ -471,14 +474,16 @@ function TagLabel({
               : 'text-muted-foreground',
         )}
       >
-        {el.name}
+        <Highlighted text={el.name} />
       </span>
       {el.attrs.slice(0, MAX_ATTRS).map((attr) => (
         <span
           key={attr.name}
           className="flex min-w-0 shrink items-center truncate"
         >
-          <span className="text-syntax-attr">{attr.name}</span>
+          <span className="text-syntax-attr">
+            <Highlighted text={attr.name} />
+          </span>
           <span className="text-syntax-punct">=</span>
           {isDefaultAttr(defaults, attr) ? (
             <DefaultChip name={`@${attr.name}`} className="max-w-32">

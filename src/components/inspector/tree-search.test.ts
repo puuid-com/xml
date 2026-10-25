@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { searchTree } from './tree-search'
+import { matchRanges, searchNeedle, searchTree } from './tree-search'
 import { parseDocument } from '#/lib/document'
 
 const xml = parseDocument(
@@ -73,5 +73,26 @@ describe('structure search', () => {
     expect(editing.rows).toHaveLength(3)
     expect(editing.matches.size).toBe(0)
     expect(searchTree(changed.nodes, 'Hammer', new Set()).rows).toHaveLength(0)
+  })
+})
+
+describe('match ranges', () => {
+  it('finds every case-insensitive occurrence', () => {
+    expect(matchRanges('Tea and TEA', searchNeedle(' tea '))).toEqual([
+      [0, 3],
+      [8, 11],
+    ])
+  })
+
+  it('does not overlap matches', () => {
+    expect(matchRanges('aaaa', 'aa')).toEqual([
+      [0, 2],
+      [2, 4],
+    ])
+  })
+
+  it('returns nothing for an empty needle or a length-changing case fold', () => {
+    expect(matchRanges('Tea', '')).toEqual([])
+    expect(matchRanges('İstanbul', 'stan')).toEqual([])
   })
 })

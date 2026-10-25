@@ -215,6 +215,14 @@
     border-radius: 3px;
   }
 
+  /* A structure search hit, styled like the editor's search matches. */
+  .search-hit {
+    color: inherit;
+    background-color: color-mix(in oklch, var(--hl-amber) 30%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--hl-amber) 60%, transparent);
+    border-radius: 2px;
+  }
+
   /*
    * A `<<variable>>`: neutral grey with a dashed ring and a leading `(x)` icon,
    * so it never reads as one of the coloured tag highlights. A value that
