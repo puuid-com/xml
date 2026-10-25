@@ -41,6 +41,7 @@ import {
   keymap,
   lineNumbers,
   rectangularSelection,
+  tooltips,
 } from '@codemirror/view'
 
 import { dynamicVarCompletions, varTooltip } from './dynamic-vars'
@@ -53,7 +54,12 @@ import { defaultMatches } from '#/lib/xml/defaults'
 import { varRegExp } from '#/lib/xml/vars'
 import { m } from '#/paraglide/messages'
 import type { Extension, Range } from '@codemirror/state'
-import type { DecorationSet, KeyBinding, ViewUpdate } from '@codemirror/view'
+import type {
+  DecorationSet,
+  KeyBinding,
+  Rect,
+  ViewUpdate,
+} from '@codemirror/view'
 import type { DefaultMatch, DefaultRule } from '#/lib/xml/defaults'
 import type { XmlDocument } from '#/lib/xml/model'
 
@@ -171,6 +177,33 @@ const defaultMarks = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field),
 })
 
+/**
+ * Docks the completion info beside the list, top-aligned and at least as
+ * tall, so the two read as one panel. Drops below when neither side fits.
+ */
+function dockInfo(
+  view: EditorView,
+  list: Rect,
+  _option: Rect,
+  info: Rect,
+  space: Rect,
+) {
+  const width = info.right - info.left
+  // Rects are on screen; styles are in the editor's own, possibly scaled, px.
+  const height = (list.bottom - list.top) / view.scaleY
+  const right = space.right - list.right >= width
+  if (right || list.left - space.left >= width) {
+    return {
+      style: `top: -1px; min-height: ${height}px`,
+      class: right ? 'cm-completionInfo-right' : 'cm-completionInfo-left',
+    }
+  }
+  return {
+    style: `top: ${height - 1}px; left: -1px; width: ${(list.right - list.left) / view.scaleX}px`,
+    class: 'cm-completionInfo-below',
+  }
+}
+
 export interface EditorCallbacks {
   onParse: (fileId: string, doc: XmlDocument) => void
   onChange: (fileId: string, update: ViewUpdate) => void
@@ -203,7 +236,12 @@ export function editorExtensions(
     indentUnit.of('  '),
     bracketMatching(),
     closeBrackets(),
-    autocompletion(),
+    // Tooltips live in the body so the completion info can overlap the side
+    // panel instead of hiding under it.
+    tooltips({
+      parent: typeof document === 'undefined' ? undefined : document.body,
+    }),
+    autocompletion({ icons: false, positionInfo: dockInfo }),
     dynamicVarCompletions,
     rectangularSelection(),
     crosshairCursor(),

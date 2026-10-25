@@ -42,6 +42,7 @@
   "updated_elsewhere": "{name} a été modifié dans un autre onglet",
   "var_tooltip": "Variable : {name}",
   "var_dynamic_tooltip": "Variable dynamique : {name}. {description}",
+  "var_preview": "Aperçu",
   "vars_resolve": "Remplacer les variables dynamiques dans un nouveau fichier",
   "vars_resolve_none": "Aucune variable dynamique à remplacer.",
   "vars_resolved": "Variables remplacées dans {name} : {count}",

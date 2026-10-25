@@ -64,10 +64,82 @@ const theme = EditorView.theme({
     fontSize: '12px',
     overflow: 'hidden',
   },
-  '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
+  // The info panel hangs outside the list, so only the list clips.
+  '.cm-tooltip.cm-tooltip-autocomplete': { overflow: 'visible' },
+  '.cm-tooltip.cm-tooltip-autocomplete > ul': {
+    padding: '4px',
+    minWidth: '200px',
+    maxHeight: '15rem',
+    borderRadius: 'inherit',
+    fontFamily: 'var(--font-mono)',
+  },
+  '.cm-tooltip.cm-tooltip-autocomplete > ul > li': {
+    padding: '0 8px',
+    lineHeight: '28px',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--muted-foreground)',
+  },
+  '.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected]': {
     backgroundColor: 'var(--secondary)',
+    color: 'var(--muted-foreground)',
+  },
+  '.cm-completionMatchedText': {
+    textDecoration: 'none',
+    color: 'var(--foreground)',
+    fontWeight: '500',
+  },
+  '.cm-completionDetail': {
+    fontStyle: 'normal',
+    fontFamily: 'var(--font-sans)',
+    color: 'var(--muted-foreground)',
+  },
+  '.cm-tooltip.cm-completionInfo': {
+    width: '264px',
+    padding: '12px 14px',
+    whiteSpace: 'normal',
+    fontFamily: 'var(--font-sans)',
+  },
+  // Square the corners where the list and the info panel meet.
+  '.cm-tooltip-autocomplete:has(> .cm-completionInfo-right)': {
+    borderTopRightRadius: '0',
+    borderBottomRightRadius: '0',
+  },
+  '.cm-completionInfo.cm-completionInfo-right': {
+    borderTopLeftRadius: '0',
+    borderBottomLeftRadius: '0',
+  },
+  '.cm-tooltip-autocomplete:has(> .cm-completionInfo-left)': {
+    borderTopLeftRadius: '0',
+    borderBottomLeftRadius: '0',
+  },
+  '.cm-completionInfo.cm-completionInfo-left': {
+    borderTopRightRadius: '0',
+    borderBottomRightRadius: '0',
+  },
+  '.cm-varInfo': { display: 'flex', flexDirection: 'column', gap: '10px' },
+  '.cm-varInfo-name': {
+    fontFamily: 'var(--font-mono)',
     color: 'var(--foreground)',
   },
+  '.cm-varInfo-description': {
+    color: 'var(--muted-foreground)',
+    lineHeight: '1.5',
+  },
+  '.cm-varInfo-label': {
+    marginBottom: '-6px',
+    fontSize: '11px',
+    color: 'var(--muted-foreground)',
+  },
+  '.cm-varInfo-preview': {
+    padding: '6px 8px',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)',
+    backgroundColor: 'var(--background)',
+    fontFamily: 'var(--font-mono)',
+    color: 'var(--foreground)',
+    overflowWrap: 'anywhere',
+  },
+  '.cm-varInfo-context': { color: 'var(--muted-foreground)' },
   '.cm-diagnostic': { padding: '6px 10px', borderLeftWidth: '3px' },
   '.cm-diagnostic-error': { borderLeftColor: 'var(--destructive)' },
   '.cm-lintRange-error': {
