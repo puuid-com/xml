@@ -34,7 +34,7 @@ export function TabStrip({
   }
 
   return (
-    <div className="flex h-9 shrink-0 items-stretch border-b bg-muted/30">
+    <div className="flex h-full min-w-0 flex-1 items-stretch">
       <Tabs
         value={activeId ?? ''}
         onValueChange={setActive}
@@ -43,7 +43,7 @@ export function TabStrip({
         <TabsList
           variant="line"
           aria-label={m.tabs_label()}
-          className="h-9! w-full justify-start gap-0 overflow-x-auto p-0 [scrollbar-width:none]"
+          className="h-full! w-full justify-start gap-0 overflow-x-auto p-0 [scrollbar-width:none]"
         >
           {files.map((file) => (
             <div

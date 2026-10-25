@@ -112,9 +112,14 @@ export function EditorApp() {
           e.target.value = ''
         }}
       />
-      <AppHeader activeId={activeId} onOpenFromDisk={openFromDisk} />
-      {files.length > 0 && <TabStrip files={files} activeId={activeId} />}
-      {activeId && <HighlightsBar />}
+      <AppHeader activeId={activeId} onOpenFromDisk={openFromDisk}>
+        {files.length > 0 ? (
+          <TabStrip files={files} activeId={activeId} />
+        ) : (
+          <div className="flex-1" />
+        )}
+        {activeId && <HighlightsBar />}
+      </AppHeader>
       <main id="main" className="min-h-0 flex-1">
         {activeId ? (
           <ResizablePanelGroup

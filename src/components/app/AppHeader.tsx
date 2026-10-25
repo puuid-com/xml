@@ -55,17 +55,20 @@ import { m } from '#/paraglide/messages'
 import { site } from '#/site'
 import type { SortOrder } from '#/lib/xml/format'
 
+/** The app's single top bar: menus, then `children` (tabs, highlights), then view toggles. */
 export function AppHeader({
   activeId,
   onOpenFromDisk,
+  children,
 }: {
   activeId: string | null
   onOpenFromDisk: () => void
+  children?: React.ReactNode
 }) {
   const panelOpen = useSelector(sessionStore, (s) => s.panelOpen)
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-0.5 overflow-x-auto border-b px-2 [scrollbar-width:none] sm:gap-1 sm:px-3">
+    <header className="flex h-10 shrink-0 items-center gap-0.5 border-b pl-2 sm:gap-1 sm:pl-3">
       <Link
         to="/"
         className="mr-1 flex items-center gap-2 text-sm font-semibold tracking-tight sm:mr-2"
@@ -143,7 +146,9 @@ export function AppHeader({
 
       <FormatControls disabled={!activeId} />
 
-      <div className="flex-1" />
+      <div className="ml-1 flex min-w-0 flex-1 self-stretch border-x sm:ml-2">
+        {children}
+      </div>
 
       <Tooltip>
         <TooltipTrigger asChild>
@@ -164,6 +169,7 @@ export function AppHeader({
         <TooltipContent>{m.action_toggle_panel()}</TooltipContent>
       </Tooltip>
       <LocaleSwitcher />
+      <div className="w-1 shrink-0 sm:w-2" />
     </header>
   )
 }

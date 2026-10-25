@@ -58,7 +58,7 @@ export function useTagCounts(): ReadonlyMap<string, number> {
   return counts
 }
 
-/** Legend of highlight rules under the tabs; each chip cycles through its matches. */
+/** Legend of highlight rules beside the tabs; each chip cycles through its matches. */
 export function HighlightsBar() {
   const rules = useHighlights()
   const counts = useTagCounts()
@@ -67,7 +67,7 @@ export function HighlightsBar() {
     <div
       role="toolbar"
       aria-label={m.highlights_title()}
-      className="flex h-8 shrink-0 items-center gap-1 overflow-x-auto border-b px-2 [scrollbar-width:none]"
+      className="hidden h-full max-w-[45%] min-w-0 shrink-0 items-center md:flex gap-1 overflow-x-auto border-l px-2 [scrollbar-width:none]"
     >
       <IconHighlight
         aria-hidden
@@ -81,7 +81,7 @@ export function HighlightsBar() {
         existing={rules.map((r) => r.tag)}
       />
       {rules.length === 0 && (
-        <span className="truncate text-xs text-muted-foreground">
+        <span className="hidden truncate text-xs text-muted-foreground xl:inline">
           {m.highlights_hint_prefix()} <Kbd>{alt}H</Kbd>{' '}
           {m.highlights_hint_suffix()}
         </span>
