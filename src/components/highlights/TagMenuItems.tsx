@@ -37,12 +37,29 @@ export function TagMenuHeader({
       <div className="truncate text-[13px] text-syntax-tag">
         {json ? tag : `<${tag}>`}
       </div>
-      {path && (
-        <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
-          {path}
-        </div>
-      )}
+      {path && <PathText path={path} />}
     </ContextMenuLabel>
+  )
+}
+
+/** Last step of a path, with any `[...]` predicates or bracketed keys. */
+const LAST_STEP = /[/.](?:[^/.[]|\[[^\]]*\])*$/
+
+/**
+ * A path that keeps its last step in view and elides the middle when it
+ * doesn't fit, so both the root and the element stay readable.
+ */
+function PathText({ path }: { path: string }) {
+  const tail = LAST_STEP.exec(path)?.[0] ?? ''
+  const head = path.slice(0, path.length - tail.length)
+  return (
+    <div
+      title={path}
+      className="mt-0.5 flex min-w-0 text-[11px] whitespace-nowrap text-muted-foreground"
+    >
+      <span className="min-w-0 truncate">{head}</span>
+      <span className="max-w-[70%] shrink-0 truncate">{tail}</span>
+    </div>
   )
 }
 
