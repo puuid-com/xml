@@ -13,7 +13,7 @@ export interface TextChange {
 
 const NAME_RE = /^[A-Za-z_:][\w.:-]*$/
 
-export function isValidName(name: string) {
+function isValidName(name: string) {
   return NAME_RE.test(name)
 }
 
@@ -50,36 +50,6 @@ export function setAttr(attr: XmlAttr, value: string): Array<TextChange> {
       insert: escapeAttr(value, attr.quote),
     },
   ]
-}
-
-export function renameAttr(attr: XmlAttr, name: string): Array<TextChange> {
-  if (!isValidName(name)) return []
-  return [{ from: attr.nameFrom, to: attr.nameTo, insert: name }]
-}
-
-export function addAttr(
-  el: XmlElement,
-  name: string,
-  value = '',
-): Array<TextChange> {
-  if (!isValidName(name) || el.attrs.some((a) => a.name === name)) return []
-  const at = el.attrs.length > 0 ? el.attrs[el.attrs.length - 1].to : el.nameTo
-  return [{ from: at, to: at, insert: ` ${name}="${escapeAttr(value)}"` }]
-}
-
-export function removeAttr(el: XmlElement, attr: XmlAttr): Array<TextChange> {
-  const index = el.attrs.indexOf(attr)
-  const from = index > 0 ? el.attrs[index - 1].to : el.nameTo
-  return [{ from, to: attr.to, insert: '' }]
-}
-
-export function renameElement(el: XmlElement, name: string): Array<TextChange> {
-  if (!isValidName(name)) return []
-  const changes = [{ from: el.nameFrom, to: el.nameTo, insert: name }]
-  if (el.closeNameFrom !== null && el.closeNameTo !== null) {
-    changes.push({ from: el.closeNameFrom, to: el.closeNameTo, insert: name })
-  }
-  return changes
 }
 
 /**

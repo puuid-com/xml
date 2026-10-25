@@ -12,7 +12,7 @@ import type { XmlDocument, XmlElement } from '#/lib/xml/model'
 // the cursor, and which tree node is selected. The view itself lives outside
 // React state; components reach it through the helpers below.
 
-export interface EditorSnapshot {
+interface EditorSnapshot {
   fileId: string | null
   /** Latest parse of the active document (error tolerant). */
   doc: XmlDocument
@@ -75,7 +75,7 @@ export function publishCursor(pos: number, line: number, col: number) {
 }
 
 /** Applies structure-tree edits as one undoable transaction. */
-export function applyChanges(changes: Array<TextChange>) {
+function applyChanges(changes: Array<TextChange>) {
   const view = currentView
   if (!view || changes.length === 0) return
   view.dispatch({ changes, userEvent: 'input.tree' })
@@ -128,6 +128,6 @@ export function revealRange(from: number, to = from, focus = true) {
   if (focus) view.focus()
 }
 
-export function getText() {
+function getText() {
   return currentView?.state.doc.toString() ?? ''
 }

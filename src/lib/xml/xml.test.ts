@@ -1,21 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  addAttr,
-  addChild,
-  diffChange,
-  removeAttr,
-  removeNode,
-  renameElement,
-  setAttr,
-  setText,
-} from './edit'
+import { addChild, diffChange, removeNode, setAttr, setText } from './edit'
 import { decodeEntities, escapeAttr, escapeText } from './entities'
 import { formatXml } from './format'
 import { elementAt, elementByPath, flattenVisible } from './locate'
 import { childElements, leafValue } from './model'
 import { parseXml } from './parse'
-import { findVars, maskVars, unmaskVars } from './vars'
+import { findVars, maskVars } from './vars'
 import type { TextChange } from './edit'
 import type { XmlElement } from './model'
 
@@ -36,12 +27,11 @@ function child(el: XmlElement, index = 0) {
 }
 
 describe('vars', () => {
-  it('masks without changing length and round-trips', () => {
+  it('masks without changing length', () => {
     const text = '<a href="<<base>>/x">Hi <<user.name>>!</a>'
     const masked = maskVars(text)
     expect(masked).toHaveLength(text.length)
     expect(masked).not.toContain('<<')
-    expect(unmaskVars(masked)).toBe(text)
   })
 
   it('finds variables with their ranges', () => {
@@ -221,25 +211,10 @@ describe('edit', () => {
     expect(apply(text, setText(empty, 'x'))).toContain('<empty>x</empty>')
   })
 
-  it('edits, adds and removes attributes', () => {
+  it('sets attribute values with escaping', () => {
     const item = child(root(text))
     expect(apply(text, setAttr(item.attrs[0], '"2"'))).toContain(
       'id="&quot;2&quot;"',
-    )
-    expect(apply(text, addAttr(item, 'new', 'v'))).toContain(
-      '<item id="1" kind="a" new="v">',
-    )
-    expect(apply(text, removeAttr(item, item.attrs[0]))).toContain(
-      '<item kind="a">',
-    )
-    expect(addAttr(item, 'id')).toEqual([])
-    expect(addAttr(item, '1bad')).toEqual([])
-  })
-
-  it('renames open and close tags together', () => {
-    const item = child(root(text))
-    expect(apply(text, renameElement(item, 'entry'))).toContain(
-      '<entry id="1" kind="a">old</entry>',
     )
   })
 

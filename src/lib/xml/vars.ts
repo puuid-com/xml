@@ -3,8 +3,8 @@
 // are swapped for private-use characters. The masked text has the same length,
 // so positions found in it map 1:1 back to the real document.
 
-export const VAR_OPEN = ''
-export const VAR_CLOSE = ''
+const VAR_OPEN = ''
+const VAR_CLOSE = ''
 
 /** Longest variable name accepted; keeps masking windows bounded. */
 export const VAR_MAX_NAME = 64
@@ -53,11 +53,6 @@ export function maskVars(text: string): string {
 export function maskVarsAsNumbers(text: string): string {
   if (!text.includes('<<')) return text
   return text.replace(varRegExp(), (whole) => '1'.padEnd(whole.length, '0'))
-}
-
-export function unmaskVars(text: string): string {
-  if (!text.includes(VAR_OPEN)) return text
-  return text.replaceAll(VAR_OPEN, '<').replaceAll(VAR_CLOSE, '>')
 }
 
 /** Splits text into literal and variable parts, in order. */

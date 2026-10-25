@@ -143,19 +143,3 @@ export const saveContent = createPacedMutations<{
   },
   strategy: debounceStrategy({ wait: 400 }),
 })
-
-/** Approximate bytes the editor uses in localStorage (UTF-16, 2 bytes/char). */
-export function cacheSize() {
-  let chars = 0
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key?.startsWith('xml-editor:')) {
-        chars += key.length + (localStorage.getItem(key)?.length ?? 0)
-      }
-    }
-  } catch {
-    return 0
-  }
-  return chars * 2
-}

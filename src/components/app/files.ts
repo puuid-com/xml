@@ -4,10 +4,10 @@ import { createFile } from '#/lib/store/files'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 
-export const NEW_FILE_CONTENT =
+const NEW_FILE_CONTENT =
   '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n  \n</root>\n'
 
-export const NEW_JSON_CONTENT = '{\n  \n}\n'
+const NEW_JSON_CONTENT = '{\n  \n}\n'
 
 export const ACCEPTED_TYPES =
   '.xml,.xsd,.xsl,.xslt,.wsdl,.svg,.plist,.config,.csproj,.xaml,.rss,.atom,.kml,.gpx,text/xml,application/xml,.json,.geojson,.jsonld,.webmanifest,.har,application/json'
