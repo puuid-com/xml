@@ -1,7 +1,6 @@
 import {
   IconBraces,
   IconCheck,
-  IconChevronDown,
   IconClipboard,
   IconDownload,
   IconFileCode,
@@ -11,6 +10,7 @@ import {
   IconJson,
   IconPencil,
   IconReplace,
+  IconSearch,
   IconSparkles,
   IconTrash,
 } from '@tabler/icons-react'
@@ -44,10 +44,13 @@ import {
   CommandShortcut,
 } from '#/components/ui/command'
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '#/components/ui/popover'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
+import { Kbd } from '#/components/ui/kbd'
 import { useAllFiles } from '#/hooks/use-files'
 import { useHighlights } from '#/hooks/use-highlights'
 import { languageOf } from '#/lib/document'
@@ -65,8 +68,8 @@ function ago(time: number) {
   return relative.format(Math.round(hours / 24), 'day')
 }
 
-/** The logo opens a searchable menu of files and actions; ⌘K opens it too. */
-export function FileMenu({
+/** Centered palette of files and actions, opened with ⌘K or the logo. */
+export function CommandMenu({
   activeId,
   onOpenFromDisk,
 }: {
@@ -75,53 +78,73 @@ export function FileMenu({
 }) {
   const open = useSelector(uiStore, (s) => s.paletteOpen)
   const returnFocus = useRef<HTMLElement | null>(null)
-  const triggerRef = useRef<HTMLButtonElement>(null)
 
-  // Runs before Radix moves focus into the menu, so ⌘K then Escape lands
-  // back in the editor instead of on the logo.
+  // Runs before Radix moves focus into the dialog, so ⌘K then Escape lands
+  // back in the editor instead of on the page.
   useLayoutEffect(() => {
     if (!open) return
     const el = document.activeElement
     returnFocus.current =
-      el instanceof HTMLElement &&
-      el !== triggerRef.current &&
-      el !== document.body
-        ? el
-        : null
+      el instanceof HTMLElement && el !== document.body ? el : null
   }, [open])
 
   return (
-    <Popover open={open} onOpenChange={setPaletteOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          ref={triggerRef}
-          variant="ghost"
-          size="sm"
-          className="mx-1 gap-1 px-1.5"
-          aria-label={m.menu_file()}
-        >
-          <span className="grid size-5 place-items-center bg-foreground text-background">
-            <IconBraces className="size-3" />
-          </span>
-          <IconChevronDown className="size-3! text-muted-foreground" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-80 gap-0 p-0"
+    <Dialog open={open} onOpenChange={setPaletteOpen}>
+      <DialogContent
+        showCloseButton={false}
+        className="top-1/2 -translate-y-1/2 overflow-hidden rounded-none p-0 sm:max-w-xl"
         onCloseAutoFocus={(e) => {
           if (!returnFocus.current?.isConnected) return
           e.preventDefault()
           returnFocus.current.focus()
         }}
       >
+        <DialogHeader className="sr-only">
+          <DialogTitle>{m.palette_title()}</DialogTitle>
+          <DialogDescription>{m.palette_description()}</DialogDescription>
+        </DialogHeader>
         <FileCommands activeId={activeId} onOpenFromDisk={onOpenFromDisk} />
-      </PopoverContent>
-    </Popover>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-// Mounted only while the menu is open, so the search resets each time.
+/** The logo in the top bar; opens the command menu. */
+export function LogoButton() {
+  return (
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      className="mx-1"
+      aria-label={m.palette_open()}
+      onClick={() => setPaletteOpen(true)}
+    >
+      <span className="grid size-5 place-items-center bg-foreground text-background">
+        <IconBraces className="size-3" />
+      </span>
+    </Button>
+  )
+}
+
+/** Bottom bar control that opens the command menu and shows its shortcut. */
+export function CommandMenuButton() {
+  return (
+    <Button
+      variant="ghost"
+      size="xs"
+      className="-ml-1.5 gap-1.5 px-1.5 text-[11px] font-normal text-muted-foreground hover:text-foreground"
+      onClick={() => setPaletteOpen(true)}
+    >
+      <IconSearch className="size-3.5" />
+      {m.palette_open()}
+      <Kbd className="h-4 min-w-4 bg-transparent px-0 text-[11px] font-normal">
+        {mod}K
+      </Kbd>
+    </Button>
+  )
+}
+
+// Mounted only while the dialog is open, so the search resets each time.
 function FileCommands({
   activeId,
   onOpenFromDisk,
@@ -140,7 +163,7 @@ function FileCommands({
 
   const run = (fn: () => void) => {
     setPaletteOpen(false)
-    // Let the menu hand focus back before fn moves it.
+    // Let the dialog hand focus back to the editor before fn moves it.
     requestAnimationFrame(fn)
   }
 
@@ -151,7 +174,7 @@ function FileCommands({
         value={search}
         onValueChange={setSearch}
       />
-      <CommandList className="max-h-[min(28rem,70vh)]">
+      <CommandList className="h-[min(26rem,60vh)] max-h-none">
         <CommandEmpty>{m.palette_empty()}</CommandEmpty>
         {files.length > 0 && (
           <CommandGroup heading={m.palette_files()}>
@@ -170,9 +193,9 @@ function FileCommands({
                 {file.id === activeId && (
                   <IconCheck className="size-3 text-muted-foreground" />
                 )}
-                <span className="ml-auto text-[11px] text-muted-foreground">
+                <CommandShortcut className="text-[11px] tracking-normal">
                   {ago(file.updatedAt)}
-                </span>
+                </CommandShortcut>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -249,14 +272,29 @@ function FileCommands({
                 <span className="truncate">
                   {m.highlight_tag({ name: tag })}
                 </span>
-                <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
+                <CommandShortcut className="text-[11px] tracking-normal tabular-nums">
                   {counts.get(tag)}
-                </span>
+                </CommandShortcut>
               </CommandItem>
             ))}
           </CommandGroup>
         )}
       </CommandList>
+      <div className="flex items-center gap-4 border-t px-3 py-2 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <Kbd>↑</Kbd>
+          <Kbd>↓</Kbd>
+          {m.palette_hint_navigate()}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Kbd>↵</Kbd>
+          {m.palette_hint_select()}
+        </span>
+        <span className="ml-auto flex items-center gap-1.5">
+          <Kbd>Esc</Kbd>
+          {m.palette_hint_close()}
+        </span>
+      </div>
     </Command>
   )
 }

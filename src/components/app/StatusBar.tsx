@@ -5,6 +5,7 @@ import {
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 
+import { CommandMenuButton } from './CommandMenu'
 import { FormatControls } from './FormatControls'
 import {
   editorStore,
@@ -36,7 +37,7 @@ function Divider({ className }: { className?: string }) {
   )
 }
 
-/** Bottom bar: document status on the left, then the editing tools and locale. */
+/** Bottom bar: command menu and document status on the left, then the editing tools and locale. */
 export function StatusBar() {
   const fileId = useSelector(editorStore, (s) => s.fileId)
   const doc = useSelector(editorStore, (s) => s.doc)
@@ -52,6 +53,8 @@ export function StatusBar() {
 
   return (
     <footer className="flex h-8 shrink-0 items-center gap-3 border-t pr-1 pl-3 text-[11px] whitespace-nowrap text-muted-foreground">
+      <CommandMenuButton />
+      <Divider />
       {fileId && (
         <>
           {first ? (

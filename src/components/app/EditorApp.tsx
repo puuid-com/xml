@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
 
 import { AppHeader } from './AppHeader'
+import { CommandMenu } from './CommandMenu'
 import { CloseDialog, DeleteDialog, RenameDialog } from './Dialogs'
 import {
   ACCEPTED_TYPES,
@@ -119,7 +120,7 @@ export function EditorApp() {
           e.target.value = ''
         }}
       />
-      <AppHeader activeId={activeId} onOpenFromDisk={openFromDisk}>
+      <AppHeader>
         {files.length > 0 ? (
           <TabStrip files={files} activeId={activeId} />
         ) : (
@@ -158,6 +159,7 @@ export function EditorApp() {
 
       <RenameDialog />
       <DeleteDialog openIds={files.map((f) => f.id)} />
+      <CommandMenu activeId={activeId} onOpenFromDisk={openFromDisk} />
       <CloseDialog openIds={files.map((f) => f.id)} />
       <QuickHighlight />
 
