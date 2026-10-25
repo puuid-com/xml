@@ -187,10 +187,10 @@
     @apply border-border outline-ring/50;
   }
   html {
-    @apply font-sans;
+    @apply font-sans overscroll-none;
   }
   body {
-    @apply min-h-dvh bg-background text-foreground antialiased;
+    @apply min-h-dvh overscroll-none bg-background text-foreground antialiased;
   }
 }
 
