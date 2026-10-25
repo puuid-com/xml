@@ -121,12 +121,17 @@ export function highlightAtCursor() {
   return true
 }
 
-/** Moves the cursor to the first element named `tag` in the document. */
-export function revealFirstTag(tag: string) {
-  const first = allElements(editorStore.state.doc.nodes).find(
+/**
+ * Steps through the elements named `tag`: starts at the first one, then each
+ * call moves to the next, wrapping back to the first after the last.
+ */
+export function cycleTag(tag: string) {
+  const matches = allElements(editorStore.state.doc.nodes).filter(
     (el) => el.name === tag,
   )
-  if (first) revealElement(first, true)
+  if (matches.length === 0) return
+  const i = matches.findIndex((el) => el.from === editorStore.state.pos)
+  revealElement(matches[(i + 1) % matches.length], true)
 }
 
 /** Moves the cursor to the next (or previous) element named `tag`, wrapping. */

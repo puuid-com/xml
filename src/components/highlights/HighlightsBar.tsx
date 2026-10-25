@@ -10,7 +10,7 @@ import { useSelector } from '@tanstack/react-store'
 import { useState } from 'react'
 
 import { ColorSwatches } from './ColorSwatches'
-import { revealFirstTag, revealTag } from '#/components/editor/actions'
+import { cycleTag, revealTag } from '#/components/editor/actions'
 import { editorStore } from '#/components/editor/editor-store'
 import { Button } from '#/components/ui/button'
 import {
@@ -58,7 +58,7 @@ export function useTagCounts(): ReadonlyMap<string, number> {
   return counts
 }
 
-/** Legend of highlight rules under the tabs; each chip jumps to its first match. */
+/** Legend of highlight rules under the tabs; each chip cycles through its matches. */
 export function HighlightsBar() {
   const rules = useHighlights()
   const counts = useTagCounts()
@@ -98,7 +98,7 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => revealFirstTag(rule.tag)}
+          onClick={() => cycleTag(rule.tag)}
           title={m.highlight_chip_hint()}
           className="h-6 min-w-0 shrink-0 gap-1.5 px-1.5 font-mono text-[11px] font-normal"
         >

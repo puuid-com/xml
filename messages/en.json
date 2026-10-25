@@ -73,7 +73,7 @@
   "highlights_hint_prefix": "Put the cursor on a tag and press",
   "highlights_hint_suffix": "to colour it.",
   "highlight_add_tag": "Highlight a tag",
-  "highlight_chip_hint": "Click to jump to the first occurrence. Right-click for more.",
+  "highlight_chip_hint": "Click to cycle through occurrences. Right-click for more.",
   "highlight_show": "Show highlight",
   "highlight_next": "Next occurrence",
   "highlight_prev": "Previous occurrence",
