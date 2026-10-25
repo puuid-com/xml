@@ -12,7 +12,6 @@ import {
   IconSparkles,
   IconTrash,
   IconWand,
-  IconArrowsMinimize,
 } from '@tabler/icons-react'
 import { Link } from '@tanstack/react-router'
 import { useSelector } from '@tanstack/react-store'
@@ -23,15 +22,19 @@ import {
   copyActive,
   downloadFile,
   formatActive,
-  minifyActive,
 } from '#/components/editor/actions'
 import { HighlightsPopover } from '#/components/highlights/HighlightsPopover'
 import { LocaleSwitcher } from '#/components/LocaleSwitcher'
 import { Button } from '#/components/ui/button'
+import { ButtonGroup } from '#/components/ui/button-group'
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
@@ -43,9 +46,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '#/components/ui/tooltip'
+import {
+  formatSettingsStore,
+  setFormatSetting,
+} from '#/lib/store/format-settings'
 import { sessionStore, setInspectorOpen } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 import { site } from '#/site'
+import type { SortOrder } from '#/lib/xml/format'
 
 const isMac =
   typeof navigator !== 'undefined' && /Mac|iP(hone|ad)/.test(navigator.platform)
@@ -138,35 +146,7 @@ export function AppHeader({
         className="mx-1 hidden data-vertical:h-5 data-vertical:self-center sm:block"
       />
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={!activeId}
-            onClick={formatActive}
-          >
-            <IconWand />
-            <span className="hidden md:inline">{m.action_format()}</span>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <KbdGroup>
-            <Kbd>⇧</Kbd>
-            <Kbd>{alt}</Kbd>
-            <Kbd>F</Kbd>
-          </KbdGroup>
-        </TooltipContent>
-      </Tooltip>
-      <Button
-        variant="ghost"
-        size="sm"
-        disabled={!activeId}
-        onClick={minifyActive}
-      >
-        <IconArrowsMinimize />
-        <span className="hidden md:inline">{m.action_minify()}</span>
-      </Button>
+      <FormatControls disabled={!activeId} />
 
       <div className="flex-1" />
 
@@ -191,5 +171,87 @@ export function AppHeader({
       </Tooltip>
       <LocaleSwitcher />
     </header>
+  )
+}
+
+function FormatControls({ disabled }: { disabled: boolean }) {
+  const settings = useSelector(formatSettingsStore, (s) => s)
+
+  return (
+    <ButtonGroup>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            onClick={formatActive}
+          >
+            <IconWand />
+            <span className="hidden md:inline">{m.action_format()}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <KbdGroup>
+            <Kbd>⇧</Kbd>
+            <Kbd>{alt}</Kbd>
+            <Kbd>F</Kbd>
+          </KbdGroup>
+        </TooltipContent>
+      </Tooltip>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={m.format_options()}
+          >
+            <IconChevronDown className="text-muted-foreground" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-64">
+          <DropdownMenuCheckboxItem
+            checked={settings.formatOnSave}
+            onCheckedChange={(v) => setFormatSetting('formatOnSave', v)}
+            onSelect={(e) => e.preventDefault()}
+          >
+            {m.format_on_save()}
+            <DropdownMenuShortcut>{mod}S</DropdownMenuShortcut>
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>{m.format_options()}</DropdownMenuLabel>
+          <DropdownMenuCheckboxItem
+            checked={settings.removeEmptyLines}
+            onCheckedChange={(v) => setFormatSetting('removeEmptyLines', v)}
+            onSelect={(e) => e.preventDefault()}
+          >
+            {m.format_remove_empty_lines()}
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem
+            checked={settings.trimVars}
+            onCheckedChange={(v) => setFormatSetting('trimVars', v)}
+            onSelect={(e) => e.preventDefault()}
+          >
+            {m.format_trim_vars()}
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>{m.format_sort()}</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            value={settings.sort}
+            onValueChange={(v) => setFormatSetting('sort', v as SortOrder)}
+          >
+            <DropdownMenuRadioItem value="none">
+              {m.format_sort_none()}
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="asc">
+              {m.format_sort_asc()}
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="desc">
+              {m.format_sort_desc()}
+            </DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </ButtonGroup>
   )
 }

@@ -15,7 +15,7 @@ export function VarText({
         part.kind === 'var' ? (
           <span
             key={i}
-            className="rounded-[3px] bg-syntax-var/15 px-0.5 text-syntax-var ring-1 ring-syntax-var/30 ring-inset"
+            className="rounded-[3px] bg-syntax-var/20 text-syntax-var shadow-[inset_0_-1.5px_0_var(--syntax-var)]"
           >
             {part.value}
           </span>

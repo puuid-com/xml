@@ -146,13 +146,12 @@ const theme = EditorView.theme({
     color: 'var(--foreground)',
     backgroundImage: 'none',
   },
+  // Same treatment as tag highlights, in the variable colour.
   '.cm-var': {
     color: 'var(--syntax-var)',
-    backgroundColor: 'color-mix(in oklch, var(--syntax-var) 14%, transparent)',
-    boxShadow:
-      'inset 0 0 0 1px color-mix(in oklch, var(--syntax-var) 35%, transparent)',
-    borderRadius: '4px',
-    padding: '1px 1px',
+    backgroundColor: 'color-mix(in oklch, var(--syntax-var) 20%, transparent)',
+    boxShadow: 'inset 0 -1.5px 0 var(--syntax-var)',
+    borderRadius: '3px',
   },
   '.cm-tag-hl': {
     backgroundColor: 'color-mix(in oklch, var(--hl) 20%, transparent)',

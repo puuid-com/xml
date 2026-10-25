@@ -2,8 +2,9 @@ import { toast } from 'sonner'
 
 import { getView } from './editor-store'
 import { filesCollection } from '#/lib/store/files'
+import { formatSettingsStore } from '#/lib/store/format-settings'
 import { diffChange } from '#/lib/xml/edit'
-import { formatXml, minifyXml } from '#/lib/xml/format'
+import { formatXml } from '#/lib/xml/format'
 import { m } from '#/paraglide/messages'
 import type { FormatResult } from '#/lib/xml/format'
 
@@ -26,13 +27,21 @@ function applyFormat(result: FormatResult, userEvent: string) {
 
 export function formatActive() {
   const view = getView()
-  if (view) applyFormat(formatXml(view.state.doc.toString()), 'input.format')
+  if (!view) return true
+  const { removeEmptyLines, trimVars, sort } = formatSettingsStore.state
+  const result = formatXml(view.state.doc.toString(), {
+    removeEmptyLines,
+    trimVars,
+    sort,
+  })
+  applyFormat(result, 'input.format')
   return true
 }
 
-export function minifyActive() {
-  const view = getView()
-  if (view) applyFormat(minifyXml(view.state.doc.toString()), 'input.minify')
+/** Files save as you type; this only formats when that option is on. */
+export function saveActive() {
+  if (formatSettingsStore.state.formatOnSave) formatActive()
+  toast.success(m.saved_locally(), { id: 'saved' })
   return true
 }
 

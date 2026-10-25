@@ -11,7 +11,7 @@ import {
   setText,
 } from './edit'
 import { decodeEntities, escapeAttr, escapeText } from './entities'
-import { formatXml, minifyXml } from './format'
+import { formatXml } from './format'
 import { elementAt, elementByPath, flattenVisible } from './locate'
 import { childElements, leafValue } from './model'
 import { parseXml } from './parse'
@@ -138,13 +138,41 @@ describe('formatXml', () => {
     })
   })
 
-  it('is idempotent and minify reverses it', () => {
+  it('is idempotent', () => {
     const input = '<a>\n<b>\n<c>1</c>\n</b>\n</a>'
     const once = formatXml(input)
     expect(once.ok && formatXml(once.text)).toEqual(once)
-    expect(once.ok && minifyXml(once.text)).toEqual({
+  })
+
+  it('removes empty lines, or keeps one between elements', () => {
+    const input = '<a>\n\n<b/>\n\n\n<c>x\n\n  y</c>\n\n</a>'
+    expect(formatXml(input)).toEqual({
       ok: true,
-      text: '<a><b><c>1</c></b></a>',
+      text: '<a>\n  <b />\n  <c>x\n  y</c>\n</a>\n',
+    })
+    expect(formatXml(input, { removeEmptyLines: false })).toEqual({
+      ok: true,
+      text: '<a>\n  <b />\n\n  <c>x\n\n  y</c>\n</a>\n',
+    })
+  })
+
+  it('trims spaces inside variables', () => {
+    const input = '<a k="<< id >>">Hi <<  name>></a>'
+    expect(formatXml(input, { trimVars: true })).toEqual({
+      ok: true,
+      text: '<a k="<<id>>">Hi <<name>></a>\n',
+    })
+  })
+
+  it('sorts elements and attributes', () => {
+    const input = '<r><c z="1" a="2"/><!--b--><b/><a/></r>'
+    expect(formatXml(input, { sort: 'asc' })).toEqual({
+      ok: true,
+      text: '<r>\n  <a />\n  <!--b-->\n  <b />\n  <c a="2" z="1" />\n</r>\n',
+    })
+    expect(formatXml(input, { sort: 'desc' })).toEqual({
+      ok: true,
+      text: '<r>\n  <c z="1" a="2" />\n  <!--b-->\n  <b />\n  <a />\n</r>\n',
     })
   })
 
