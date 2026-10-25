@@ -10,8 +10,8 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
-import { SiteFooter } from '#/components/layout/SiteFooter'
-import { SiteHeader } from '#/components/layout/SiteHeader'
+import { Toaster } from '#/components/ui/sonner'
+import { TooltipProvider } from '#/components/ui/tooltip'
 import { seo } from '#/lib/seo'
 import { themeScript } from '#/lib/theme'
 import { m } from '#/paraglide/messages'
@@ -86,18 +86,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 function RootLayout() {
   return (
-    <div className="flex min-h-dvh flex-col">
+    <TooltipProvider delayDuration={300}>
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:ring-1 focus:ring-ring"
       >
         {m.skip_to_content()}
       </a>
-      <SiteHeader />
-      <main id="main" className="flex-1">
-        <Outlet />
-      </main>
-      <SiteFooter />
-    </div>
+      <Outlet />
+      <Toaster position="bottom-right" />
+    </TooltipProvider>
   )
 }

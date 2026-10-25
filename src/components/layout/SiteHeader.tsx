@@ -5,7 +5,7 @@ import { m } from '#/paraglide/messages'
 import { site } from '#/site'
 
 const navItems = [
-  { to: '/', label: () => m.nav_home() },
+  { to: '/', label: () => m.nav_editor() },
   { to: '/about', label: () => m.nav_about() },
 ] as const
 

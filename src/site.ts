@@ -11,8 +11,9 @@ interface Site {
 }
 
 export const site: Site = {
-  name: 'Web Template',
-  description: 'A TanStack Start website template.',
+  name: 'XML Editor',
+  description:
+    'A fast XML editor with a synced tree view, tag highlighting and <<variable>> support.',
   /** Production origin, no trailing slash. Used for canonical and sitemap URLs. */
   url: 'http://localhost:3000',
   /** Default social preview image (1200x630), e.g. '/og.png'. Empty to omit. */

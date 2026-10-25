@@ -46,6 +46,30 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Syntax palette, from the Geist colour scale. Shared by editor and tree. */
+  --syntax-tag: oklch(0.53 0.19 257);
+  --syntax-attr: oklch(0.5 0.2 302);
+  --syntax-value: oklch(0.5 0.13 152);
+  --syntax-punct: oklch(0.62 0.02 257);
+  --syntax-comment: oklch(0.6 0 0);
+  --syntax-meta: oklch(0.58 0.14 60);
+  --syntax-entity: oklch(0.55 0.2 355);
+  --syntax-var: oklch(0.52 0.1 195);
+  --syntax-gutter: oklch(0.72 0 0);
+  --syntax-selection: oklch(0.53 0.19 257 / 16%);
+  --syntax-active-line: oklch(0.145 0 0 / 3%);
+  --syntax-match: oklch(0.53 0.19 257 / 12%);
+
+  /* Tag highlight presets. */
+  --hl-blue: oklch(0.6 0.2 257);
+  --hl-purple: oklch(0.58 0.22 302);
+  --hl-pink: oklch(0.62 0.22 355);
+  --hl-red: oklch(0.6 0.22 25);
+  --hl-amber: oklch(0.75 0.16 70);
+  --hl-green: oklch(0.62 0.16 150);
+  --hl-teal: oklch(0.62 0.11 190);
+  --hl-gray: oklch(0.6 0 0);
 }
 
 .dark {
@@ -82,6 +106,28 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  --syntax-tag: oklch(0.76 0.13 250);
+  --syntax-attr: oklch(0.76 0.14 305);
+  --syntax-value: oklch(0.8 0.14 155);
+  --syntax-punct: oklch(0.56 0.02 257);
+  --syntax-comment: oklch(0.56 0 0);
+  --syntax-meta: oklch(0.82 0.13 78);
+  --syntax-entity: oklch(0.77 0.15 355);
+  --syntax-var: oklch(0.82 0.11 190);
+  --syntax-gutter: oklch(0.42 0 0);
+  --syntax-selection: oklch(0.76 0.13 250 / 22%);
+  --syntax-active-line: oklch(1 0 0 / 3%);
+  --syntax-match: oklch(0.76 0.13 250 / 16%);
+
+  --hl-blue: oklch(0.7 0.16 255);
+  --hl-purple: oklch(0.7 0.18 305);
+  --hl-pink: oklch(0.72 0.18 355);
+  --hl-red: oklch(0.68 0.2 25);
+  --hl-amber: oklch(0.8 0.15 75);
+  --hl-green: oklch(0.74 0.16 152);
+  --hl-teal: oklch(0.76 0.11 190);
+  --hl-gray: oklch(0.68 0 0);
 }
 
 @theme inline {
@@ -127,6 +173,13 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-syntax-tag: var(--syntax-tag);
+  --color-syntax-attr: var(--syntax-attr);
+  --color-syntax-value: var(--syntax-value);
+  --color-syntax-punct: var(--syntax-punct);
+  --color-syntax-comment: var(--syntax-comment);
+  --color-syntax-meta: var(--syntax-meta);
+  --color-syntax-var: var(--syntax-var);
 }
 
 @layer base {
