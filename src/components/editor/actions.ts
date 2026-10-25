@@ -1,13 +1,14 @@
-import { syntaxTree } from '@codemirror/language'
 import { toast } from 'sonner'
 
 import {
   activeLanguage,
   editorStore,
+  getText,
   getView,
   parseActive,
   revealElement,
 } from './editor-store'
+import { tagNameNear } from './syntax'
 import {
   setDefaultsPreview,
   setQuickHighlight,
@@ -16,34 +17,20 @@ import { filesCollection } from '#/lib/store/files'
 import { enabledDefaults } from '#/lib/store/defaults'
 import { formatSettingsStore } from '#/lib/store/format-settings'
 import { highlightsCollection } from '#/lib/store/highlights'
-import { MIME_TYPES, documentDefaults, formatDocument } from '#/lib/document'
-import { decodeString } from '#/lib/json/parse'
+import {
+  MIME_TYPES,
+  documentDefaults,
+  formatDocument,
+  languageOf,
+} from '#/lib/document'
 import { defaultSummary } from '#/lib/xml/defaults'
 import { diffChange } from '#/lib/xml/edit'
 import { allElements, elementAt } from '#/lib/xml/locate'
 import { isLeaf, leafValue } from '#/lib/xml/model'
 import { m } from '#/paraglide/messages'
 import type { EditorView } from '@codemirror/view'
-import type { SyntaxNode } from '@lezer/common'
-import type { FormatResult } from '#/lib/xml/format'
 
-function replaceDoc(next: string, userEvent: string) {
-  const view = getView()
-  if (!view) return
-  const change = diffChange(view.state.doc.toString(), next)
-  if (change) view.dispatch({ changes: change, userEvent })
-}
-
-function applyFormat(result: FormatResult, userEvent: string) {
-  if (!result.ok) {
-    toast.error(m.format_failed(), {
-      duration: 4000,
-      description: result.errors[0]?.message,
-    })
-    return
-  }
-  replaceDoc(result.text, userEvent)
-}
+// Commands return `true` so CodeMirror keymaps treat the key as handled.
 
 export function formatActive() {
   const view = getView()
@@ -55,13 +42,22 @@ export function formatActive() {
         .filter((r) => r.enabled)
         .map((r) => r.tag)
     : []
-  const result = formatDocument(view.state.doc.toString(), activeLanguage(), {
+  const text = view.state.doc.toString()
+  const result = formatDocument(text, activeLanguage(), {
     removeEmptyLines,
     trimVars,
     sort,
     first,
   })
-  applyFormat(result, 'input.format')
+  if (!result.ok) {
+    toast.error(m.format_failed(), {
+      duration: 4000,
+      description: result.errors[0]?.message,
+    })
+    return true
+  }
+  const change = diffChange(text, result.text)
+  if (change) view.dispatch({ changes: change, userEvent: 'input.format' })
   return true
 }
 
@@ -74,7 +70,7 @@ export function applyDefaultsActive() {
     toast(m.defaults_none(), { id: 'defaults' })
     return true
   }
-  const doc = parseActive(view.state.doc.toString())
+  const doc = parseActive()
   const summary = defaultSummary(doc.nodes, rules)
   if (summary.length === 0) {
     toast(m.defaults_unchanged(), { id: 'defaults' })
@@ -88,10 +84,7 @@ export function applyDefaultsActive() {
 export function commitDefaultsActive() {
   const view = getView()
   if (!view) return
-  const changes = documentDefaults(
-    parseActive(view.state.doc.toString()),
-    enabledDefaults(),
-  )
+  const changes = documentDefaults(parseActive(), enabledDefaults())
   if (changes.length === 0) return
   view.dispatch({ changes, userEvent: 'input.defaults' })
   toast.success(m.defaults_applied({ count: changes.length }), {
@@ -117,9 +110,10 @@ export function saveActive() {
 export function downloadFile(id: string) {
   const file = filesCollection.get(id)
   if (!file) return
-  const view = getView()
-  const content = view ? view.state.doc.toString() : file.content
-  const language = activeLanguage()
+  // The editor holds edits that may not be saved yet.
+  const active = editorStore.state.fileId === id
+  const content = active ? getText() : file.content
+  const language = active ? activeLanguage() : languageOf(file.name, content)
   const blob = new Blob([content], { type: MIME_TYPES[language] })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -132,48 +126,18 @@ export function downloadFile(id: string) {
 }
 
 export async function copyActive() {
-  const view = getView()
-  if (!view) return
-  await navigator.clipboard.writeText(view.state.doc.toString())
+  if (!getView()) return
+  await navigator.clipboard.writeText(getText())
   toast.success(m.copied())
 }
-
-const TAG_PARENTS = new Set(['OpenTag', 'CloseTag', 'SelfClosingTag'])
 
 /** Tag name or JSON key under the cursor, else the element the cursor is in. */
 function tagAtCursor(view: EditorView) {
   const pos = view.state.selection.main.head
-  const tree = syntaxTree(view.state)
-  for (const side of [-1, 1] as const) {
-    const node = tree.resolveInner(pos, side)
-    if (node.name === 'TagName' && TAG_PARENTS.has(node.parent?.name ?? '')) {
-      return { name: view.state.sliceDoc(node.from, node.to), at: node.from }
-    }
-    if (node.name === 'PropertyName') {
-      return { name: keyName(view, node), at: node.from }
-    }
-  }
+  const near = tagNameNear(view.state, pos)
+  if (near) return near
   const el = elementAt(editorStore.state.doc.nodes, pos)
   return el && !el.json?.item ? { name: el.name, at: pos } : null
-}
-
-/**
- * Name of the tag (`<a …>`, `</a>`, `<a/>`) or JSON key that contains `pos`,
- * if any.
- */
-export function tagAt(view: EditorView, pos: number) {
-  let node: SyntaxNode | null = syntaxTree(view.state).resolveInner(pos, 1)
-  for (; node; node = node.parent) {
-    if (node.name === 'PropertyName') return keyName(view, node)
-    if (!TAG_PARENTS.has(node.name)) continue
-    const name = node.getChild('TagName')
-    return name ? view.state.sliceDoc(name.from, name.to) : null
-  }
-  return null
-}
-
-function keyName(view: EditorView, node: SyntaxNode) {
-  return decodeString(view.state.sliceDoc(node.from, node.to))
 }
 
 /** Opens the colour picker for the tag at the cursor. */

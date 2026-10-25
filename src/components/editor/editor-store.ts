@@ -97,7 +97,7 @@ export function editAtPath(
   if (!el) return
   applyChanges(build(el, text, doc))
   const fileId = editorStore.state.fileId
-  if (fileId) publishParse(fileId, parseActive(view.state.doc.toString()))
+  if (fileId) publishParse(fileId, parseActive())
 }
 
 /** Parses `text` as the language of the file in the editor. */
@@ -128,6 +128,6 @@ export function revealRange(from: number, to = from, focus = true) {
   if (focus) view.focus()
 }
 
-function getText() {
+export function getText() {
   return currentView?.state.doc.toString() ?? ''
 }

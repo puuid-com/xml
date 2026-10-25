@@ -17,15 +17,9 @@ import {
   setView,
 } from './editor-store'
 import { docLanguage, languageCompartment, languageExtension } from './language'
+import { editorExtensions, fileIdField, setDefaultRules } from './extensions'
+import { setTagHighlights } from './tag-highlights'
 import { TagContextMenu } from './TagContextMenu'
-import {
-  defaultRulesCompartment,
-  defaultRulesFacet,
-  editorExtensions,
-  fileIdField,
-  tagHighlightsCompartment,
-  tagHighlightsFacet,
-} from './extensions'
 import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
 import { languageOf } from '#/lib/document'
@@ -33,12 +27,20 @@ import { filesCollection, saveContent } from '#/lib/store/files'
 import { writerId } from '#/lib/store/session'
 import { diffChange } from '#/lib/xml/edit'
 import { m } from '#/paraglide/messages'
-import type { Extension } from '@codemirror/state'
+import type { Extension, TransactionSpec } from '@codemirror/state'
 import type { DefaultRule } from '#/lib/xml/defaults'
-import type { ViewUpdate } from '@codemirror/view'
+import type { TextChange } from '#/lib/xml/edit'
 
 /** Marks changes that came from another browser tab, so they are not saved back. */
 const remoteSync = Annotation.define<boolean>()
+
+/** Applies another tab's edit without saving it back or adding an undo step. */
+function remoteChange(changes: TextChange): TransactionSpec {
+  return {
+    changes,
+    annotations: [remoteSync.of(true), Transaction.addToHistory.of(false)],
+  }
+}
 
 // One editor state per file, kept across tab switches so undo history,
 // selection and scroll survive. Lives at module scope to outlive remounts.
@@ -59,7 +61,7 @@ function sharedExtensions(
   extensions ??= editorExtensions(
     {
       onParse: (fileId, doc) => publishParse(fileId, doc),
-      onChange: (fileId, update: ViewUpdate) => {
+      onChange: (fileId, update) => {
         if (update.transactions.some((tr) => tr.annotation(remoteSync))) return
         saveContent({ id: fileId, content: update.state.doc.toString() })
       },
@@ -89,10 +91,7 @@ function stateFor(
     // Catch up with edits made elsewhere while this file was not shown.
     const change = diffChange(cached.doc.toString(), content)
     if (!change) return cached
-    return cached.update({
-      changes: change,
-      annotations: [remoteSync.of(true), Transaction.addToHistory.of(false)],
-    }).state
+    return cached.update(remoteChange(change)).state
   }
   return EditorState.create({
     doc: content,
@@ -155,13 +154,7 @@ export function CodeEditor({ fileId }: { fileId: string }) {
         if (!state) continue
         const diff = diffChange(state.doc.toString(), file.content)
         if (!diff) continue
-        const spec = {
-          changes: diff,
-          annotations: [
-            remoteSync.of(true),
-            Transaction.addToHistory.of(false),
-          ],
-        }
+        const spec = remoteChange(diff)
         if (active) {
           view.dispatch(spec)
           toast(m.updated_elsewhere({ name: file.name }), { id: 'remote' })
@@ -195,12 +188,8 @@ export function CodeEditor({ fileId }: { fileId: string }) {
     if (activeName.current) syncLanguage(view, activeName.current)
     view.dispatch({
       effects: [
-        tagHighlightsCompartment.reconfigure(
-          tagHighlightsFacet.of(highlightsRef.current),
-        ),
-        defaultRulesCompartment.reconfigure(
-          defaultRulesFacet.of(defaultsRef.current),
-        ),
+        setTagHighlights(highlightsRef.current),
+        setDefaultRules(defaultsRef.current),
       ],
     })
     publishCursorFrom(view.state)
@@ -210,20 +199,12 @@ export function CodeEditor({ fileId }: { fileId: string }) {
 
   useEffect(() => {
     highlightsRef.current = highlights
-    viewRef.current?.dispatch({
-      effects: tagHighlightsCompartment.reconfigure(
-        tagHighlightsFacet.of(highlights),
-      ),
-    })
+    viewRef.current?.dispatch({ effects: setTagHighlights(highlights) })
   }, [highlights])
 
   useEffect(() => {
     defaultsRef.current = defaults
-    viewRef.current?.dispatch({
-      effects: defaultRulesCompartment.reconfigure(
-        defaultRulesFacet.of(defaults),
-      ),
-    })
+    viewRef.current?.dispatch({ effects: setDefaultRules(defaults) })
   }, [defaults])
 
   return (

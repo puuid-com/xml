@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { leafAt, tagAt } from './actions'
+import { leafAt } from './actions'
 import { getView } from './editor-store'
+import { tagAt } from './syntax'
 import { ColorSwatches } from '#/components/highlights/ColorSwatches'
 import {
   ContextMenu,
@@ -39,7 +40,7 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
             onContextMenu={(e) => {
               const view = getView()
               const pos = view?.posAtCoords({ x: e.clientX, y: e.clientY })
-              const name = view && pos != null ? tagAt(view, pos) : null
+              const name = view && pos != null ? tagAt(view.state, pos) : null
               // Not on a tag: keep the event from the trigger.
               if (!name) e.stopPropagation()
               else {
