@@ -8,6 +8,7 @@ import {
   applyDefaultsActive,
   formatActive,
   highlightAtCursor,
+  resolveVarsActive,
   saveActive,
 } from './actions'
 import {
@@ -78,6 +79,11 @@ function sharedExtensions(
         {
           key: shortcuts.applyDefaults.key,
           run: applyDefaultsActive,
+          preventDefault: true,
+        },
+        {
+          key: shortcuts.resolveVars.key,
+          run: resolveVarsActive,
           preventDefault: true,
         },
       ],

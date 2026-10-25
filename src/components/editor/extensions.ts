@@ -43,6 +43,7 @@ import {
   rectangularSelection,
 } from '@codemirror/view'
 
+import { dynamicVarCompletions, varTooltip } from './dynamic-vars'
 import { docLanguage } from './language'
 import { namesParent, treeChanged } from './syntax'
 import { tagHighlights } from './tag-highlights'
@@ -67,7 +68,7 @@ const varDecorator = new MatchDecorator({
   decoration: (match) =>
     Decoration.mark({
       class: 'cm-var var-chip',
-      attributes: { title: m.var_tooltip({ name: match[1] }) },
+      attributes: { title: varTooltip(match[1]) },
     }),
 })
 
@@ -203,6 +204,7 @@ export function editorExtensions(
     bracketMatching(),
     closeBrackets(),
     autocompletion(),
+    dynamicVarCompletions,
     rectangularSelection(),
     crosshairCursor(),
     highlightActiveLine(),

@@ -17,6 +17,7 @@ import {
   IconSearch,
   IconTrash,
   IconUserCircle,
+  IconVariable,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { useLayoutEffect, useRef, useState } from 'react'
@@ -35,6 +36,7 @@ import {
   copyActive,
   downloadFile,
   highlightAtCursor,
+  resolveVarsActive,
 } from '#/components/editor/actions'
 import { localeNames } from '#/components/LocaleSwitcher'
 import {
@@ -342,6 +344,13 @@ function FileCommands({
             {m.defaults_apply()}
             <CommandShortcut>
               {shortcutLabel(shortcuts.applyDefaults)}
+            </CommandShortcut>
+          </CommandItem>
+          <CommandItem onSelect={() => run(resolveVarsActive)}>
+            <IconVariable />
+            {m.vars_resolve()}
+            <CommandShortcut>
+              {shortcutLabel(shortcuts.resolveVars)}
             </CommandShortcut>
           </CommandItem>
         </CommandGroup>

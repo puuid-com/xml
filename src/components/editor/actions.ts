@@ -24,6 +24,7 @@ import {
   languageOf,
 } from '#/lib/document'
 import { defaultSummary } from '#/lib/xml/defaults'
+import { resolveDynamicVars } from '#/lib/xml/dynamic-vars'
 import { diffChange } from '#/lib/xml/edit'
 import { allElements, elementAt } from '#/lib/xml/locate'
 import { hasName, isLeaf, leafValue } from '#/lib/xml/model'
@@ -96,6 +97,35 @@ export function commitDefaultsActive() {
   if (changes.length === 0) return
   view.dispatch({ changes, userEvent: 'input.defaults' })
   notify.success(m.defaults_applied({ count: changes.length }))
+}
+
+/**
+ * Swaps dynamic variables such as `<<$randomInt>>` for generated values, as
+ * one undo step. Only the selection is touched when there is one.
+ */
+export function resolveVarsActive() {
+  if (!getView()) return true
+  // Faker is large and only needed here, so it loads on first use.
+  void import('@faker-js/faker').then(({ faker }) => {
+    const view = getView()
+    if (!view) return
+    const { main } = view.state.selection
+    const range = main.empty ? undefined : { from: main.from, to: main.to }
+    const changes = resolveDynamicVars(
+      view.state.doc.toString(),
+      { faker, now: new Date() },
+      range,
+    )
+    if (changes.length === 0) {
+      notify.info(
+        range ? m.vars_resolve_none_selection() : m.vars_resolve_none(),
+      )
+      return
+    }
+    view.dispatch({ changes, userEvent: 'input.vars' })
+    notify.success(m.vars_resolved({ count: changes.length }))
+  })
+  return true
 }
 
 /** Leaf element at `pos` with its current text, if any. */

@@ -2,7 +2,11 @@ import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 
 import { CommandMenuButton } from './CommandMenu'
-import { FormatButton, FormatOptions } from './FormatControls'
+import {
+  FormatButton,
+  FormatOptions,
+  ResolveVarsButton,
+} from './FormatControls'
 import { noticeStore } from './notice-store'
 import { StatusNotice } from './StatusNotice'
 import { ThemeToggle } from './ThemeToggle'
@@ -47,6 +51,7 @@ export function StatusBar() {
             <ProfileMenu />
             <FormatButton />
             <DefaultsButton />
+            <ResolveVarsButton />
             <SettingsPopover />
           </div>
           <Separator

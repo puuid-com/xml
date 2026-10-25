@@ -19,6 +19,7 @@ export const shortcuts = {
   save: { key: 'Mod-s', keys: [mod, 'S'] },
   highlight: { key: 'Alt-h', keys: [alt, 'H'] },
   applyDefaults: { key: 'Shift-Alt-d', keys: ['⇧', alt, 'D'] },
+  resolveVars: { key: 'Shift-Alt-v', keys: ['⇧', alt, 'V'] },
   palette: { hotkey: 'Mod+K', keys: [mod, 'K'] },
   quickOpen: { hotkey: 'Mod+P', keys: [mod, 'P'] },
   openFile: { hotkey: 'Mod+O', keys: [mod, 'O'] },

@@ -1,8 +1,8 @@
-import { IconWand } from '@tabler/icons-react'
+import { IconVariable, IconWand } from '@tabler/icons-react'
 
 import { ShortcutKeys } from './ShortcutKeys'
 import { ToolbarButton } from './ToolbarButton'
-import { formatActive } from '#/components/editor/actions'
+import { formatActive, resolveVarsActive } from '#/components/editor/actions'
 import { Label } from '#/components/ui/label'
 import { Separator } from '#/components/ui/separator'
 import { Switch } from '#/components/ui/switch'
@@ -22,6 +22,19 @@ export function FormatButton() {
       onClick={formatActive}
     >
       <IconWand />
+    </ToolbarButton>
+  )
+}
+
+/** Replace dynamic variables button in the bottom bar. */
+export function ResolveVarsButton() {
+  return (
+    <ToolbarButton
+      label={m.vars_resolve()}
+      shortcut={shortcuts.resolveVars}
+      onClick={resolveVarsActive}
+    >
+      <IconVariable />
     </ToolbarButton>
   )
 }
