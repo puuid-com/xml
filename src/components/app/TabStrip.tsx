@@ -1,11 +1,11 @@
 import { IconFileCode, IconPlus, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
 
-import { neighbour, newFile } from './files'
-import { askRename } from './ui-store'
+import { newFile } from './files'
+import { askClose, askRename } from './ui-store'
 import { Button } from '#/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
-import { closeFile, reorderFile } from '#/lib/store/files'
+import { reorderFile } from '#/lib/store/files'
 import { setActive } from '#/lib/store/session'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
@@ -24,14 +24,6 @@ export function TabStrip({
 }) {
   const [dragId, setDragId] = useState<string | null>(null)
   const [overId, setOverId] = useState<string | null>(null)
-
-  const close = (id: string) => {
-    if (id === activeId) {
-      const index = files.findIndex((f) => f.id === id)
-      setActive(neighbour(files, index)?.id ?? null)
-    }
-    closeFile(id)
-  }
 
   return (
     <div className="flex h-full min-w-0 flex-1 items-stretch">
@@ -85,7 +77,7 @@ export function TabStrip({
                 title={file.name}
                 onDoubleClick={() => askRename(file.id)}
                 onAuxClick={(e) => {
-                  if (e.button === 1) close(file.id)
+                  if (e.button === 1) askClose(file.id)
                 }}
                 className="h-full! max-w-52 flex-none gap-1.5 pr-7 pl-3 font-normal after:bottom-0!"
               >
@@ -95,7 +87,7 @@ export function TabStrip({
               <button
                 type="button"
                 aria-label={m.tab_close({ name: file.name })}
-                onClick={() => close(file.id)}
+                onClick={() => askClose(file.id)}
                 className={cn(
                   'absolute top-1/2 right-1.5 grid size-4 -translate-y-1/2 place-items-center text-muted-foreground opacity-0 group-hover/tab:opacity-100 hover:bg-muted hover:text-foreground focus-visible:opacity-100',
                   file.id === activeId && 'opacity-100',

@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
 
 import { AppHeader } from './AppHeader'
-import { DeleteDialog, FilePalette, RenameDialog } from './Dialogs'
+import { CloseDialog, DeleteDialog, FilePalette, RenameDialog } from './Dialogs'
 import {
   ACCEPTED_TYPES,
   importFiles,
@@ -159,6 +159,7 @@ export function EditorApp() {
       <FilePalette onOpenFromDisk={openFromDisk} />
       <RenameDialog />
       <DeleteDialog openIds={files.map((f) => f.id)} />
+      <CloseDialog openIds={files.map((f) => f.id)} />
       <QuickHighlight />
 
       <div

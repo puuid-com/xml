@@ -20,7 +20,13 @@ import {
   newFile,
   newJsonFile,
 } from './files'
-import { askDelete, askRename, setPaletteOpen, uiStore } from './ui-store'
+import {
+  askClose,
+  askDelete,
+  askRename,
+  setPaletteOpen,
+  uiStore,
+} from './ui-store'
 import {
   applyDefaultsActive,
   highlightAtCursor,
@@ -62,7 +68,12 @@ import { Label } from '#/components/ui/label'
 import { useAllFiles } from '#/hooks/use-files'
 import { useHighlights } from '#/hooks/use-highlights'
 import { alt } from '#/lib/platform'
-import { deleteFile, filesCollection, renameFile } from '#/lib/store/files'
+import {
+  closeFile,
+  deleteFile,
+  filesCollection,
+  renameFile,
+} from '#/lib/store/files'
 import { setHighlight } from '#/lib/store/highlights'
 import { sessionStore, setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
@@ -321,6 +332,47 @@ export function DeleteDialog({ openIds }: { openIds: Array<string> }) {
           <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={confirm}>
             {m.delete_confirm()}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+export function CloseDialog({ openIds }: { openIds: Array<string> }) {
+  const closeId = useSelector(uiStore, (s) => s.closeId)
+  const file = closeId ? filesCollection.get(closeId) : undefined
+
+  const confirm = () => {
+    if (!file) return
+    if (sessionStore.state.activeId === file.id) {
+      const index = openIds.indexOf(file.id)
+      setActive(neighbour(openIds, index) ?? null)
+    }
+    closeFile(file.id)
+    askClose(null)
+  }
+
+  return (
+    <AlertDialog
+      open={!!file}
+      onOpenChange={(open) => {
+        if (!open) askClose(null)
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {m.close_title({ name: file?.name ?? '' })}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {m.close_description()}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
+          <AlertDialogAction onClick={confirm}>
+            {m.close_confirm()}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

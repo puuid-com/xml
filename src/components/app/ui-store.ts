@@ -5,6 +5,7 @@ interface UiState {
   paletteOpen: boolean
   renameId: string | null
   deleteId: string | null
+  closeId: string | null
   /** Tag whose colour picker is open next to the editor cursor. */
   quickHighlight: QuickHighlight | null
 }
@@ -20,6 +21,7 @@ export const uiStore = new Store<UiState>({
   paletteOpen: false,
   renameId: null,
   deleteId: null,
+  closeId: null,
   quickHighlight: null,
 })
 
@@ -33,6 +35,10 @@ export function askRename(renameId: string | null) {
 
 export function askDelete(deleteId: string | null) {
   uiStore.setState((s) => ({ ...s, deleteId }))
+}
+
+export function askClose(closeId: string | null) {
+  uiStore.setState((s) => ({ ...s, closeId }))
 }
 
 export function setQuickHighlight(quickHighlight: QuickHighlight | null) {
