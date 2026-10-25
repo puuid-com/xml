@@ -120,6 +120,7 @@ export function EditorApp() {
           <div className="flex-1" />
         )}
       </AppHeader>
+      {activeId && <PinnedBar />}
       <main id="main" className="min-h-0 flex-1">
         {activeId ? (
           <ResizablePanelGroup
@@ -128,12 +129,7 @@ export function EditorApp() {
             onLayoutChanged={layout.onLayoutChanged}
           >
             <ResizablePanel id="editor" minSize="25">
-              <div className="flex h-full min-h-0 flex-col">
-                <PinnedBar />
-                <div className="min-h-0 flex-1">
-                  <CodeEditor fileId={activeId} />
-                </div>
-              </div>
+              <CodeEditor fileId={activeId} />
             </ResizablePanel>
             {panelOpen && (
               <>

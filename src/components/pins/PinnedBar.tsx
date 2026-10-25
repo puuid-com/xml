@@ -45,7 +45,7 @@ export function PinnedBar() {
     <div
       role="toolbar"
       aria-label={m.pins_title()}
-      className="flex shrink-0 flex-wrap items-center gap-1.5 border-b bg-muted/20 px-2 py-1.5"
+      className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 border-b bg-muted/20 px-2 py-1.5"
     >
       <IconPin
         aria-hidden
