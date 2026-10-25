@@ -1,18 +1,21 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 
-import { tagAt } from './actions'
+import { leafAt, tagAt } from './actions'
 import { getView } from './editor-store'
 import { ColorSwatches } from '#/components/highlights/ColorSwatches'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '#/components/ui/context-menu'
 import { useHighlights } from '#/hooks/use-highlights'
+import { setDefault } from '#/lib/store/defaults'
 import { removeHighlight, setHighlight } from '#/lib/store/highlights'
 import { m } from '#/paraglide/messages'
 
@@ -22,6 +25,7 @@ import { m } from '#/paraglide/messages'
  */
 export function TagContextMenu({ children }: { children: React.ReactNode }) {
   const [tag, setTag] = useState<string | null>(null)
+  const [leaf, setLeaf] = useState<{ name: string; value: string } | null>(null)
   const rules = useHighlights()
   const rule = tag ? rules.find((r) => r.tag === tag) : undefined
 
@@ -37,7 +41,11 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
               const name = view && pos != null ? tagAt(view, pos) : null
               // Not on a tag: keep the event from the trigger.
               if (!name) e.stopPropagation()
-              else setTag(name)
+              else {
+                setTag(name)
+                const el = leafAt(pos!)
+                setLeaf(el?.name === name ? el : null)
+              }
             }}
           >
             {children}
@@ -68,6 +76,19 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
               <ContextMenuItem onSelect={() => removeHighlight(rule.id)}>
                 {m.highlight_remove()}
               </ContextMenuItem>
+            )}
+            {leaf && (
+              <>
+                <ContextMenuSeparator />
+                <ContextMenuItem
+                  onSelect={() => {
+                    setDefault(leaf.name, leaf.value)
+                    toast.success(m.defaults_saved({ name: leaf.name }))
+                  }}
+                >
+                  {m.defaults_save_current()}
+                </ContextMenuItem>
+              </>
             )}
           </>
         )}

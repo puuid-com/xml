@@ -4,11 +4,15 @@ import { toast } from 'sonner'
 import { editorStore, getView, revealElement } from './editor-store'
 import { setQuickHighlight } from '#/components/app/ui-store'
 import { filesCollection } from '#/lib/store/files'
+import { enabledDefaults } from '#/lib/store/defaults'
 import { formatSettingsStore } from '#/lib/store/format-settings'
 import { highlightsCollection } from '#/lib/store/highlights'
+import { defaultChanges } from '#/lib/xml/defaults'
 import { diffChange } from '#/lib/xml/edit'
 import { formatXml } from '#/lib/xml/format'
 import { allElements, elementAt } from '#/lib/xml/locate'
+import { isLeaf, leafValue } from '#/lib/xml/model'
+import { parseXml } from '#/lib/xml/parse'
 import { m } from '#/paraglide/messages'
 import type { EditorView } from '@codemirror/view'
 import type { SyntaxNode } from '@lezer/common'
@@ -50,6 +54,36 @@ export function formatActive() {
   })
   applyFormat(result, 'input.format')
   return true
+}
+
+/** Writes every enabled default value into the active file, as one undo step. */
+export function applyDefaultsActive() {
+  const view = getView()
+  if (!view) return true
+  const rules = enabledDefaults()
+  if (rules.length === 0) {
+    toast(m.defaults_none(), { id: 'defaults' })
+    return true
+  }
+  const changes = defaultChanges(
+    parseXml(view.state.doc.toString()).nodes,
+    rules,
+  )
+  if (changes.length === 0) {
+    toast(m.defaults_unchanged(), { id: 'defaults' })
+    return true
+  }
+  view.dispatch({ changes, userEvent: 'input.defaults' })
+  toast.success(m.defaults_applied({ count: changes.length }), {
+    id: 'defaults',
+  })
+  return true
+}
+
+/** Leaf element at `pos` with its current text, if any. */
+export function leafAt(pos: number) {
+  const el = elementAt(editorStore.state.doc.nodes, pos)
+  return el && isLeaf(el) ? { name: el.name, value: leafValue(el) } : null
 }
 
 /** Files save as you type; this only formats when that option is on. */

@@ -3,7 +3,12 @@ import { EditorView } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
-import { formatActive, highlightAtCursor, saveActive } from './actions'
+import {
+  applyDefaultsActive,
+  formatActive,
+  highlightAtCursor,
+  saveActive,
+} from './actions'
 import { publishCursor, publishParse, setView } from './editor-store'
 import { TagContextMenu } from './TagContextMenu'
 import {
@@ -49,6 +54,7 @@ function sharedExtensions(highlights: ReadonlyMap<string, string>) {
         { key: 'Shift-Alt-f', run: formatActive, preventDefault: true },
         { key: 'Mod-s', run: saveActive, preventDefault: true },
         { key: 'Alt-h', run: highlightAtCursor, preventDefault: true },
+        { key: 'Shift-Alt-d', run: applyDefaultsActive, preventDefault: true },
       ],
     },
     highlights,

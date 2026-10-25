@@ -9,6 +9,13 @@ import {
   uniqueName,
 } from './files'
 import {
+  defaultsCollection,
+  enabledDefaults,
+  findDefault,
+  setDefault,
+  toggleDefault,
+} from './defaults'
+import {
   findHighlight,
   highlightCss,
   highlightsCollection,
@@ -83,5 +90,27 @@ describe('highlights', () => {
   it('resolves preset and custom colours to CSS', () => {
     expect(highlightCss('teal')).toBe('var(--hl-teal)')
     expect(highlightCss('#123456')).toBe('#123456')
+  })
+})
+
+describe('defaults', () => {
+  beforeEach(() => {
+    for (const rule of [...defaultsCollection.values()]) {
+      defaultsCollection.delete(rule.id)
+    }
+  })
+
+  it('adds one rule per key and updates its value', () => {
+    setDefault('id', '1')
+    setDefault('id', '2')
+    expect([...defaultsCollection.values()]).toHaveLength(1)
+    expect(findDefault('id')?.value).toBe('2')
+  })
+
+  it('only returns enabled rules', () => {
+    setDefault('a', '1')
+    setDefault('b', '2')
+    toggleDefault(findDefault('a')!.id)
+    expect(enabledDefaults().map((r) => r.key)).toEqual(['b'])
   })
 })

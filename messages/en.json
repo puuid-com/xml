@@ -108,5 +108,20 @@
   "delete_title": "Delete {name}?",
   "delete_description": "The file is removed from this browser's cache in every tab. This cannot be undone.",
   "delete_confirm": "Delete",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "defaults_title": "Default values",
+  "defaults_description": "Set a value per tag name, or @attribute. Apply writes them into the open file. Saved in this browser.",
+  "defaults_apply": "Apply defaults",
+  "defaults_empty": "No default values yet. Add one below, or right-click a tag in the editor.",
+  "defaults_key": "Tag or @attr",
+  "defaults_value": "Value",
+  "defaults_add": "Add",
+  "defaults_enable": "Use the default for {key}",
+  "defaults_value_for": "Default value for {key}",
+  "defaults_remove": "Remove the default for {key}",
+  "defaults_none": "Add default values first.",
+  "defaults_unchanged": "Every value already matches its default.",
+  "defaults_applied": "Values set: {count}",
+  "defaults_save_current": "Save value as default",
+  "defaults_saved": "Default saved for <{name}>"
 }

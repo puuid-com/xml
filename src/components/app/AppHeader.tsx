@@ -23,6 +23,7 @@ import {
   downloadFile,
   formatActive,
 } from '#/components/editor/actions'
+import { DefaultsControls } from '#/components/defaults/DefaultsControls'
 import { LocaleSwitcher } from '#/components/LocaleSwitcher'
 import { Button } from '#/components/ui/button'
 import { ButtonGroup } from '#/components/ui/button-group'
@@ -151,6 +152,7 @@ export function AppHeader({
       />
 
       <FormatControls disabled={!activeId} />
+      <DefaultsControls disabled={!activeId} />
 
       <div className="ml-1 flex min-w-0 flex-1 self-stretch border-x sm:ml-2">
         {children}

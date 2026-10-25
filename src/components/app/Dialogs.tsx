@@ -4,6 +4,7 @@ import {
   IconFilePlus,
   IconFolderOpen,
   IconHighlight,
+  IconReplace,
   IconSparkles,
 } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form'
@@ -12,7 +13,10 @@ import { useState } from 'react'
 
 import { activate, loadSample, neighbour, newFile } from './files'
 import { askDelete, askRename, setPaletteOpen, uiStore } from './ui-store'
-import { highlightAtCursor } from '#/components/editor/actions'
+import {
+  applyDefaultsActive,
+  highlightAtCursor,
+} from '#/components/editor/actions'
 import { dropEditorState } from '#/components/editor/CodeEditor'
 import { useTagCounts } from '#/components/highlights/HighlightsBar'
 import {
@@ -148,6 +152,11 @@ function PaletteCommands({ onOpenFromDisk }: { onOpenFromDisk: () => void }) {
             <IconHighlight />
             {m.highlight_at_cursor()}
             <CommandShortcut>{alt}H</CommandShortcut>
+          </CommandItem>
+          <CommandItem onSelect={() => run(() => void applyDefaultsActive())}>
+            <IconReplace />
+            {m.defaults_apply()}
+            <CommandShortcut>⇧{alt}D</CommandShortcut>
           </CommandItem>
         </CommandGroup>
         {tags.length > 0 && (
