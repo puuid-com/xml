@@ -250,6 +250,14 @@ function FormatControls({ disabled }: { disabled: boolean }) {
               {m.format_sort_desc()}
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem
+            checked={settings.highlightedFirst}
+            onCheckedChange={(v) => setFormatSetting('highlightedFirst', v)}
+            onSelect={(e) => e.preventDefault()}
+          >
+            {m.format_highlighted_first()}
+          </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </ButtonGroup>

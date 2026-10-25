@@ -34,6 +34,7 @@
   "format_sort_none": "Keep order",
   "format_sort_asc": "Ascending (A–Z)",
   "format_sort_desc": "Descending (Z–A)",
+  "format_highlighted_first": "Highlighted tags first",
   "action_toggle_panel": "Toggle side panel",
   "format_failed": "Fix the errors before formatting",
   "copied": "Copied to clipboard",

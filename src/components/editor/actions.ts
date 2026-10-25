@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { getView } from './editor-store'
 import { filesCollection } from '#/lib/store/files'
 import { formatSettingsStore } from '#/lib/store/format-settings'
+import { highlightsCollection } from '#/lib/store/highlights'
 import { diffChange } from '#/lib/xml/edit'
 import { formatXml } from '#/lib/xml/format'
 import { m } from '#/paraglide/messages'
@@ -28,11 +29,18 @@ function applyFormat(result: FormatResult, userEvent: string) {
 export function formatActive() {
   const view = getView()
   if (!view) return true
-  const { removeEmptyLines, trimVars, sort } = formatSettingsStore.state
+  const { removeEmptyLines, trimVars, sort, highlightedFirst } =
+    formatSettingsStore.state
+  const first = highlightedFirst
+    ? [...highlightsCollection.values()]
+        .filter((r) => r.enabled)
+        .map((r) => r.tag)
+    : []
   const result = formatXml(view.state.doc.toString(), {
     removeEmptyLines,
     trimVars,
     sort,
+    first,
   })
   applyFormat(result, 'input.format')
   return true

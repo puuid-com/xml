@@ -15,6 +15,8 @@ export interface FormatOptions {
   trimVars?: boolean
   /** Order sibling elements by tag name and attributes by name. */
   sort?: SortOrder
+  /** Tag names moved ahead of their siblings, e.g. highlighted ones. */
+  first?: Iterable<string>
 }
 
 /**
@@ -29,6 +31,7 @@ export function formatXml(
     removeEmptyLines = true,
     trimVars = false,
     sort = 'none',
+    first = [],
   }: FormatOptions = {},
 ): FormatResult {
   const doc = parseXml(text)
@@ -36,15 +39,16 @@ export function formatXml(
 
   const lines: Array<string> = []
   const compare = sort === 'none' ? null : byName(sort)
+  const order = elementOrder(compare, new Set(first))
 
   const writeAll = (nodes: Array<XmlNode>, depth: number) => {
-    const items = compare ? sortNodes(nodes, compare) : nodes
+    const items = order ? sortNodes(nodes, order) : nodes
     let wrote = false
     let blank = false
     for (const node of items) {
       if (node.kind === 'text' && node.raw.trim() === '') {
         // Sorting moves nodes away from the gaps that separated them.
-        if (!removeEmptyLines && !compare && wrote) {
+        if (!removeEmptyLines && !order && wrote) {
           blank ||= (node.raw.match(/\n/g)?.length ?? 0) > 1
         }
         continue
@@ -105,14 +109,20 @@ function byName(order: 'asc' | 'desc') {
   return (a: string, b: string) => sign * a.localeCompare(b)
 }
 
+type Compare = (a: string, b: string) => number
+
+/** Tags in `first` lead, then `compare` (or document order) decides. */
+function elementOrder(compare: Compare | null, first: Set<string>) {
+  if (first.size === 0) return compare
+  return (a: string, b: string) =>
+    Number(first.has(b)) - Number(first.has(a)) || (compare?.(a, b) ?? 0)
+}
+
 /**
  * Sorts elements by tag name, stably. Comments and processing instructions
  * travel with the element that follows them.
  */
-function sortNodes(
-  nodes: Array<XmlNode>,
-  compare: (a: string, b: string) => number,
-): Array<XmlNode> {
+function sortNodes(nodes: Array<XmlNode>, compare: Compare): Array<XmlNode> {
   const groups: Array<{ name: string | null; nodes: Array<XmlNode> }> = []
   let pending: Array<XmlNode> = []
   for (const node of nodes) {
@@ -135,10 +145,7 @@ function hasText(el: XmlElement) {
   )
 }
 
-function openTag(
-  el: XmlElement,
-  compare: ((a: string, b: string) => number) | null,
-) {
+function openTag(el: XmlElement, compare: Compare | null) {
   const attrs = compare
     ? [...el.attrs].sort((a, b) => compare(a.name, b.name))
     : el.attrs

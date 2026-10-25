@@ -9,6 +9,7 @@ export interface FormatSettings {
   removeEmptyLines: boolean
   trimVars: boolean
   sort: SortOrder
+  highlightedFirst: boolean
 }
 
 const STORAGE_KEY = 'xml-editor:format'
@@ -18,6 +19,7 @@ const initial: FormatSettings = {
   removeEmptyLines: true,
   trimVars: false,
   sort: 'none',
+  highlightedFirst: false,
 }
 
 function load(): FormatSettings {

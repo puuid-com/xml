@@ -176,6 +176,18 @@ describe('formatXml', () => {
     })
   })
 
+  it('puts given tags first', () => {
+    const input = '<r><c/><b/><a/><b/></r>'
+    expect(formatXml(input, { first: ['b'] })).toEqual({
+      ok: true,
+      text: '<r>\n  <b />\n  <b />\n  <c />\n  <a />\n</r>\n',
+    })
+    expect(formatXml(input, { first: ['c', 'b'], sort: 'asc' })).toEqual({
+      ok: true,
+      text: '<r>\n  <b />\n  <b />\n  <c />\n  <a />\n</r>\n',
+    })
+  })
+
   it('refuses invalid documents', () => {
     expect(formatXml('<a><b></a>').ok).toBe(false)
   })
