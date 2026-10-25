@@ -1,9 +1,12 @@
 import { Store } from '@tanstack/store'
 
+import { singleton } from './singleton'
+
 // Identifies this page load. Not persisted: a duplicated browser tab copies
 // sessionStorage, and two tabs must never share an id.
-export const writerId =
-  typeof crypto !== 'undefined' ? crypto.randomUUID() : 'server'
+export const writerId = singleton('writerId', () =>
+  typeof crypto !== 'undefined' ? crypto.randomUUID() : 'server',
+)
 
 // Per browser tab: which file is active and which tree nodes are collapsed.
 // Kept in sessionStorage so a reload restores it without leaking to other tabs.
@@ -32,14 +35,16 @@ function load(): SessionState {
   return initial
 }
 
-export const sessionStore = new Store<SessionState>(load())
-
-sessionStore.subscribe(() => {
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(sessionStore.state))
-  } catch {
-    // Ignore quota or unavailable storage.
-  }
+export const sessionStore = singleton('session', () => {
+  const store = new Store<SessionState>(load())
+  store.subscribe(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(store.state))
+    } catch {
+      // Ignore quota or unavailable storage.
+    }
+  })
+  return store
 })
 
 export function setActive(activeId: string | null) {

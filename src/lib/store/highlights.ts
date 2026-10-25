@@ -5,6 +5,7 @@ import {
 import { z } from 'zod'
 
 import { newId } from './files'
+import { singleton } from './singleton'
 
 /** Preset swatches; each maps to a `--hl-<name>` token in styles.css. */
 export const HIGHLIGHT_PRESETS = [
@@ -33,13 +34,15 @@ export const highlightSchema = z.object({
 export type Highlight = z.infer<typeof highlightSchema>
 
 // Global across files, synced across browser tabs like the files.
-export const highlightsCollection = createCollection(
-  localStorageCollectionOptions({
-    id: 'highlights',
-    storageKey: 'xml-editor:highlights',
-    getKey: (rule) => rule.id,
-    schema: highlightSchema,
-  }),
+export const highlightsCollection = singleton('highlights', () =>
+  createCollection(
+    localStorageCollectionOptions({
+      id: 'highlights',
+      storageKey: 'xml-editor:highlights',
+      getKey: (rule) => rule.id,
+      schema: highlightSchema,
+    }),
+  ),
 )
 
 export function isPreset(color: string): color is HighlightPreset {

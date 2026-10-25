@@ -7,6 +7,7 @@ import {
 import { z } from 'zod'
 
 import { writerId } from './session'
+import { singleton } from './singleton'
 
 export const fileSchema = z.object({
   id: z.string(),
@@ -25,13 +26,15 @@ export const fileSchema = z.object({
 export type XmlFile = z.infer<typeof fileSchema>
 
 // localStorage events keep every browser tab of the site in sync.
-export const filesCollection = createCollection(
-  localStorageCollectionOptions({
-    id: 'files',
-    storageKey: 'xml-editor:files',
-    getKey: (file) => file.id,
-    schema: fileSchema,
-  }),
+export const filesCollection = singleton('files', () =>
+  createCollection(
+    localStorageCollectionOptions({
+      id: 'files',
+      storageKey: 'xml-editor:files',
+      getKey: (file) => file.id,
+      schema: fileSchema,
+    }),
+  ),
 )
 
 export function newId() {
@@ -145,7 +148,18 @@ export const saveContent = createPacedMutations<{
   strategy: debounceStrategy({ wait: 400 }),
 })
 
-/** Approximate bytes used by the cache. */
+/** Approximate bytes the editor uses in localStorage (UTF-16, 2 bytes/char). */
 export function cacheSize() {
-  return filesCollection.utils.getStorageSize()
+  let chars = 0
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith('xml-editor:')) {
+        chars += key.length + (localStorage.getItem(key)?.length ?? 0)
+      }
+    }
+  } catch {
+    return 0
+  }
+  return chars * 2
 }

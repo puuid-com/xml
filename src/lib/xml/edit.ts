@@ -156,3 +156,26 @@ export function detectIndentUnit(text: string) {
   if (!match) return '  '
   return match[1].startsWith('\t') ? '\t' : match[1]
 }
+
+/** Smallest single change turning `before` into `after`, or `null` if equal. */
+export function diffChange(before: string, after: string): TextChange | null {
+  if (before === after) return null
+  let start = 0
+  const max = Math.min(before.length, after.length)
+  while (start < max && before[start] === after[start]) start++
+  let endBefore = before.length
+  let endAfter = after.length
+  while (
+    endBefore > start &&
+    endAfter > start &&
+    before[endBefore - 1] === after[endAfter - 1]
+  ) {
+    endBefore--
+    endAfter--
+  }
+  return {
+    from: start,
+    to: endBefore,
+    insert: after.slice(start, endAfter),
+  }
+}

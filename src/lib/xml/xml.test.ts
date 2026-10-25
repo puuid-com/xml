@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addAttr,
   addChild,
+  diffChange,
   removeAttr,
   removeNode,
   renameElement,
@@ -204,6 +205,18 @@ describe('edit', () => {
     expect(apply(text, removeNode(text, child(el)))).toBe(
       '<root>\n  <empty/>\n</root>',
     )
+  })
+})
+
+describe('diffChange', () => {
+  it('returns the smallest change', () => {
+    expect(diffChange('<a>old</a>', '<a>new</a>')).toEqual({
+      from: 3,
+      to: 6,
+      insert: 'new',
+    })
+    expect(diffChange('aaa', 'aaaa')).toEqual({ from: 3, to: 3, insert: 'a' })
+    expect(diffChange('same', 'same')).toBeNull()
   })
 })
 
