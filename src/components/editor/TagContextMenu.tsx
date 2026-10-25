@@ -1,3 +1,4 @@
+import { IconBookmark } from '@tabler/icons-react'
 import { useState } from 'react'
 
 import { leafAt } from './actions'
@@ -8,6 +9,7 @@ import { CopyPathMenuItems } from '#/components/inspector/CopyPathMenuItems'
 import {
   HighlightMenuItems,
   PinMenuItem,
+  TagMenuHeader,
 } from '#/components/highlights/TagMenuItems'
 import {
   ContextMenu,
@@ -57,12 +59,13 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent
-        className="w-56"
+        className="w-72"
         onCloseAutoFocus={(e) => {
           e.preventDefault()
           getView()?.focus()
         }}
       >
+        {tag && <TagMenuHeader tag={tag} el={element} />}
         {tag && <HighlightMenuItems tag={tag} />}
         {tag && element && (
           <>
@@ -79,6 +82,7 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
                 notify.success(m.defaults_saved({ name: leaf.name }))
               }}
             >
+              <IconBookmark />
               {m.defaults_save_current()}
             </ContextMenuItem>
             <PinMenuItem tag={leaf.name} />

@@ -1,3 +1,5 @@
+import { IconCopy } from '@tabler/icons-react'
+
 import { notify } from '#/components/app/notice-store'
 import { editorStore } from '#/components/editor/editor-store'
 import { ContextMenuItem } from '#/components/ui/context-menu'
@@ -23,6 +25,7 @@ export function CopyPathMenuItems({ el }: { el: XmlElement }) {
         notify.success(m.copied(), { detail: path })
       }}
     >
+      <IconCopy />
       {LABELS[format]()}
     </ContextMenuItem>
   ))

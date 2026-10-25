@@ -8,6 +8,7 @@ import { hlStyle } from '#/components/highlights/hl-style'
 import {
   MatchNavItems,
   PinMenuItem,
+  TagMenuHeader,
 } from '#/components/highlights/TagMenuItems'
 import { useDraft } from '#/components/inspector/use-draft'
 import {
@@ -111,7 +112,8 @@ function PinnedField({
             <span className={cn(color && 'hl-ink')}>{tag}</span>
           </button>
         </ContextMenuTrigger>
-        <ContextMenuContent className="w-48">
+        <ContextMenuContent className="w-56">
+          <TagMenuHeader tag={tag} />
           <MatchNavItems tag={tag} count={count} />
           <ContextMenuSeparator />
           <PinMenuItem tag={tag} />

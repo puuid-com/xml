@@ -4,7 +4,8 @@ import { useState } from 'react'
 
 import { ColorSwatches } from './ColorSwatches'
 import { hlStyle } from './hl-style'
-import { MatchNavItems } from './TagMenuItems'
+import { SwatchMenuRow } from './SwatchMenuRow'
+import { MatchNavItems, TagMenuHeader } from './TagMenuItems'
 import { cycleTag } from '#/components/editor/actions'
 import { Button } from '#/components/ui/button'
 import {
@@ -13,9 +14,6 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '#/components/ui/context-menu'
 import { Input } from '#/components/ui/input'
@@ -101,7 +99,8 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
           </span>
         </Button>
       </ContextMenuTrigger>
-      <ContextMenuContent className="w-52">
+      <ContextMenuContent className="w-72">
+        <TagMenuHeader tag={rule.tag} />
         <ContextMenuCheckboxItem
           checked={rule.enabled}
           onCheckedChange={() => toggleHighlight(rule.id)}
@@ -111,15 +110,11 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
         <ContextMenuSeparator />
         <MatchNavItems tag={rule.tag} count={count} />
         <ContextMenuSeparator />
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>{m.highlight_color()}</ContextMenuSubTrigger>
-          <ContextMenuSubContent className="p-2">
-            <ColorSwatches
-              value={rule.color}
-              onSelect={(c) => setHighlight(rule.tag, c)}
-            />
-          </ContextMenuSubContent>
-        </ContextMenuSub>
+        <SwatchMenuRow
+          label={m.highlight_label()}
+          value={rule.color}
+          onSelect={(c) => setHighlight(rule.tag, c)}
+        />
         <ContextMenuItem
           variant="destructive"
           onSelect={() => removeHighlight(rule.id)}

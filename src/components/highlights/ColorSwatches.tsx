@@ -5,7 +5,7 @@ import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
 import type { HighlightPreset } from '#/lib/store/colors'
 
-const presetLabels: Record<HighlightPreset, () => string> = {
+export const presetLabels: Record<HighlightPreset, () => string> = {
   blue: m.color_blue,
   purple: m.color_purple,
   pink: m.color_pink,

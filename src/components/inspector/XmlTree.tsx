@@ -2,6 +2,8 @@ import {
   IconAlertTriangle,
   IconChevronDown,
   IconChevronRight,
+  IconChevronsDown,
+  IconChevronsUp,
   IconPin,
   IconSearch,
   IconX,
@@ -29,6 +31,7 @@ import { hlStyle } from '#/components/highlights/hl-style'
 import {
   HighlightMenuItems,
   PinMenuItem,
+  TagMenuHeader,
 } from '#/components/highlights/TagMenuItems'
 import {
   ContextMenu,
@@ -48,12 +51,7 @@ import { useHighlightMap } from '#/hooks/use-highlights'
 import { usePins } from '#/hooks/use-pins'
 import { useMediaQuery } from '#/hooks/use-media-query'
 import { sessionStore, setCollapsed } from '#/lib/store/session'
-import {
-  addChildTo,
-  canAddChild,
-  removeElement,
-  setValue,
-} from '#/lib/document'
+import { setValue } from '#/lib/document'
 import { cn } from '#/lib/utils'
 import {
   attrDiffers,
@@ -529,7 +527,8 @@ function TreeRowMenu({
   }
 
   return (
-    <ContextMenuContent className="w-56">
+    <ContextMenuContent className="w-72">
+      <TagMenuHeader tag={el.name} el={el} />
       {hasName(el) && (
         <>
           <HighlightMenuItems tag={el.name} />
@@ -537,39 +536,20 @@ function TreeRowMenu({
           <ContextMenuSeparator />
         </>
       )}
-      {canAddChild(el) && (
-        <ContextMenuItem
-          onSelect={() =>
-            editAtPath(el.path, (fresh, text) =>
-              addChildTo(text, fresh, el.json ? 'key' : 'element'),
-            )
-          }
-        >
-          {m.node_add_child()}
-        </ContextMenuItem>
-      )}
       {hasChildren && (
         <>
           <ContextMenuItem onSelect={() => collapseChildren(true)}>
+            <IconChevronsUp />
             {m.tree_collapse_all()}
           </ContextMenuItem>
           <ContextMenuItem onSelect={() => collapseChildren(false)}>
+            <IconChevronsDown />
             {m.tree_expand_all()}
           </ContextMenuItem>
+          <ContextMenuSeparator />
         </>
       )}
       <CopyPathMenuItems el={el} />
-      <ContextMenuSeparator />
-      <ContextMenuItem
-        variant="destructive"
-        onSelect={() =>
-          editAtPath(el.path, (fresh, text, doc) =>
-            removeElement(text, fresh, doc),
-          )
-        }
-      >
-        {m.node_delete()}
-      </ContextMenuItem>
     </ContextMenuContent>
   )
 }
