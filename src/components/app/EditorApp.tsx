@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
 
 import { AppHeader } from './AppHeader'
-import { CloseDialog, DeleteDialog, FilePalette, RenameDialog } from './Dialogs'
+import { CloseDialog, DeleteDialog, RenameDialog } from './Dialogs'
 import {
   ACCEPTED_TYPES,
   importFiles,
@@ -156,7 +156,6 @@ export function EditorApp() {
       </main>
       <StatusBar />
 
-      <FilePalette onOpenFromDisk={openFromDisk} />
       <RenameDialog />
       <DeleteDialog openIds={files.map((f) => f.id)} />
       <CloseDialog openIds={files.map((f) => f.id)} />
