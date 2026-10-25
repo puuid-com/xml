@@ -68,11 +68,11 @@ export function publishCursor(pos: number, line: number, col: number) {
   )
 }
 
-/** Applies inspector edits as one undoable transaction. */
+/** Applies structure-tree edits as one undoable transaction. */
 export function applyChanges(changes: Array<TextChange>) {
   const view = currentView
   if (!view || changes.length === 0) return
-  view.dispatch({ changes, userEvent: 'input.inspector' })
+  view.dispatch({ changes, userEvent: 'input.tree' })
 }
 
 /**

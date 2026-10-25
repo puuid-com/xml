@@ -42,7 +42,7 @@ import { m } from '#/paraglide/messages'
 export function EditorApp() {
   const files = useOpenFiles()
   const storedActive = useSelector(sessionStore, (s) => s.activeId)
-  const inspectorOpen = useSelector(sessionStore, (s) => s.inspectorOpen)
+  const panelOpen = useSelector(sessionStore, (s) => s.panelOpen)
   const wide = useMediaQuery('(min-width: 768px)')
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -76,7 +76,7 @@ export function EditorApp() {
 
   const layout = useDefaultLayout({
     id: `xml-main-${wide ? 'h' : 'v'}`,
-    panelIds: inspectorOpen ? ['editor', 'side'] : ['editor'],
+    panelIds: panelOpen ? ['editor', 'side'] : ['editor'],
   })
 
   const hasFiles = (e: React.DragEvent) =>
@@ -84,7 +84,7 @@ export function EditorApp() {
 
   return (
     <div
-      className="relative flex h-dvh flex-col"
+      className="relative flex h-dvh flex-col overflow-hidden"
       onDragOver={(e) => {
         if (!hasFiles(e)) return
         e.preventDefault()
@@ -125,7 +125,7 @@ export function EditorApp() {
             <ResizablePanel id="editor" minSize="25">
               <CodeEditor fileId={activeId} />
             </ResizablePanel>
-            {inspectorOpen && (
+            {panelOpen && (
               <>
                 <ResizableHandle />
                 <ResizablePanel

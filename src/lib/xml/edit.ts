@@ -1,4 +1,4 @@
-// Turns structured edits from the inspector into minimal text changes, so the
+// Turns structured edits from the tree into minimal text changes, so the
 // document keeps its formatting and every edit is one undoable transaction.
 // Changes are compatible with CodeMirror's `ChangeSpec`.
 

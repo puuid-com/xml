@@ -50,7 +50,7 @@ import {
   setFormatSetting,
 } from '#/lib/store/format-settings'
 import { alt, mod } from '#/lib/platform'
-import { sessionStore, setInspectorOpen } from '#/lib/store/session'
+import { sessionStore, setPanelOpen } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 import { site } from '#/site'
 import type { SortOrder } from '#/lib/xml/format'
@@ -62,7 +62,7 @@ export function AppHeader({
   activeId: string | null
   onOpenFromDisk: () => void
 }) {
-  const inspectorOpen = useSelector(sessionStore, (s) => s.inspectorOpen)
+  const panelOpen = useSelector(sessionStore, (s) => s.panelOpen)
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-0.5 overflow-x-auto border-b px-2 [scrollbar-width:none] sm:gap-1 sm:px-3">
@@ -150,11 +150,11 @@ export function AppHeader({
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-pressed={inspectorOpen}
+            aria-pressed={panelOpen}
             aria-label={m.action_toggle_panel()}
-            onClick={() => setInspectorOpen(!inspectorOpen)}
+            onClick={() => setPanelOpen(!panelOpen)}
           >
-            {inspectorOpen ? (
+            {panelOpen ? (
               <IconLayoutSidebarRightFilled />
             ) : (
               <IconLayoutSidebarRight />

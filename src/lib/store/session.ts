@@ -14,7 +14,7 @@ export interface SessionState {
   activeId: string | null
   /** Collapsed tree paths, by file id. */
   collapsed: Record<string, Array<string>>
-  inspectorOpen: boolean
+  panelOpen: boolean
 }
 
 const STORAGE_KEY = 'xml-editor:session'
@@ -22,7 +22,7 @@ const STORAGE_KEY = 'xml-editor:session'
 const initial: SessionState = {
   activeId: null,
   collapsed: {},
-  inspectorOpen: true,
+  panelOpen: true,
 }
 
 function load(): SessionState {
@@ -67,6 +67,6 @@ export function setCollapsed(fileId: string, paths: Array<string>) {
   }))
 }
 
-export function setInspectorOpen(inspectorOpen: boolean) {
-  sessionStore.setState((s) => ({ ...s, inspectorOpen }))
+export function setPanelOpen(panelOpen: boolean) {
+  sessionStore.setState((s) => ({ ...s, panelOpen }))
 }
