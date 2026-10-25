@@ -25,21 +25,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useActiveProfile } from '#/hooks/use-profiles'
 import { m } from '#/paraglide/messages'
 
-/** Bottom bar: notices and highlight chips on the left, editing tools, search and the theme toggle on the right. */
+/** Bottom bar: highlight chips then notices on the left, editing tools, search and the theme toggle on the right. */
 export function StatusBar() {
   const fileId = useSelector(editorStore, (s) => s.fileId)
   const hasNotice = useSelector(noticeStore, (n) => n !== null)
 
   return (
     <footer className="flex h-12 shrink-0 items-center gap-1 border-t px-1.5 text-[11px] whitespace-nowrap text-muted-foreground md:h-8">
-      <StatusNotice />
+      {fileId && <HighlightsBar />}
       {fileId && hasNotice && (
         <Separator
           orientation="vertical"
           className="mx-1 data-vertical:h-4 data-vertical:self-center"
         />
       )}
-      {fileId && <HighlightsBar />}
+      <StatusNotice />
       <div className="flex-1" />
       {fileId && (
         <>

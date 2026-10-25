@@ -16,7 +16,7 @@ export function StatusNotice() {
     <div
       role="status"
       aria-live="polite"
-      className="flex max-w-[min(32rem,50%)] min-w-0 shrink-0 items-center"
+      className="flex max-w-[min(32rem,50%)] min-w-0 shrink items-center"
     >
       {notice && (
         <>
