@@ -15,8 +15,8 @@ import {
 } from '#/components/app/ui-store'
 import { filesCollection } from '#/lib/store/files'
 import { enabledDefaults } from '#/lib/store/defaults'
-import { formatSettingsStore } from '#/lib/store/format-settings'
-import { highlightsCollection } from '#/lib/store/highlights'
+import { profileHighlights } from '#/lib/store/highlights'
+import { activeFormat } from '#/lib/store/profiles'
 import {
   MIME_TYPES,
   documentDefaults,
@@ -35,10 +35,9 @@ import type { EditorView } from '@codemirror/view'
 export function formatActive() {
   const view = getView()
   if (!view) return true
-  const { removeEmptyLines, trimVars, sort, highlightedFirst } =
-    formatSettingsStore.state
+  const { removeEmptyLines, trimVars, sort, highlightedFirst } = activeFormat()
   const first = highlightedFirst
-    ? [...highlightsCollection.values()]
+    ? profileHighlights()
         .filter((r) => r.enabled)
         .map((r) => r.tag)
     : []
@@ -102,7 +101,7 @@ export function leafAt(pos: number) {
 
 /** Files save as you type; this only formats when that option is on. */
 export function saveActive() {
-  if (formatSettingsStore.state.formatOnSave) formatActive()
+  if (activeFormat().formatOnSave) formatActive()
   toast.success(m.saved_locally(), { id: 'saved' })
   return true
 }

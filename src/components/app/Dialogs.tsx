@@ -1,5 +1,7 @@
 import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { neighbour } from './files'
 import { askClose, askRename, setDefaultsPreview, uiStore } from './ui-store'
@@ -121,23 +123,33 @@ function RenameForm({ id, name }: { id: string; name: string }) {
 export function CloseDialog({ openIds }: { openIds: Array<string> }) {
   const closeId = useSelector(uiStore, (s) => s.closeId)
   const file = closeId ? filesCollection.get(closeId) : undefined
+  const [closing, setClosing] = useState(false)
 
-  const confirm = () => {
-    if (!file) return
-    if (sessionStore.state.activeId === file.id) {
-      const index = openIds.indexOf(file.id)
-      setActive(neighbour(openIds, index) ?? null)
+  const confirm = async () => {
+    if (!file || closing) return
+    const wasActive = sessionStore.state.activeId === file.id
+    setClosing(true)
+    try {
+      if (wasActive) {
+        const index = openIds.indexOf(file.id)
+        setActive(neighbour(openIds, index) ?? null)
+      }
+      await closeFile(file.id)
+      dropEditorState(file.id)
+      askClose(null)
+    } catch {
+      if (wasActive) setActive(file.id)
+      toast.error(m.archive_delete_failed())
+    } finally {
+      setClosing(false)
     }
-    closeFile(file.id)
-    dropEditorState(file.id)
-    askClose(null)
   }
 
   return (
     <AlertDialog
       open={!!file}
       onOpenChange={(open) => {
-        if (!open) askClose(null)
+        if (!open && !closing) askClose(null)
       }}
     >
       <AlertDialogContent>
@@ -150,8 +162,15 @@ export function CloseDialog({ openIds }: { openIds: Array<string> }) {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={confirm}>
+          <AlertDialogCancel disabled={closing}>{m.cancel()}</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            disabled={closing}
+            onClick={(event) => {
+              event.preventDefault()
+              void confirm()
+            }}
+          >
             {m.close_confirm()}
           </AlertDialogAction>
         </AlertDialogFooter>

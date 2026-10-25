@@ -1,13 +1,9 @@
 import { IconCheck, IconPlus } from '@tabler/icons-react'
 
-import {
-  HIGHLIGHT_PRESETS,
-  highlightCss,
-  isPreset,
-} from '#/lib/store/highlights'
+import { HIGHLIGHT_PRESETS, highlightCss, isPreset } from '#/lib/store/colors'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
-import type { HighlightPreset } from '#/lib/store/highlights'
+import type { HighlightPreset } from '#/lib/store/colors'
 
 const presetLabels: Record<HighlightPreset, () => string> = {
   blue: m.color_blue,
@@ -24,17 +20,19 @@ const presetLabels: Record<HighlightPreset, () => string> = {
 export function ColorSwatches({
   value,
   onSelect,
+  label = m.highlight_color(),
   className,
 }: {
   value?: string
   onSelect: (color: string) => void
+  label?: string
   className?: string
 }) {
   const custom = value && !isPreset(value) ? value : undefined
   return (
     <div
       role="radiogroup"
-      aria-label={m.highlight_color()}
+      aria-label={label}
       className={cn('flex flex-wrap items-center gap-1.5', className)}
     >
       {HIGHLIGHT_PRESETS.map((preset) => (

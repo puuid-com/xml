@@ -1,5 +1,4 @@
 import { IconWand } from '@tabler/icons-react'
-import { useSelector } from '@tanstack/react-store'
 
 import { ShortcutKeys } from './ShortcutKeys'
 import { ToolbarButton } from './ToolbarButton'
@@ -9,10 +8,8 @@ import { Separator } from '#/components/ui/separator'
 import { Switch } from '#/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { shortcuts } from '#/lib/shortcuts'
-import {
-  formatSettingsStore,
-  setFormatSetting,
-} from '#/lib/store/format-settings'
+import { useFormatSettings } from '#/hooks/use-profiles'
+import { setFormatSetting } from '#/lib/store/profiles'
 import { m } from '#/paraglide/messages'
 import type { SortOrder } from '#/lib/xml/format'
 
@@ -31,7 +28,7 @@ export function FormatButton() {
 
 /** Format settings, shown in the bottom bar's settings popover. */
 export function FormatOptions() {
-  const settings = useSelector(formatSettingsStore, (s) => s)
+  const settings = useFormatSettings()
 
   return (
     <>

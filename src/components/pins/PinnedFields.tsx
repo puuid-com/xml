@@ -102,7 +102,7 @@ function PinnedField({
             type="button"
             title={m.pin_cycle_hint()}
             className={cn(
-              'max-w-40 cursor-pointer truncate text-left font-mono text-xs font-medium',
+              'min-h-11 max-w-40 cursor-pointer truncate text-left font-mono text-xs font-medium md:min-h-0',
               color ? 'hl-tag px-1' : 'text-syntax-tag',
             )}
             style={hlStyle(color)}
@@ -117,12 +117,12 @@ function PinnedField({
           <PinMenuItem tag={tag} />
         </ContextMenuContent>
       </ContextMenu>
-      <InputGroup className="h-6 bg-background font-mono">
+      <InputGroup className="h-11 bg-background font-mono md:h-6">
         <InputGroupInput
           aria-label={tag}
           disabled={!el}
           placeholder={placeholder}
-          className="h-6 px-1.5 text-xs"
+          className="h-11 px-1.5 text-base md:h-6 md:text-xs"
           {...draft}
         />
         {count > 1 && (
@@ -140,7 +140,7 @@ function PinnedField({
             size="icon-xs"
             aria-label={m.pin_remove({ name: tag })}
             title={m.pin_remove({ name: tag })}
-            className="text-muted-foreground"
+            className="text-muted-foreground max-md:size-11"
             onClick={() => unpinTag(tag)}
           >
             <IconX className="size-3" />

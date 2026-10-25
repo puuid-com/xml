@@ -1,15 +1,19 @@
-import { useLiveQuery } from '@tanstack/react-db'
+import { eq, useLiveQuery } from '@tanstack/react-db'
 import { useMemo } from 'react'
 
+import { useActiveProfileId } from './use-profiles'
 import { highlightCss, highlightsCollection } from '#/lib/store/highlights'
 
-/** All highlight rules, oldest first. */
+/** Highlight rules of the active profile, oldest first. */
 export function useHighlights() {
-  const { data } = useLiveQuery((q) =>
-    q
-      .from({ rule: highlightsCollection })
-      .orderBy(({ rule }) => rule.createdAt, 'asc'),
-  )
+  const profileId = useActiveProfileId()
+  const { data } = useLiveQuery({
+    query: (q) =>
+      q
+        .from({ rule: highlightsCollection })
+        .where(({ rule }) => eq(rule.profileId, profileId))
+        .orderBy(({ rule }) => rule.createdAt, 'asc'),
+  })
   return data
 }
 

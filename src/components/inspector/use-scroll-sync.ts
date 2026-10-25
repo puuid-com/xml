@@ -20,6 +20,7 @@ export function useScrollSync(
   rows: Array<TreeRow>,
   rowHeight: number,
   fileId: string | null,
+  enabled = true,
 ) {
   const rowsRef = useRef(rows)
   useLayoutEffect(() => {
@@ -30,7 +31,7 @@ export function useScrollSync(
   useEffect(() => {
     const tree = scrollRef.current
     const view = getView()
-    if (!tree || !view || !fileId) return
+    if (!tree || !view || !fileId || !enabled) return
     const editor = view.scrollDOM
     let driver: Pane | null = null
 
@@ -77,7 +78,7 @@ export function useScrollSync(
     editor.addEventListener('scroll', onEditorScroll, options)
     tree.addEventListener('scroll', onTreeScroll, options)
     return () => controller.abort()
-  }, [scrollRef, rowHeight, fileId, hasRows])
+  }, [scrollRef, rowHeight, fileId, hasRows, enabled])
 }
 
 /** Document y of a row's first line; past the last row, the end of its element. */

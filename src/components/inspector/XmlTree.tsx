@@ -3,6 +3,8 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconPin,
+  IconSearch,
+  IconX,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual'
@@ -11,6 +13,8 @@ import { flushSync } from 'react-dom'
 import { toast } from 'sonner'
 
 import { treeKeyAction } from './tree-keys'
+import { searchTree } from './tree-search'
+import { StructureBreadcrumb } from './StructureBreadcrumb'
 import { useDraft } from './use-draft'
 import { useScrollSync } from './use-scroll-sync'
 import { VarText } from './VarText'
@@ -32,14 +36,17 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '#/components/ui/context-menu'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '#/components/ui/input-group'
 import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
 import { usePins } from '#/hooks/use-pins'
-import {
-  sessionStore,
-  setCollapsed,
-  toggleCollapsed,
-} from '#/lib/store/session'
+import { useMediaQuery } from '#/hooks/use-media-query'
+import { sessionStore, setCollapsed } from '#/lib/store/session'
 import {
   addChildTo,
   canAddChild,
@@ -54,19 +61,13 @@ import {
   isDefaultLeaf,
   leafDiffers,
 } from '#/lib/xml/defaults'
-import {
-  allElements,
-  ancestorPaths,
-  displayPath,
-  flattenVisible,
-} from '#/lib/xml/locate'
+import { allElements, ancestorPaths, displayPath } from '#/lib/xml/locate'
 import { hasName, isLeaf, isTextLeaf, leafValue } from '#/lib/xml/model'
 import { m } from '#/paraglide/messages'
 import type { DefaultIndex } from '#/lib/xml/defaults'
 import type { TreeRow } from '#/lib/xml/locate'
 import type { XmlElement } from '#/lib/xml/model'
 
-const ROW_HEIGHT = 26
 const INDENT = 14
 /** Attributes shown inline; the rest are counted. */
 const MAX_ATTRS = 3
@@ -90,9 +91,22 @@ export function XmlTree() {
   const scrollRef = useRef<HTMLDivElement>(null)
   // The row holding keyboard focus while focus is inside the tree.
   const [focusedPath, setFocusedPath] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [editingPath, setEditingPath] = useState<string | null>(null)
+  const [searchCollapsed, setSearchCollapsed] = useState<Set<string>>(new Set())
+  const inputRef = useRef<HTMLInputElement>(null)
+  const wide = useMediaQuery('(min-width: 768px)')
+  const rowHeight = wide ? 26 : 44
+  const searching = query.trim() !== ''
 
-  const collapsed = new Set(collapsedList)
-  const rows = flattenVisible(doc.nodes, collapsed)
+  const collapsed = useMemo(
+    () => (searching ? searchCollapsed : new Set(collapsedList)),
+    [searching, searchCollapsed, collapsedList],
+  )
+  const { rows, matches } = useMemo(
+    () => searchTree(doc.nodes, query, collapsed, editingPath),
+    [doc.nodes, query, collapsed, editingPath],
+  )
   const indexOf = (path: string | null) =>
     path === null ? -1 : rows.findIndex((r) => r.el.path === path)
   // The single tabbable row (roving tabIndex): the focused row, else the
@@ -107,7 +121,7 @@ export function XmlTree() {
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan: 16,
     // Keep the tab stop mounted even when scrolled away, so Tab still lands
     // in the tree and arrow keys can move focus from it.
@@ -119,12 +133,13 @@ export function XmlTree() {
       return [...indexes, activeIndex].sort((a, b) => a - b)
     },
   })
-  useScrollSync(scrollRef, rows, ROW_HEIGHT, fileId)
+  useScrollSync(scrollRef, rows, rowHeight, fileId, wide && !searching)
+  useEffect(() => virtualizer.measure(), [virtualizer, rowHeight])
 
   // Follow the editor cursor: expand collapsed ancestors and scroll to it.
   // Only a cursor move triggers this, so collapsing a row by hand sticks.
   const followCursor = useEffectEvent(() => {
-    if (!selectedPath || !fileId) return
+    if (!selectedPath || !fileId || searching) return
     const hidden = ancestorPaths(selectedPath).filter((p) => collapsed.has(p))
     if (hidden.length > 0) {
       setCollapsed(fileId, hidden, false)
@@ -134,9 +149,34 @@ export function XmlTree() {
     if (index >= 0) virtualizer.scrollToIndex(index, { align: 'auto' })
   })
   // `rows.length` re-runs it once expanded ancestors have rendered their rows.
-  useEffect(() => followCursor(), [selectedPath, fileId, rows.length])
+  useEffect(
+    () => followCursor(),
+    [selectedPath, fileId, rows.length, searching],
+  )
+  useEffect(() => virtualizer.scrollToOffset(0), [query, virtualizer])
 
   if (!fileId) return null
+
+  const changeQuery = (value: string) => {
+    setQuery(value)
+    setSearchCollapsed(new Set())
+    setFocusedPath(null)
+  }
+
+  const changeCollapsed = (paths: Array<string>, collapse: boolean) => {
+    if (!searching) {
+      setCollapsed(fileId, paths, collapse)
+      return
+    }
+    setSearchCollapsed((previous) => {
+      const next = new Set(previous)
+      for (const path of paths) {
+        if (collapse) next.add(path)
+        else next.delete(path)
+      }
+      return next
+    })
+  }
 
   const focusRow = (index: number) => {
     // Render first so the row is mounted and tabbable, then move focus to it.
@@ -161,7 +201,7 @@ export function XmlTree() {
         break
       case 'expand':
       case 'collapse':
-        toggleCollapsed(fileId, el.path)
+        changeCollapsed([el.path], action.type === 'collapse')
         break
       case 'reveal':
         revealElement(el)
@@ -174,6 +214,55 @@ export function XmlTree() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-12 shrink-0 items-center gap-2 border-b px-3 md:h-10">
+        <h2 className="shrink-0 text-xs font-medium text-muted-foreground">
+          {m.panel_structure()}
+        </h2>
+        <InputGroup className="h-11 border-0 bg-transparent has-[[data-slot=input-group-control]:focus-visible]:ring-inset md:h-8 dark:bg-transparent">
+          <InputGroupInput
+            ref={inputRef}
+            aria-label={m.tree_search()}
+            placeholder={m.tree_search_placeholder()}
+            value={query}
+            className="h-full text-base md:text-xs"
+            onChange={(event) => changeQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.preventDefault()
+                changeQuery('')
+              } else if (event.key === 'ArrowDown' && rows.length) {
+                event.preventDefault()
+                focusRow(0)
+              }
+            }}
+          />
+          <InputGroupAddon>
+            <IconSearch aria-hidden />
+          </InputGroupAddon>
+          {searching && (
+            <InputGroupAddon align="inline-end" className="shrink-0">
+              <span role="status" className="whitespace-nowrap font-normal">
+                {m.tree_search_matches({ count: matches.size })}
+              </span>
+            </InputGroupAddon>
+          )}
+          {query && (
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                size="icon-xs"
+                className="max-md:size-11"
+                aria-label={m.tree_search_clear()}
+                onClick={() => {
+                  changeQuery('')
+                  inputRef.current?.focus()
+                }}
+              >
+                <IconX />
+              </InputGroupButton>
+            </InputGroupAddon>
+          )}
+        </InputGroup>
+      </div>
       {doc.errors.length > 0 && (
         <div className="border-b bg-destructive/5 px-3 py-2 text-xs">
           <div className="mb-1 flex items-center gap-1.5 font-medium text-destructive">
@@ -196,7 +285,9 @@ export function XmlTree() {
         </div>
       )}
       {rows.length === 0 ? (
-        <p className="p-4 text-xs text-muted-foreground">{m.tree_empty()}</p>
+        <p className="flex-1 p-4 text-sm text-muted-foreground">
+          {searching ? m.tree_search_empty() : m.tree_empty()}
+        </p>
       ) : (
         <div
           ref={scrollRef}
@@ -222,7 +313,9 @@ export function XmlTree() {
                   index={item.index}
                   active={item.index === activeIndex}
                   onFocusRow={setFocusedPath}
-                  fileId={fileId}
+                  onEditingChange={setEditingPath}
+                  rowHeight={rowHeight}
+                  onCollapse={changeCollapsed}
                   top={item.start}
                   defaults={defaults}
                   selected={row.el.path === selectedPath}
@@ -234,6 +327,11 @@ export function XmlTree() {
           </div>
         </div>
       )}
+      <StructureBreadcrumb
+        nodes={doc.nodes}
+        path={selectedPath}
+        onNavigate={() => changeQuery('')}
+      />
     </div>
   )
 }
@@ -243,7 +341,9 @@ function TreeRowView({
   index,
   active,
   onFocusRow,
-  fileId,
+  onEditingChange,
+  rowHeight,
+  onCollapse,
   top,
   defaults,
   selected,
@@ -255,7 +355,9 @@ function TreeRowView({
   /** Whether this row is the tree's single Tab stop. */
   active: boolean
   onFocusRow: (path: string) => void
-  fileId: string
+  onEditingChange: (path: string | null) => void
+  rowHeight: number
+  onCollapse: (paths: Array<string>, collapse: boolean) => void
   top: number
   defaults: DefaultIndex
   selected: boolean
@@ -285,7 +387,7 @@ function TreeRowView({
           )}
           style={{
             top,
-            height: ROW_HEIGHT,
+            height: rowHeight,
             paddingLeft: 6 + depth * INDENT,
           }}
         >
@@ -294,10 +396,10 @@ function TreeRowView({
               type="button"
               tabIndex={-1}
               aria-label={collapsed ? m.tree_expand() : m.tree_collapse()}
-              className="grid size-4 shrink-0 place-items-center text-muted-foreground hover:text-foreground"
+              className="grid size-8 shrink-0 place-items-center text-muted-foreground hover:text-foreground md:size-4"
               onClick={(e) => {
                 e.stopPropagation()
-                toggleCollapsed(fileId, el.path)
+                onCollapse([el.path], !collapsed)
               }}
             >
               {collapsed ? (
@@ -307,12 +409,13 @@ function TreeRowView({
               )}
             </button>
           ) : (
-            <span className="size-4 shrink-0" />
+            <span className="size-8 shrink-0 md:size-4" />
           )}
           <TagLabel el={el} color={color} defaults={defaults} />
           {textLeaf && (
             <LeafValue
               path={el.path}
+              onEditingChange={onEditingChange}
               value={leafValue(el)}
               defaultKey={isDefaultLeaf(defaults, el) ? el.name : undefined}
               differs={leafDiffers(defaults, el)}
@@ -328,7 +431,7 @@ function TreeRowView({
           )}
         </div>
       </ContextMenuTrigger>
-      <TreeRowMenu el={el} fileId={fileId} hasChildren={hasChildren} />
+      <TreeRowMenu el={el} onCollapse={onCollapse} hasChildren={hasChildren} />
     </ContextMenu>
   )
 }
@@ -405,11 +508,11 @@ function TagLabel({
 
 function TreeRowMenu({
   el,
-  fileId,
+  onCollapse,
   hasChildren,
 }: {
   el: XmlElement
-  fileId: string
+  onCollapse: (paths: Array<string>, collapse: boolean) => void
   hasChildren: boolean
 }) {
   // Collapsing keeps this row open; expanding opens it too.
@@ -417,11 +520,7 @@ function TreeRowMenu({
     const descendants = allElements([el])
       .filter((e) => e !== el && !isLeaf(e))
       .map((e) => e.path)
-    setCollapsed(
-      fileId,
-      collapse ? descendants : [el.path, ...descendants],
-      collapse,
-    )
+    onCollapse(collapse ? descendants : [el.path, ...descendants], collapse)
   }
 
   return (
@@ -480,11 +579,13 @@ function TreeRowMenu({
 /** Leaf text shown inline; click to edit in place. */
 function LeafValue({
   path,
+  onEditingChange,
   value,
   defaultKey,
   differs,
 }: {
   path: string
+  onEditingChange: (path: string | null) => void
   value: string
   /** Set when the value equals the default for this key. */
   defaultKey?: string
@@ -501,12 +602,13 @@ function LeafValue({
       <input
         autoFocus
         aria-label={m.node_text()}
-        className="ml-1 h-5 min-w-0 flex-1 border border-ring bg-background px-1 font-mono text-xs outline-none"
+        className="ml-1 h-10 min-w-0 flex-1 border border-ring bg-background px-1 font-mono text-base outline-none md:h-5 md:text-xs"
         {...draft}
         onClick={(e) => e.stopPropagation()}
         onBlur={() => {
           draft.onBlur()
           setEditing(false)
+          onEditingChange(null)
         }}
         onKeyDown={(e) => {
           const row = e.currentTarget.closest<HTMLElement>('[role="treeitem"]')
@@ -515,6 +617,7 @@ function LeafValue({
             // Hand focus back to the row so keyboard navigation continues.
             row?.focus({ preventScroll: true })
             setEditing(false)
+            onEditingChange(null)
           }
         }}
       />
@@ -526,9 +629,10 @@ function LeafValue({
       tabIndex={-1}
       data-edit-value
       title={m.node_edit_text()}
-      className="ml-1 flex h-5 min-w-0 flex-1 items-center truncate px-1 text-left text-foreground/80 hover:bg-background hover:ring-1 hover:ring-border"
+      className="ml-1 flex h-10 min-w-0 flex-1 items-center truncate px-1 text-left text-foreground/80 hover:bg-background hover:ring-1 hover:ring-border md:h-5"
       onClick={(e) => {
         e.stopPropagation()
+        onEditingChange(path)
         setEditing(true)
       }}
     >

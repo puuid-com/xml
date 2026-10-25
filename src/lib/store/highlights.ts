@@ -1,20 +1,12 @@
 import { z } from 'zod'
 
-import { localCollection, newId } from './persist'
+import { unusedPreset } from './colors'
+import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
+import { activeProfileId } from './profiles'
+import type { HighlightPreset } from './colors'
 
-/** Preset swatches; each maps to a `--hl-<name>` token in styles.css. */
-export const HIGHLIGHT_PRESETS = [
-  'blue',
-  'purple',
-  'pink',
-  'red',
-  'amber',
-  'green',
-  'teal',
-  'gray',
-] as const
-
-export type HighlightPreset = (typeof HIGHLIGHT_PRESETS)[number]
+export { HIGHLIGHT_PRESETS, highlightCss, isPreset } from './colors'
+export type { HighlightPreset } from './colors'
 
 const highlightSchema = z.object({
   id: z.string(),
@@ -24,38 +16,39 @@ const highlightSchema = z.object({
   color: z.string(),
   enabled: z.boolean(),
   createdAt: z.number(),
+  profileId: z.string(),
 })
 
 export type Highlight = z.infer<typeof highlightSchema>
 
-// Global across files, synced across browser tabs like the files.
+// Per profile, synced across browser tabs like the files.
 export const highlightsCollection = localCollection(
   'highlights',
   highlightSchema,
+  (key) => backfill(key, { profileId: DEFAULT_PROFILE_ID }),
 )
 
-export function isPreset(color: string): color is HighlightPreset {
-  return (HIGHLIGHT_PRESETS as ReadonlyArray<string>).includes(color)
-}
-
-/** CSS colour for a stored highlight colour. */
-export function highlightCss(color: string) {
-  return isPreset(color) ? `var(--hl-${color})` : color
+/** A profile's rules; the active file's profile by default. */
+export function profileHighlights(profileId = activeProfileId()) {
+  return [...highlightsCollection.values()].filter(
+    (r) => r.profileId === profileId,
+  )
 }
 
 /** Next preset not yet used, so new rules get distinct colours. */
-export function nextPreset(): HighlightPreset {
-  const used = new Set([...highlightsCollection.values()].map((r) => r.color))
-  return HIGHLIGHT_PRESETS.find((p) => !used.has(p)) ?? HIGHLIGHT_PRESETS[0]
+export function nextPreset(profileId = activeProfileId()): HighlightPreset {
+  return unusedPreset(profileHighlights(profileId).map((r) => r.color))
 }
 
-export function findHighlight(tag: string) {
-  return [...highlightsCollection.values()].find((r) => r.tag === tag)
+export function findHighlight(tag: string, profileId = activeProfileId()) {
+  return profileHighlights(profileId).find((r) => r.tag === tag)
 }
 
-/** Adds or recolours the rule for `tag`. */
-export function setHighlight(tag: string, color: string = nextPreset()) {
-  const existing = findHighlight(tag)
+/** Adds or recolours the rule for `tag` in the active profile. */
+export function setHighlight(tag: string, color?: string) {
+  const profileId = activeProfileId()
+  color ??= nextPreset(profileId)
+  const existing = findHighlight(tag, profileId)
   if (existing) {
     highlightsCollection.update(existing.id, (draft) => {
       draft.color = color
@@ -69,6 +62,7 @@ export function setHighlight(tag: string, color: string = nextPreset()) {
     color,
     enabled: true,
     createdAt: Date.now(),
+    profileId,
   })
 }
 

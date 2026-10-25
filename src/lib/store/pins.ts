@@ -1,24 +1,31 @@
 import { z } from 'zod'
 
-import { localCollection, newId } from './persist'
+import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
+import { activeProfileId } from './profiles'
 
 const pinSchema = z.object({
   id: z.string(),
   /** Exact tag or key name, prefix included (`soap:Body`). */
   tag: z.string(),
   createdAt: z.number(),
+  profileId: z.string(),
 })
 
-// Global across files, synced across browser tabs like the highlights.
-export const pinsCollection = localCollection('pins', pinSchema)
+// Per profile, synced across browser tabs like the highlights.
+export const pinsCollection = localCollection('pins', pinSchema, (key) =>
+  backfill(key, { profileId: DEFAULT_PROFILE_ID }),
+)
 
-export function findPin(tag: string) {
-  return [...pinsCollection.values()].find((p) => p.tag === tag)
+export function findPin(tag: string, profileId = activeProfileId()) {
+  return [...pinsCollection.values()].find(
+    (p) => p.tag === tag && p.profileId === profileId,
+  )
 }
 
 export function pinTag(tag: string) {
-  if (findPin(tag)) return
-  pinsCollection.insert({ id: newId(), tag, createdAt: Date.now() })
+  const profileId = activeProfileId()
+  if (findPin(tag, profileId)) return
+  pinsCollection.insert({ id: newId(), tag, createdAt: Date.now(), profileId })
 }
 
 export function unpinTag(tag: string) {

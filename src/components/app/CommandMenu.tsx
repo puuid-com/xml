@@ -1,7 +1,9 @@
 import {
+  IconArchive,
   IconBraces,
   IconCheck,
   IconClipboard,
+  IconCopy,
   IconDownload,
   IconFileCode,
   IconFilePlus,
@@ -10,14 +12,24 @@ import {
   IconJson,
   IconLanguage,
   IconPencil,
+  IconPlus,
   IconReplace,
   IconSearch,
+  IconTrash,
+  IconUserCircle,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { useLayoutEffect, useRef, useState } from 'react'
 
 import { newFile, newJsonFile } from './files'
-import { askRename, setPaletteOpen, uiStore } from './ui-store'
+import {
+  askDeleteProfile,
+  askRename,
+  setArchiveOpen,
+  setPaletteOpen,
+  setProfileDialog,
+  uiStore,
+} from './ui-store'
 import {
   applyDefaultsActive,
   copyActive,
@@ -25,6 +37,11 @@ import {
   highlightAtCursor,
 } from '#/components/editor/actions'
 import { localeNames } from '#/components/LocaleSwitcher'
+import {
+  switchProfile,
+  switchToNextProfile,
+} from '#/components/profiles/actions'
+import { ProfileTag } from '#/components/profiles/ProfileTag'
 import { Button } from '#/components/ui/button'
 import {
   Command,
@@ -46,9 +63,10 @@ import {
 import { Kbd } from '#/components/ui/kbd'
 import { useOpenFiles } from '#/hooks/use-files'
 import { useHighlights } from '#/hooks/use-highlights'
+import { useActiveProfile, useProfiles } from '#/hooks/use-profiles'
 import { useTagCounts } from '#/hooks/use-tag-counts'
 import { languageOf } from '#/lib/document'
-import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
+import { profileShortcuts, shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import { setHighlight } from '#/lib/store/highlights'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
@@ -101,7 +119,7 @@ export function LogoButton() {
     <Button
       variant="ghost"
       size="icon-sm"
-      className="mx-1"
+      className="mx-1 max-md:size-11"
       aria-label={m.palette_open()}
       onClick={() => setPaletteOpen(true)}
     >
@@ -120,7 +138,7 @@ export function CommandMenuButton() {
       size="xs"
       aria-label={m.palette_open()}
       title={m.palette_open()}
-      className="gap-1.5 px-1.5 text-[11px] font-normal text-muted-foreground hover:text-foreground"
+      className="gap-1.5 px-1.5 text-[11px] font-normal text-muted-foreground hover:text-foreground max-md:h-11 max-md:min-w-11"
       onClick={() => setPaletteOpen(true)}
     >
       <IconSearch className="size-3.5" />
@@ -140,6 +158,8 @@ function FileCommands({
   onOpenFromDisk: () => void
 }) {
   const files = useOpenFiles()
+  const profiles = useProfiles()
+  const activeProfile = useActiveProfile()
   const counts = useTagCounts()
   const highlighted = new Set(useHighlights().map((r) => r.tag))
   const [search, setSearch] = useState('')
@@ -206,8 +226,92 @@ function FileCommands({
             </CommandGroup>
           </>
         )}
+        {activeId && activeProfile && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading={m.profiles_title()}>
+              {profiles.map((profile, index) => (
+                <CommandItem
+                  key={profile.id}
+                  value={`profile ${profile.name} ${profile.id}`}
+                  onSelect={() => run(() => void switchProfile(profile.id))}
+                >
+                  <IconUserCircle />
+                  <ProfileTag profile={profile} className="max-w-60" />
+                  {profile.id === activeProfile.id && (
+                    <IconCheck className="size-3 text-muted-foreground" />
+                  )}
+                  {profileShortcuts[index] && (
+                    <CommandShortcut>
+                      {shortcutLabel(profileShortcuts[index])}
+                    </CommandShortcut>
+                  )}
+                </CommandItem>
+              ))}
+              {profiles.length > 1 && (
+                <CommandItem onSelect={() => run(switchToNextProfile)}>
+                  <IconUserCircle />
+                  {m.profile_next()}
+                  <CommandShortcut>
+                    {shortcutLabel(shortcuts.nextProfile)}
+                  </CommandShortcut>
+                </CommandItem>
+              )}
+              <CommandItem
+                onSelect={() => run(() => setProfileDialog({ mode: 'create' }))}
+              >
+                <IconPlus />
+                {m.profile_new()}
+              </CommandItem>
+              <CommandItem
+                onSelect={() =>
+                  run(() =>
+                    setProfileDialog({
+                      mode: 'clone',
+                      profileId: activeProfile.id,
+                    }),
+                  )
+                }
+              >
+                <IconCopy />
+                <span className="truncate">
+                  {m.profile_clone({ name: activeProfile.name })}
+                </span>
+              </CommandItem>
+              <CommandItem
+                onSelect={() =>
+                  run(() =>
+                    setProfileDialog({
+                      mode: 'edit',
+                      profileId: activeProfile.id,
+                    }),
+                  )
+                }
+              >
+                <IconPencil />
+                <span className="truncate">
+                  {m.profile_edit({ name: activeProfile.name })}
+                </span>
+              </CommandItem>
+              {profiles.length > 1 && (
+                <CommandItem
+                  onSelect={() => run(() => askDeleteProfile(activeProfile.id))}
+                >
+                  <IconTrash />
+                  <span className="truncate">
+                    {m.profile_delete({ name: activeProfile.name })}
+                  </span>
+                </CommandItem>
+              )}
+            </CommandGroup>
+          </>
+        )}
         <CommandSeparator />
         <CommandGroup heading={m.palette_actions()}>
+          <CommandItem onSelect={() => run(() => setArchiveOpen(true))}>
+            <IconArchive />
+            {m.archive_title()}
+          </CommandItem>
           <CommandItem onSelect={() => run(newFile)}>
             <IconFilePlus />
             {m.file_new()}

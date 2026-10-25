@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
-import { localCollection, newId } from './persist'
+import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
+import { activeProfileId } from './profiles'
 
 const defaultValueSchema = z.object({
   id: z.string(),
@@ -9,27 +10,37 @@ const defaultValueSchema = z.object({
   value: z.string(),
   enabled: z.boolean(),
   createdAt: z.number(),
+  profileId: z.string(),
 })
 
 export type DefaultValue = z.infer<typeof defaultValueSchema>
 
-// Global across files, synced across browser tabs like the highlights.
+// Per profile, synced across browser tabs like the highlights.
 export const defaultsCollection = localCollection(
   'defaults',
   defaultValueSchema,
+  (storageKey) => backfill(storageKey, { profileId: DEFAULT_PROFILE_ID }),
 )
 
-export function findDefault(key: string) {
-  return [...defaultsCollection.values()].find((r) => r.key === key)
+/** A profile's rules; the active file's profile by default. */
+export function profileDefaults(profileId = activeProfileId()) {
+  return [...defaultsCollection.values()].filter(
+    (r) => r.profileId === profileId,
+  )
 }
 
-export function enabledDefaults() {
-  return [...defaultsCollection.values()].filter((r) => r.enabled)
+export function findDefault(key: string, profileId = activeProfileId()) {
+  return profileDefaults(profileId).find((r) => r.key === key)
 }
 
-/** Adds the rule for `key`, or updates its value. */
+export function enabledDefaults(profileId = activeProfileId()) {
+  return profileDefaults(profileId).filter((r) => r.enabled)
+}
+
+/** Adds the rule for `key` to the active profile, or updates its value. */
 export function setDefault(key: string, value: string) {
-  const existing = findDefault(key)
+  const profileId = activeProfileId()
+  const existing = findDefault(key, profileId)
   if (existing) {
     defaultsCollection.update(existing.id, (draft) => {
       draft.value = value
@@ -43,6 +54,7 @@ export function setDefault(key: string, value: string) {
     value,
     enabled: true,
     createdAt: Date.now(),
+    profileId,
   })
 }
 

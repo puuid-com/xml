@@ -80,7 +80,7 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
           size="sm"
           onClick={() => cycleTag(rule.tag)}
           title={m.highlight_chip_hint()}
-          className="h-6 min-w-0 shrink-0 gap-1.5 px-1.5 font-mono text-[11px] font-normal"
+          className="h-11 min-w-11 shrink-0 gap-1.5 px-1.5 font-mono text-[11px] font-normal md:h-6 md:min-w-0"
         >
           <span
             style={hlStyle(highlightCss(rule.color))}
@@ -146,7 +146,7 @@ function AddRulePopover({
         <Button
           variant="ghost"
           size="icon-xs"
-          className="shrink-0"
+          className="shrink-0 max-md:size-11"
           aria-label={m.highlight_add_tag()}
           title={m.highlight_add_tag()}
         >

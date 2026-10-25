@@ -1,6 +1,7 @@
 import { toast } from 'sonner'
 
 import { createFile } from '#/lib/store/files'
+import { activeProfileId } from '#/lib/store/profiles'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 
@@ -17,13 +18,23 @@ export function neighbour<T>(list: ReadonlyArray<T>, index: number) {
   return list.at(index + 1) ?? (index > 0 ? list.at(index - 1) : undefined)
 }
 
+// New files take the profile of the file in the editor.
+
 export function newFile() {
-  const file = createFile(m.file_untitled(), NEW_FILE_CONTENT)
+  const file = createFile(
+    m.file_untitled(),
+    NEW_FILE_CONTENT,
+    activeProfileId(),
+  )
   setActive(file.id)
 }
 
 export function newJsonFile() {
-  const file = createFile(m.file_untitled_json(), NEW_JSON_CONTENT)
+  const file = createFile(
+    m.file_untitled_json(),
+    NEW_JSON_CONTENT,
+    activeProfileId(),
+  )
   setActive(file.id)
 }
 
@@ -31,11 +42,12 @@ export function newJsonFile() {
 export async function importFiles(list: FileList | Array<File>) {
   const files = Array.from(list)
   const contents = await Promise.allSettled(files.map((file) => file.text()))
+  const profileId = activeProfileId()
   let last: string | null = null
   for (const [i, result] of contents.entries()) {
     const { name } = files[i]
     if (result.status === 'fulfilled') {
-      last = createFile(name, result.value).id
+      last = createFile(name, result.value, profileId).id
       continue
     }
     toast.error(m.file_import_failed({ name }), {

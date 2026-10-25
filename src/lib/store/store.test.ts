@@ -1,10 +1,14 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   closeFile,
+  archivedFiles,
+  ARCHIVE_LIMIT,
   createFile,
   filesCollection,
   reorderFile,
+  restoreFile,
+  saveContent,
   uniqueName,
 } from './files'
 import {
@@ -25,6 +29,7 @@ import { findPin, pinTag, pinsCollection, togglePin, unpinTag } from './pins'
 
 function openOrder() {
   return [...filesCollection.values()]
+    .filter((file) => file.deletedAt === null)
     .sort((a, b) => a.order - b.order)
     .map((f) => f.name)
 }
@@ -43,13 +48,80 @@ describe('files', () => {
     expect(openOrder()).toEqual(['untitled.xml', 'untitled-2.xml'])
   })
 
-  it('deletes the file when its tab closes', () => {
+  it('archives the file when its tab closes, including its contents', async () => {
     const a = createFile('a.xml', '<a/>')
     createFile('b.xml')
-    closeFile(a.id)
+    await closeFile(a.id)
     expect(openOrder()).toEqual(['b.xml'])
-    expect(filesCollection.has(a.id)).toBe(false)
-    expect(localStorage.getItem('xml-editor:files')).not.toContain('a.xml')
+    expect(archivedFiles()).toEqual([
+      expect.objectContaining({ id: a.id, name: 'a.xml', content: '<a/>' }),
+    ])
+    expect(localStorage.getItem('xml-editor:files')).toContain('a.xml')
+  })
+
+  it('retains only the last ten deleted files, even with equal clock times', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
+    try {
+      for (let i = 0; i < 12; i++) {
+        const file = createFile(`file-${i}.xml`, `<root>${i}</root>`)
+        await closeFile(file.id)
+      }
+      expect(archivedFiles()).toHaveLength(ARCHIVE_LIMIT)
+      expect(archivedFiles().map((file) => file.name)).toEqual(
+        Array.from({ length: 10 }, (_, i) => `file-${11 - i}.xml`),
+      )
+      expect(filesCollection.size).toBe(10)
+      expect(localStorage.getItem('xml-editor:files')).not.toContain(
+        'file-0.xml',
+      )
+    } finally {
+      now.mockRestore()
+    }
+  })
+
+  it('restores at the end, preserves contents, and resolves open-name collisions', async () => {
+    const original = createFile('a.json', '{"value":42}')
+    await closeFile(original.id)
+    createFile('a.json', '{}')
+    createFile('b.xml', '<b/>')
+    expect(await restoreFile(original.id)).toBe(original.id)
+    expect(openOrder()).toEqual(['a.json', 'b.xml', 'a-2.json'])
+    expect(filesCollection.get(original.id)?.content).toBe('{"value":42}')
+    expect(archivedFiles()).toHaveLength(0)
+    expect(await restoreFile(original.id)).toBeUndefined()
+    await closeFile(original.id)
+    expect(archivedFiles()[0].name).toBe('a-2.json')
+  })
+
+  it('keeps the latest edit when closing before the debounced save completes', async () => {
+    const file = createFile('typing.xml', '<old/>')
+    const pending = saveContent({ id: file.id, content: '<latest/>' })
+    await closeFile(file.id)
+    await pending.isPersisted.promise
+    expect(openOrder()).toEqual([])
+    expect(archivedFiles()[0].content).toBe('<latest/>')
+    expect(localStorage.getItem('xml-editor:files')).toContain('<latest/>')
+  })
+
+  it('rolls back archival and eviction if storage is full', async () => {
+    for (let i = 0; i < 10; i++) {
+      const file = createFile(`archived-${i}.xml`)
+      await closeFile(file.id)
+    }
+    const file = createFile('keep-open.xml', '<keep/>')
+    const before = archivedFiles().map((entry) => entry.id)
+    const write = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Full', 'QuotaExceededError')
+      })
+    try {
+      await expect(closeFile(file.id)).rejects.toThrow()
+      expect(openOrder()).toEqual(['keep-open.xml'])
+      expect(archivedFiles().map((entry) => entry.id)).toEqual(before)
+    } finally {
+      write.mockRestore()
+    }
   })
 
   it('reorders tabs', () => {

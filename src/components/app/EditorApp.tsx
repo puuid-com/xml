@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
 
 import { AppHeader } from './AppHeader'
+import { ArchiveDialog } from './ArchiveDialog'
 import { CommandMenu } from './CommandMenu'
 import { CloseDialog, DefaultsConfirmDialog, RenameDialog } from './Dialogs'
 import { ACCEPTED_TYPES, importFiles, newFile, newJsonFile } from './files'
@@ -16,8 +17,13 @@ import { SidePanel } from './SidePanel'
 import { StatusBar } from './StatusBar'
 import { TabStrip } from './TabStrip'
 import { useAppShortcuts } from './use-app-shortcuts'
+import { setMobileView, uiStore } from './ui-store'
 import { CodeEditor } from '#/components/editor/CodeEditor'
 import { QuickHighlight } from '#/components/highlights/QuickHighlight'
+import {
+  DeleteProfileDialog,
+  ProfileDialog,
+} from '#/components/profiles/ProfileDialogs'
 import { Button } from '#/components/ui/button'
 import {
   Empty,
@@ -33,17 +39,17 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '#/components/ui/resizable'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useOpenFiles } from '#/hooks/use-files'
 import { useMediaQuery } from '#/hooks/use-media-query'
 import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
-import { sessionStore, setActive } from '#/lib/store/session'
+import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
 
 export function EditorApp() {
   const files = useOpenFiles()
   const storedActive = useSelector(sessionStore, (s) => s.activeId)
-  const panelOpen = useSelector(sessionStore, (s) => s.panelOpen)
   const wide = useMediaQuery('(min-width: 768px)')
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
@@ -59,11 +65,16 @@ export function EditorApp() {
 
   const openFromDisk = () => inputRef.current?.click()
 
-  useAppShortcuts({ activeId, onOpenFromDisk: openFromDisk })
-
-  const layout = useDefaultLayout({
-    id: `xml-main-${wide ? 'h' : 'v'}`,
-    panelIds: panelOpen ? ['editor', 'side'] : ['editor'],
+  useAppShortcuts({
+    activeId,
+    onOpenFromDisk: openFromDisk,
+    onTogglePanel: () => {
+      if (wide) setPanelOpen(!sessionStore.state.panelOpen)
+      else
+        setMobileView(
+          uiStore.state.mobileView === 'editor' ? 'structure' : 'editor',
+        )
+    },
   })
 
   const hasFiles = (e: React.DragEvent) =>
@@ -108,28 +119,11 @@ export function EditorApp() {
       </AppHeader>
       <main id="main" className="min-h-0 flex-1">
         {activeId ? (
-          <ResizablePanelGroup
-            orientation={wide ? 'horizontal' : 'vertical'}
-            defaultLayout={layout.defaultLayout}
-            onLayoutChanged={layout.onLayoutChanged}
-          >
-            <ResizablePanel id="editor" minSize="25">
-              <CodeEditor fileId={activeId} />
-            </ResizablePanel>
-            {panelOpen && (
-              <>
-                <ResizableHandle />
-                <ResizablePanel
-                  id="side"
-                  defaultSize="36"
-                  minSize="20"
-                  className="bg-muted/20"
-                >
-                  <SidePanel />
-                </ResizablePanel>
-              </>
-            )}
-          </ResizablePanelGroup>
+          wide ? (
+            <DesktopWorkspace fileId={activeId} />
+          ) : (
+            <MobileWorkspace fileId={activeId} />
+          )
         ) : (
           <Welcome onOpenFromDisk={openFromDisk} />
         )}
@@ -137,9 +131,12 @@ export function EditorApp() {
       <StatusBar />
 
       <RenameDialog />
+      <ArchiveDialog />
       <CommandMenu activeId={activeId} onOpenFromDisk={openFromDisk} />
       <CloseDialog openIds={files.map((f) => f.id)} />
       <DefaultsConfirmDialog />
+      <ProfileDialog />
+      <DeleteProfileDialog />
       <QuickHighlight />
 
       <div
@@ -155,6 +152,85 @@ export function EditorApp() {
         </div>
       </div>
     </div>
+  )
+}
+
+function DesktopWorkspace({ fileId }: { fileId: string }) {
+  const panelOpen = useSelector(sessionStore, (s) => s.panelOpen)
+  const layout = useDefaultLayout({
+    id: 'xml-main-h',
+    panelIds: panelOpen ? ['editor', 'side'] : ['editor'],
+  })
+
+  return (
+    <ResizablePanelGroup
+      orientation="horizontal"
+      defaultLayout={layout.defaultLayout}
+      onLayoutChanged={layout.onLayoutChanged}
+    >
+      <ResizablePanel id="editor" minSize="25">
+        <CodeEditor fileId={fileId} />
+      </ResizablePanel>
+      {panelOpen && (
+        <>
+          <ResizableHandle />
+          <ResizablePanel
+            id="side"
+            defaultSize="36"
+            minSize="20"
+            className="bg-muted/20"
+          >
+            <SidePanel />
+          </ResizablePanel>
+        </>
+      )}
+    </ResizablePanelGroup>
+  )
+}
+
+export function MobileWorkspace({ fileId }: { fileId: string }) {
+  const view = useSelector(uiStore, (s) => s.mobileView)
+  useEffect(() => setMobileView('editor'), [fileId])
+
+  return (
+    <Tabs
+      value={view}
+      onValueChange={(value) =>
+        setMobileView(value === 'structure' ? 'structure' : 'editor')
+      }
+      className="h-full min-h-0 gap-0"
+    >
+      <TabsList
+        variant="line"
+        aria-label={m.workspace_views()}
+        className="h-11! w-full shrink-0 border-b p-0"
+      >
+        <TabsTrigger value="editor" className="h-full! text-sm after:bottom-0!">
+          {m.nav_editor()}
+        </TabsTrigger>
+        <TabsTrigger
+          value="structure"
+          className="h-full! text-sm after:bottom-0!"
+        >
+          {m.panel_structure()}
+        </TabsTrigger>
+      </TabsList>
+      {/* Keep CodeMirror alive so tree edits, selection and undo still work. */}
+      <TabsContent
+        value="editor"
+        forceMount
+        className="min-h-0 overflow-hidden data-[state=inactive]:hidden"
+      >
+        <CodeEditor fileId={fileId} />
+      </TabsContent>
+      <TabsContent
+        value="structure"
+        forceMount
+        className="min-h-0 overflow-hidden bg-muted/20 data-[state=inactive]:hidden"
+      >
+        <SidePanel />
+      </TabsContent>
+    </Tabs>
   )
 }
 

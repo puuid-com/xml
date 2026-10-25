@@ -25,7 +25,23 @@ export const shortcuts = {
   newFile: { hotkey: 'Mod+Alt+N', keys: [alt, mod, 'N'] },
   rename: { hotkey: 'F2', keys: ['F2'] },
   togglePanel: { hotkey: 'Mod+B', keys: [mod, 'B'] },
+  nextProfile: { hotkey: 'Mod+Alt+P', keys: [alt, mod, 'P'] },
 } satisfies Record<string, Shortcut>
+
+/** ⌥⌘1 to ⌥⌘9 switch the current file to the profile in that position. */
+export const profileShortcuts = (
+  [
+    'Mod+Alt+1',
+    'Mod+Alt+2',
+    'Mod+Alt+3',
+    'Mod+Alt+4',
+    'Mod+Alt+5',
+    'Mod+Alt+6',
+    'Mod+Alt+7',
+    'Mod+Alt+8',
+    'Mod+Alt+9',
+  ] satisfies Array<Hotkey>
+).map((hotkey, i) => ({ hotkey, keys: [alt, mod, String(i + 1)] }))
 
 /** The keys run together, as in `⇧⌥F`. */
 export function shortcutLabel(shortcut: Shortcut) {

@@ -1,11 +1,17 @@
-import { useLiveQuery } from '@tanstack/react-db'
+import { eq, useLiveQuery } from '@tanstack/react-db'
 
+import { useActiveProfileId } from './use-profiles'
 import { pinsCollection } from '#/lib/store/pins'
 
-/** All pinned tags, oldest first. */
+/** Pinned tags of the active profile, oldest first. */
 export function usePins() {
-  const { data } = useLiveQuery((q) =>
-    q.from({ pin: pinsCollection }).orderBy(({ pin }) => pin.createdAt, 'asc'),
-  )
+  const profileId = useActiveProfileId()
+  const { data } = useLiveQuery({
+    query: (q) =>
+      q
+        .from({ pin: pinsCollection })
+        .where(({ pin }) => eq(pin.profileId, profileId))
+        .orderBy(({ pin }) => pin.createdAt, 'asc'),
+  })
   return data
 }
