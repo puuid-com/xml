@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useDraft } from './use-draft'
+import { useScrollSync } from './use-scroll-sync'
 import { VarText } from './VarText'
 import {
   editAtPath,
@@ -93,6 +94,7 @@ export function XmlTree() {
     estimateSize: () => ROW_HEIGHT,
     overscan: 16,
   })
+  useScrollSync(scrollRef, rows, ROW_HEIGHT, fileId)
 
   // Follow the editor cursor: expand collapsed ancestors and scroll to it.
   useEffect(() => {
