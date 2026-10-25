@@ -11,12 +11,11 @@ import {
   IconPencil,
   IconReplace,
   IconSearch,
-  IconSparkles,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { useLayoutEffect, useRef, useState } from 'react'
 
-import { loadJsonSample, loadSample, newFile, newJsonFile } from './files'
+import { newFile, newJsonFile } from './files'
 import { askRename, setPaletteOpen, uiStore } from './ui-store'
 import {
   applyDefaultsActive,
@@ -214,14 +213,6 @@ function FileCommands({
             <IconFolderOpen />
             {m.file_open_disk()}
             <CommandShortcut>{mod}O</CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => run(loadSample)}>
-            <IconSparkles />
-            {m.file_sample()}
-          </CommandItem>
-          <CommandItem onSelect={() => run(loadJsonSample)}>
-            <IconSparkles />
-            {m.file_sample_json()}
           </CommandItem>
           <CommandItem onSelect={() => run(() => void highlightAtCursor())}>
             <IconHighlight />

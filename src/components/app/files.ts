@@ -7,69 +7,7 @@ import { m } from '#/paraglide/messages'
 export const NEW_FILE_CONTENT =
   '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n  \n</root>\n'
 
-export const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?>
-<!-- <<variables>> are highlighted and kept as written -->
-<order xmlns="https://example.com/orders" id="<<orderId>>" env="<<env>>">
-  <customer type="business">
-    <name>Acme Corporation</name>
-    <email><<customerEmail>></email>
-    <address country="CA">
-      <street>123 Rue Principale</street>
-      <city>Montréal</city>
-      <postal>H2X 1Y4</postal>
-    </address>
-  </customer>
-  <items currency="CAD">
-    <item sku="KB-001" qty="2">
-      <title>Mechanical keyboard</title>
-      <price>149.99</price>
-    </item>
-    <item sku="MS-204" qty="1">
-      <title>Wireless mouse &amp; pad</title>
-      <price>59.00</price>
-    </item>
-  </items>
-  <notes><![CDATA[Leave at the <front> door]]></notes>
-  <endpoint><<baseUrl>>/orders/<<orderId>></endpoint>
-</order>
-`
-
 export const NEW_JSON_CONTENT = '{\n  \n}\n'
-
-export const SAMPLE_JSON = `{
-  "id": "<<orderId>>",
-  "env": "<<env>>",
-  "customer": {
-    "type": "business",
-    "name": "Acme Corporation",
-    "email": "<<customerEmail>>",
-    "address": {
-      "country": "CA",
-      "street": "123 Rue Principale",
-      "city": "Montréal",
-      "postal": "H2X 1Y4"
-    }
-  },
-  "items": [
-    {
-      "sku": "KB-001",
-      "qty": 2,
-      "title": "Mechanical keyboard",
-      "price": 149.99
-    },
-    {
-      "sku": "MS-204",
-      "qty": <<mouseQty>>,
-      "title": "Wireless mouse \\u0026 pad",
-      "price": 59.0
-    }
-  ],
-  "currency": "CAD",
-  "gift": false,
-  "notes": null,
-  "endpoint": "<<baseUrl>>/orders/<<orderId>>"
-}
-`
 
 export const ACCEPTED_TYPES =
   '.xml,.xsd,.xsl,.xslt,.wsdl,.svg,.plist,.config,.csproj,.xaml,.rss,.atom,.kml,.gpx,text/xml,application/xml,.json,.geojson,.jsonld,.webmanifest,.har,application/json'
@@ -86,16 +24,6 @@ export function newFile() {
 
 export function newJsonFile() {
   const file = createFile(m.file_untitled_json(), NEW_JSON_CONTENT)
-  setActive(file.id)
-}
-
-export function loadSample() {
-  const file = createFile('sample.xml', SAMPLE_XML)
-  setActive(file.id)
-}
-
-export function loadJsonSample() {
-  const file = createFile('sample.json', SAMPLE_JSON)
   setActive(file.id)
 }
 
