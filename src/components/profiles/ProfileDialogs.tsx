@@ -1,10 +1,10 @@
 import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { switchProfile } from './actions'
 import { ProfileTag } from './ProfileTag'
+import { notify } from '#/components/app/notice-store'
 import {
   askDeleteProfile,
   setProfileDialog,
@@ -227,7 +227,7 @@ export function DeleteProfileDialog() {
       await deleteProfile(profile.id)
       askDeleteProfile(null)
     } catch {
-      toast.error(m.profile_delete_failed())
+      notify.error(m.profile_delete_failed())
     } finally {
       setDeleting(false)
     }

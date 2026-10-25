@@ -10,8 +10,8 @@ import { useSelector } from '@tanstack/react-store'
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual'
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { toast } from 'sonner'
 
+import { notify } from '#/components/app/notice-store'
 import { treeKeyAction } from './tree-keys'
 import { searchTree } from './tree-search'
 import { StructureBreadcrumb } from './StructureBreadcrumb'
@@ -556,7 +556,7 @@ function TreeRowMenu({
       <ContextMenuItem
         onSelect={() => {
           void navigator.clipboard.writeText(displayPath(el.path).join('/'))
-          toast.success(m.copied())
+          notify.success(m.copied())
         }}
       >
         {m.node_copy_path()}

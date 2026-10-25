@@ -1,5 +1,4 @@
-import { toast } from 'sonner'
-
+import { notify } from './notice-store'
 import { createFile } from '#/lib/store/files'
 import { activeProfileId } from '#/lib/store/profiles'
 import { setActive } from '#/lib/store/session'
@@ -50,9 +49,8 @@ export async function importFiles(list: FileList | Array<File>) {
       last = createFile(name, result.value, profileId).id
       continue
     }
-    toast.error(m.file_import_failed({ name }), {
-      duration: 4000,
-      description:
+    notify.error(m.file_import_failed({ name }), {
+      detail:
         result.reason instanceof Error ? result.reason.message : undefined,
     })
   }

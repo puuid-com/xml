@@ -36,6 +36,8 @@
   "action_toggle_panel": "Afficher ou masquer le panneau",
   "format_failed": "Corrigez les erreurs avant de formater",
   "copied": "Copié dans le presse-papiers",
+  "notice_go_to": "Aller à",
+  "notice_dismiss": "Fermer",
   "saved_locally": "Enregistré dans ce navigateur",
   "updated_elsewhere": "{name} a été modifié dans un autre onglet",
   "var_tooltip": "Variable : {name}",

@@ -36,6 +36,8 @@
   "action_toggle_panel": "Toggle side panel",
   "format_failed": "Fix the errors before formatting",
   "copied": "Copied to clipboard",
+  "notice_go_to": "Go to",
+  "notice_dismiss": "Dismiss",
   "saved_locally": "Saved in this browser",
   "updated_elsewhere": "{name} was updated in another tab",
   "var_tooltip": "Variable: {name}",

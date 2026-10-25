@@ -1,9 +1,9 @@
 import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { neighbour } from './files'
+import { notify } from './notice-store'
 import { askClose, askRename, setDefaultsPreview, uiStore } from './ui-store'
 import { commitDefaultsActive } from '#/components/editor/actions'
 import { dropEditorState } from '#/components/editor/CodeEditor'
@@ -139,7 +139,7 @@ export function CloseDialog({ openIds }: { openIds: Array<string> }) {
       askClose(null)
     } catch {
       if (wasActive) setActive(file.id)
-      toast.error(m.archive_delete_failed())
+      notify.error(m.archive_delete_failed())
     } finally {
       setClosing(false)
     }

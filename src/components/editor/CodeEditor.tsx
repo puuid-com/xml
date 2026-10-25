@@ -2,8 +2,8 @@ import { forceLinting } from '@codemirror/lint'
 import { Annotation, EditorState, Transaction } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
-import { toast } from 'sonner'
 
+import { notify } from '#/components/app/notice-store'
 import {
   applyDefaultsActive,
   formatActive,
@@ -166,7 +166,7 @@ export function CodeEditor({ fileId }: { fileId: string }) {
         const spec = remoteChange(diff)
         if (active) {
           view.dispatch(spec)
-          toast(m.updated_elsewhere({ name: file.name }), { id: 'remote' })
+          notify.info(m.updated_elsewhere({ name: file.name }))
         } else {
           states.set(file.id, state.update(spec).state)
         }

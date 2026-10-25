@@ -1,8 +1,8 @@
 import { IconArchive, IconFileCode, IconRestore } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
+import { notify } from './notice-store'
 import { ToolbarButton } from './ToolbarButton'
 import { setArchiveOpen, setMobileView, uiStore } from './ui-store'
 import { Button } from '#/components/ui/button'
@@ -45,10 +45,10 @@ export function ArchiveDialog() {
         setActive(restored)
         setMobileView('editor')
         setArchiveOpen(false)
-        toast.success(m.archive_restored())
+        notify.success(m.archive_restored())
       }
     } catch {
-      toast.error(m.archive_restore_failed())
+      notify.error(m.archive_restore_failed())
     } finally {
       setRestoring(null)
     }

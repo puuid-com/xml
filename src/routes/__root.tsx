@@ -10,7 +10,6 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
-import { Toaster } from '#/components/ui/sonner'
 import { TooltipProvider } from '#/components/ui/tooltip'
 import { seo } from '#/lib/seo'
 import { themeScript } from '#/lib/theme'
@@ -94,7 +93,6 @@ function RootLayout() {
         {m.skip_to_content()}
       </a>
       <Outlet />
-      <Toaster position="bottom-right" duration={1500} />
     </TooltipProvider>
   )
 }

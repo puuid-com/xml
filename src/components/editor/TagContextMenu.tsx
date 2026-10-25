@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import { leafAt } from './actions'
 import { getView } from './editor-store'
 import { tagAt } from './syntax'
+import { notify } from '#/components/app/notice-store'
 import {
   HighlightMenuItems,
   PinMenuItem,
@@ -63,7 +63,7 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
             <ContextMenuItem
               onSelect={() => {
                 setDefault(leaf.name, leaf.value)
-                toast.success(m.defaults_saved({ name: leaf.name }))
+                notify.success(m.defaults_saved({ name: leaf.name }))
               }}
             >
               {m.defaults_save_current()}

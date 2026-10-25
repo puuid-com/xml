@@ -1,5 +1,3 @@
-import { toast } from 'sonner'
-
 import {
   activeLanguage,
   editorStore,
@@ -7,8 +5,10 @@ import {
   getView,
   parseActive,
   revealElement,
+  revealRange,
 } from './editor-store'
 import { tagNameNear } from './syntax'
+import { notify } from '#/components/app/notice-store'
 import {
   setDefaultsPreview,
   setQuickHighlight,
@@ -49,9 +49,18 @@ export function formatActive() {
     first,
   })
   if (!result.ok) {
-    toast.error(m.format_failed(), {
-      duration: 4000,
-      description: result.errors[0]?.message,
+    const error = result.errors.at(0)
+    const { fileId } = editorStore.state
+    notify.error(m.format_failed(), {
+      detail: error?.message,
+      action: error && {
+        label: m.notice_go_to(),
+        // The offsets only make sense in the file that failed.
+        run: () => {
+          if (editorStore.state.fileId === fileId)
+            revealRange(error.from, error.to)
+        },
+      },
     })
     return true
   }
@@ -66,13 +75,13 @@ export function applyDefaultsActive() {
   if (!view) return true
   const rules = enabledDefaults()
   if (rules.length === 0) {
-    toast(m.defaults_none(), { id: 'defaults' })
+    notify.info(m.defaults_none())
     return true
   }
   const doc = parseActive()
   const summary = defaultSummary(doc.nodes, rules)
   if (summary.length === 0) {
-    toast(m.defaults_unchanged(), { id: 'defaults' })
+    notify.info(m.defaults_unchanged())
     return true
   }
   setDefaultsPreview(summary)
@@ -86,9 +95,7 @@ export function commitDefaultsActive() {
   const changes = documentDefaults(parseActive(), enabledDefaults())
   if (changes.length === 0) return
   view.dispatch({ changes, userEvent: 'input.defaults' })
-  toast.success(m.defaults_applied({ count: changes.length }), {
-    id: 'defaults',
-  })
+  notify.success(m.defaults_applied({ count: changes.length }))
 }
 
 /** Leaf element at `pos` with its current text, if any. */
@@ -102,7 +109,7 @@ export function leafAt(pos: number) {
 /** Files save as you type; this only formats when that option is on. */
 export function saveActive() {
   if (activeFormat().formatOnSave) formatActive()
-  toast.success(m.saved_locally(), { id: 'saved' })
+  notify.success(m.saved_locally())
   return true
 }
 
@@ -127,7 +134,7 @@ export function downloadFile(id: string) {
 export async function copyActive() {
   if (!getView()) return
   await navigator.clipboard.writeText(getText())
-  toast.success(m.copied())
+  notify.success(m.copied())
 }
 
 /** Tag name or JSON key under the cursor, else the element the cursor is in. */
@@ -146,7 +153,7 @@ export function highlightAtCursor() {
   const tag = tagAtCursor(view)
   const coords = tag && view.coordsAtPos(tag.at)
   if (!tag || !coords) {
-    toast(m.highlight_no_tag(), { id: 'highlight-no-tag' })
+    notify.info(m.highlight_no_tag())
     return true
   }
   setQuickHighlight({ tag: tag.name, x: coords.left, y: coords.bottom })

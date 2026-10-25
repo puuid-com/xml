@@ -1,5 +1,4 @@
-import { toast } from 'sonner'
-
+import { notify } from '#/components/app/notice-store'
 import { setFileProfile } from '#/lib/store/files'
 import {
   activeProfileId,
@@ -16,8 +15,7 @@ export async function switchProfile(profileId: string, announce = false) {
   if (!fileId || !profile) return
   await setFileProfile(fileId, profileId)
   // Keyboard switches have no menu to show the result.
-  if (announce)
-    toast(m.profile_switched({ name: profile.name }), { id: 'profile' })
+  if (announce) notify.info(m.profile_switched({ name: profile.name }))
 }
 
 /** Cycles the active file through the profiles, in order. */
