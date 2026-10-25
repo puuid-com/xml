@@ -11,6 +11,7 @@ import { formatXml } from '#/lib/xml/format'
 import { allElements, elementAt } from '#/lib/xml/locate'
 import { m } from '#/paraglide/messages'
 import type { EditorView } from '@codemirror/view'
+import type { SyntaxNode } from '@lezer/common'
 import type { FormatResult } from '#/lib/xml/format'
 
 function replaceDoc(next: string, userEvent: string) {
@@ -93,6 +94,17 @@ function tagAtCursor(view: EditorView) {
   }
   const el = elementAt(editorStore.state.doc.nodes, pos)
   return el ? { name: el.name, at: pos } : null
+}
+
+/** Name of the tag (`<a …>`, `</a>`, `<a/>`) that contains `pos`, if any. */
+export function tagAt(view: EditorView, pos: number) {
+  let node: SyntaxNode | null = syntaxTree(view.state).resolveInner(pos, 1)
+  for (; node; node = node.parent) {
+    if (!TAG_PARENTS.has(node.name)) continue
+    const name = node.getChild('TagName')
+    return name ? view.state.sliceDoc(name.from, name.to) : null
+  }
+  return null
 }
 
 /** Opens the colour picker for the tag at the cursor. */

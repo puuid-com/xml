@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 
 import { formatActive, highlightAtCursor, saveActive } from './actions'
 import { publishCursor, publishParse, setView } from './editor-store'
+import { TagContextMenu } from './TagContextMenu'
 import {
   editorExtensions,
   fileIdField,
@@ -154,7 +155,11 @@ export function CodeEditor({ fileId }: { fileId: string }) {
     })
   }, [highlights])
 
-  return <div ref={parentRef} className="h-full min-h-0 overflow-hidden" />
+  return (
+    <TagContextMenu>
+      <div ref={parentRef} className="h-full min-h-0 overflow-hidden" />
+    </TagContextMenu>
+  )
 }
 
 /** Forgets a file's editor state, e.g. after deleting it. */
