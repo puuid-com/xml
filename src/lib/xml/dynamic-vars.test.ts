@@ -2,18 +2,11 @@ import { faker } from '@faker-js/faker'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { DYNAMIC_VARS, resolveDynamicVars } from './dynamic-vars'
-import type { TextChange } from './edit'
 
 const now = new Date('2026-06-09T21:10:36.177Z')
 
-function apply(text: string, changes: Array<TextChange>) {
-  return [...changes]
-    .sort((a, b) => b.from - a.from)
-    .reduce((acc, c) => acc.slice(0, c.from) + c.insert + acc.slice(c.to), text)
-}
-
-function resolve(text: string, range?: { from: number; to: number }) {
-  return apply(text, resolveDynamicVars(text, { faker, now }, range))
+function resolve(text: string) {
+  return resolveDynamicVars(text, { faker, now }).text
 }
 
 describe('dynamic vars', () => {
@@ -66,11 +59,12 @@ describe('dynamic vars', () => {
     expect(a).not.toBe(b)
   })
 
-  it('only touches variables inside the range', () => {
-    const text = '<<$timestamp>> <<$timestamp>>'
-    expect(resolve(text, { from: 15, to: text.length })).toBe(
-      '<<$timestamp>> 1781039436',
-    )
-    expect(resolve(text, { from: 2, to: text.length - 2 })).toBe(text)
+  it('counts only the variables it replaced', () => {
+    expect(
+      resolveDynamicVars('<<$randomInt>> <<user>> <<$randomInt>>', {
+        faker,
+        now,
+      }).count,
+    ).toBe(2)
   })
 })

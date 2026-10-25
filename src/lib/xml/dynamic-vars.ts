@@ -1,6 +1,5 @@
-import { findVars } from './vars'
+import { varRegExp } from './vars'
 import type { Faker } from '@faker-js/faker'
-import type { TextChange } from './edit'
 
 // Postman's dynamic variables, such as `<<$randomInt>>`: each one stands for
 // a value made up when the document is used. Only the Common and the Text,
@@ -66,24 +65,18 @@ const byName = new Map(DYNAMIC_VARS.map((v) => [v.name, v]))
 
 /**
  * Replaces each supported dynamic variable with a fresh value; every
- * occurrence gets its own. Unknown and plain variables stay as written. With
- * `range`, only variables fully inside it are replaced.
+ * occurrence gets its own. Unknown and plain variables stay as written.
  */
 export function resolveDynamicVars(
   text: string,
   ctx: DynamicVarContext,
-  range?: { from: number; to: number },
-): Array<TextChange> {
-  const changes: Array<TextChange> = []
-  for (const match of findVars(text)) {
-    if (range && (match.from < range.from || match.to > range.to)) continue
-    const known = byName.get(match.name)
-    if (!known) continue
-    changes.push({
-      from: match.from,
-      to: match.to,
-      insert: known.generate(ctx),
-    })
-  }
-  return changes
+): { text: string; count: number } {
+  let count = 0
+  const resolved = text.replace(varRegExp(), (whole, name: string) => {
+    const known = byName.get(name)
+    if (!known) return whole
+    count++
+    return known.generate(ctx)
+  })
+  return { text: resolved, count }
 }

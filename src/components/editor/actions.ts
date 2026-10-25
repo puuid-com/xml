@@ -13,10 +13,11 @@ import {
   setDefaultsPreview,
   setQuickHighlight,
 } from '#/components/app/ui-store'
-import { filesCollection } from '#/lib/store/files'
+import { createFile, filesCollection } from '#/lib/store/files'
 import { enabledDefaults } from '#/lib/store/defaults'
 import { profileHighlights } from '#/lib/store/highlights'
 import { activeFormat } from '#/lib/store/profiles'
+import { setActive } from '#/lib/store/session'
 import {
   MIME_TYPES,
   documentDefaults,
@@ -100,30 +101,32 @@ export function commitDefaultsActive() {
 }
 
 /**
- * Swaps dynamic variables such as `<<$randomInt>>` for generated values, as
- * one undo step. Only the selection is touched when there is one.
+ * Opens a copy of the active file with dynamic variables such as
+ * `<<$randomInt>>` swapped for generated values, leaving the original as is.
  */
 export function resolveVarsActive() {
   if (!getView()) return true
   // Faker is large and only needed here, so it loads on first use.
   void import('@faker-js/faker').then(({ faker }) => {
-    const view = getView()
-    if (!view) return
-    const { main } = view.state.selection
-    const range = main.empty ? undefined : { from: main.from, to: main.to }
-    const changes = resolveDynamicVars(
-      view.state.doc.toString(),
-      { faker, now: new Date() },
-      range,
-    )
-    if (changes.length === 0) {
-      notify.info(
-        range ? m.vars_resolve_none_selection() : m.vars_resolve_none(),
-      )
+    const { fileId } = editorStore.state
+    const file = fileId ? filesCollection.get(fileId) : undefined
+    if (!getView() || !file) return
+    const { text, count } = resolveDynamicVars(getText(), {
+      faker,
+      now: new Date(),
+    })
+    if (count === 0) {
+      notify.info(m.vars_resolve_none())
       return
     }
-    view.dispatch({ changes, userEvent: 'input.vars' })
-    notify.success(m.vars_resolved({ count: changes.length }))
+    const dot = file.name.lastIndexOf('.')
+    const name = m.vars_file_name({
+      stem: dot > 0 ? file.name.slice(0, dot) : file.name,
+      ext: dot > 0 ? file.name.slice(dot) : '',
+    })
+    const copy = createFile(name, text, file.profileId)
+    setActive(copy.id)
+    notify.success(m.vars_resolved({ count, name: copy.name }))
   })
   return true
 }
