@@ -2,7 +2,7 @@ import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
 
 import { neighbour } from './files'
-import { askClose, askDelete, askRename, uiStore } from './ui-store'
+import { askClose, askRename, uiStore } from './ui-store'
 import { dropEditorState } from '#/components/editor/CodeEditor'
 import {
   AlertDialog,
@@ -25,12 +25,7 @@ import {
 } from '#/components/ui/dialog'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import {
-  closeFile,
-  deleteFile,
-  filesCollection,
-  renameFile,
-} from '#/lib/store/files'
+import { closeFile, filesCollection, renameFile } from '#/lib/store/files'
 import { sessionStore, setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 
@@ -121,48 +116,6 @@ function RenameForm({ id, name }: { id: string; name: string }) {
   )
 }
 
-export function DeleteDialog({ openIds }: { openIds: Array<string> }) {
-  const deleteId = useSelector(uiStore, (s) => s.deleteId)
-  const file = deleteId ? filesCollection.get(deleteId) : undefined
-
-  const confirm = () => {
-    if (!file) return
-    if (sessionStore.state.activeId === file.id) {
-      const index = openIds.indexOf(file.id)
-      setActive(neighbour(openIds, index) ?? null)
-    }
-    deleteFile(file.id)
-    dropEditorState(file.id)
-    askDelete(null)
-  }
-
-  return (
-    <AlertDialog
-      open={!!file}
-      onOpenChange={(open) => {
-        if (!open) askDelete(null)
-      }}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {m.delete_title({ name: file?.name ?? '' })}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {m.delete_description()}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={confirm}>
-            {m.delete_confirm()}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
-}
-
 export function CloseDialog({ openIds }: { openIds: Array<string> }) {
   const closeId = useSelector(uiStore, (s) => s.closeId)
   const file = closeId ? filesCollection.get(closeId) : undefined
@@ -174,6 +127,7 @@ export function CloseDialog({ openIds }: { openIds: Array<string> }) {
       setActive(neighbour(openIds, index) ?? null)
     }
     closeFile(file.id)
+    dropEditorState(file.id)
     askClose(null)
   }
 
@@ -195,7 +149,7 @@ export function CloseDialog({ openIds }: { openIds: Array<string> }) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
-          <AlertDialogAction onClick={confirm}>
+          <AlertDialogAction variant="destructive" onClick={confirm}>
             {m.close_confirm()}
           </AlertDialogAction>
         </AlertDialogFooter>

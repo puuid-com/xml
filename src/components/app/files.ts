@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 
-import { createFile, openFile } from '#/lib/store/files'
+import { createFile } from '#/lib/store/files'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 
@@ -99,12 +99,7 @@ export function loadJsonSample() {
   setActive(file.id)
 }
 
-export function activate(id: string) {
-  openFile(id)
-  setActive(id)
-}
-
-/** Reads dropped or picked files into the cache and opens them. */
+/** Reads dropped or picked files and opens each in a tab. */
 export async function importFiles(list: FileList | Array<File>) {
   let last: string | null = null
   for (const file of Array.from(list)) {

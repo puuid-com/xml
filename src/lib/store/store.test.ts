@@ -4,7 +4,6 @@ import {
   closeFile,
   createFile,
   filesCollection,
-  openFile,
   reorderFile,
   uniqueName,
 } from './files'
@@ -25,7 +24,6 @@ import {
 
 function openOrder() {
   return [...filesCollection.values()]
-    .filter((f) => f.open)
     .sort((a, b) => a.order - b.order)
     .map((f) => f.name)
 }
@@ -44,13 +42,13 @@ describe('files', () => {
     expect(openOrder()).toEqual(['untitled.xml', 'untitled-2.xml'])
   })
 
-  it('closes and reopens tabs at the end', () => {
-    const a = createFile('a.xml')
+  it('deletes the file when its tab closes', () => {
+    const a = createFile('a.xml', '<a/>')
     createFile('b.xml')
     closeFile(a.id)
     expect(openOrder()).toEqual(['b.xml'])
-    openFile(a.id)
-    expect(openOrder()).toEqual(['b.xml', 'a.xml'])
+    expect(filesCollection.has(a.id)).toBe(false)
+    expect(localStorage.getItem('xml-editor:files')).not.toContain('a.xml')
   })
 
   it('reorders tabs', () => {

@@ -11,7 +11,7 @@ import { useDefaultLayout } from 'react-resizable-panels'
 
 import { AppHeader } from './AppHeader'
 import { CommandMenu } from './CommandMenu'
-import { CloseDialog, DeleteDialog, RenameDialog } from './Dialogs'
+import { CloseDialog, RenameDialog } from './Dialogs'
 import {
   ACCEPTED_TYPES,
   importFiles,
@@ -55,7 +55,7 @@ export function EditorApp() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
 
-  // Fall back to the first open tab when the stored one is gone (closed here
+  // Fall back to the first tab when the stored one is gone (closed here
   // or in another browser tab).
   const activeId = files.some((f) => f.id === storedActive)
     ? storedActive
@@ -158,7 +158,6 @@ export function EditorApp() {
       <StatusBar />
 
       <RenameDialog />
-      <DeleteDialog openIds={files.map((f) => f.id)} />
       <CommandMenu activeId={activeId} onOpenFromDisk={openFromDisk} />
       <CloseDialog openIds={files.map((f) => f.id)} />
       <QuickHighlight />

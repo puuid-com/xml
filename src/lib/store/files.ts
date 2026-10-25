@@ -13,29 +13,46 @@ export const fileSchema = z.object({
   id: z.string(),
   name: z.string(),
   content: z.string(),
-  /** Shown as a tab. Closing a tab keeps the file in the cache. */
-  open: z.boolean(),
-  /** Tab order among open files. */
+  /** Tab order. */
   order: z.number(),
-  createdAt: z.number(),
-  updatedAt: z.number(),
   /** Browser tab that wrote the content last, to tell remote edits apart. */
   writer: z.string(),
 })
 
 export type XmlFile = z.infer<typeof fileSchema>
 
+const STORAGE_KEY = 'xml-editor:files'
+
+// Files used to outlive their tab. Drop those so storage only holds tabs.
+function pruneClosed() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return
+    const stored = JSON.parse(raw) as Record<
+      string,
+      { data?: { open?: boolean } }
+    >
+    const kept = Object.fromEntries(
+      Object.entries(stored).filter(([, item]) => item.data?.open !== false),
+    )
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(kept))
+  } catch {
+    // No storage (SSR, private mode).
+  }
+}
+
 // localStorage events keep every browser tab of the site in sync.
-export const filesCollection = singleton('files', () =>
-  createCollection(
+export const filesCollection = singleton('files', () => {
+  pruneClosed()
+  return createCollection(
     localStorageCollectionOptions({
       id: 'files',
-      storageKey: 'xml-editor:files',
+      storageKey: STORAGE_KEY,
       getKey: (file) => file.id,
       schema: fileSchema,
     }),
-  ),
-)
+  )
+})
 
 export function newId() {
   return crypto.randomUUID()
@@ -44,12 +61,12 @@ export function newId() {
 function nextOrder() {
   let max = 0
   for (const file of filesCollection.values()) {
-    if (file.open) max = Math.max(max, file.order)
+    max = Math.max(max, file.order)
   }
   return max + 1
 }
 
-/** Picks `untitled.xml`, `untitled-2.xml`… avoiding names already cached. */
+/** Picks `untitled.xml`, `untitled-2.xml`… avoiding names of open tabs. */
 export function uniqueName(base: string) {
   const taken = new Set([...filesCollection.values()].map((f) => f.name))
   if (!taken.has(base)) return base
@@ -63,36 +80,20 @@ export function uniqueName(base: string) {
 }
 
 export function createFile(name: string, content = ''): XmlFile {
-  const now = Date.now()
   const file: XmlFile = {
     id: newId(),
     name: uniqueName(name),
     content,
-    open: true,
     order: nextOrder(),
-    createdAt: now,
-    updatedAt: now,
     writer: writerId,
   }
   filesCollection.insert(file)
   return file
 }
 
-export function openFile(id: string) {
-  const file = filesCollection.get(id)
-  if (!file || file.open) return
-  const order = nextOrder()
-  filesCollection.update(id, (draft) => {
-    draft.open = true
-    draft.order = order
-  })
-}
-
+/** Closing a tab deletes its file. */
 export function closeFile(id: string) {
-  if (!filesCollection.has(id)) return
-  filesCollection.update(id, (draft) => {
-    draft.open = false
-  })
+  if (filesCollection.has(id)) filesCollection.delete(id)
 }
 
 export function renameFile(id: string, name: string) {
@@ -103,14 +104,10 @@ export function renameFile(id: string, name: string) {
   })
 }
 
-export function deleteFile(id: string) {
-  if (filesCollection.has(id)) filesCollection.delete(id)
-}
-
-/** Moves an open tab to sit before `beforeId`, or last when `null`. */
+/** Moves a tab to sit before `beforeId`, or last when `null`. */
 export function reorderFile(id: string, beforeId: string | null) {
   const open = [...filesCollection.values()]
-    .filter((f) => f.open && f.id !== id)
+    .filter((f) => f.id !== id)
     .sort((a, b) => a.order - b.order)
   const index = beforeId ? open.findIndex((f) => f.id === beforeId) : -1
   const moving = filesCollection.get(id)
@@ -138,7 +135,6 @@ export const saveContent = createPacedMutations<{
     if (!filesCollection.has(id)) return
     filesCollection.update(id, (draft) => {
       draft.content = content
-      draft.updatedAt = Date.now()
       draft.writer = writerId
     })
   },

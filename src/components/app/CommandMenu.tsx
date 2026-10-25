@@ -12,19 +12,12 @@ import {
   IconReplace,
   IconSearch,
   IconSparkles,
-  IconTrash,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { useLayoutEffect, useRef, useState } from 'react'
 
-import {
-  activate,
-  loadJsonSample,
-  loadSample,
-  newFile,
-  newJsonFile,
-} from './files'
-import { askDelete, askRename, setPaletteOpen, uiStore } from './ui-store'
+import { loadJsonSample, loadSample, newFile, newJsonFile } from './files'
+import { askRename, setPaletteOpen, uiStore } from './ui-store'
 import {
   applyDefaultsActive,
   copyActive,
@@ -51,22 +44,13 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { Kbd } from '#/components/ui/kbd'
-import { useAllFiles } from '#/hooks/use-files'
+import { useOpenFiles } from '#/hooks/use-files'
 import { useHighlights } from '#/hooks/use-highlights'
 import { languageOf } from '#/lib/document'
 import { alt, mod } from '#/lib/platform'
 import { setHighlight } from '#/lib/store/highlights'
+import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
-
-const relative = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
-
-function ago(time: number) {
-  const minutes = Math.round((time - Date.now()) / 60_000)
-  if (Math.abs(minutes) < 60) return relative.format(minutes, 'minute')
-  const hours = Math.round(minutes / 60)
-  if (Math.abs(hours) < 24) return relative.format(hours, 'hour')
-  return relative.format(Math.round(hours / 24), 'day')
-}
 
 /** Centered palette of files and actions, opened with ⌘K or the logo. */
 export function CommandMenu({
@@ -152,7 +136,7 @@ function FileCommands({
   activeId: string | null
   onOpenFromDisk: () => void
 }) {
-  const files = useAllFiles()
+  const files = useOpenFiles()
   const counts = useTagCounts()
   const highlighted = new Set(useHighlights().map((r) => r.tag))
   const [search, setSearch] = useState('')
@@ -182,7 +166,7 @@ function FileCommands({
               <CommandItem
                 key={file.id}
                 value={`${file.name} ${file.id}`}
-                onSelect={() => run(() => activate(file.id))}
+                onSelect={() => run(() => setActive(file.id))}
               >
                 {languageOf(file.name, '') === 'json' ? (
                   <IconJson />
@@ -193,9 +177,6 @@ function FileCommands({
                 {file.id === activeId && (
                   <IconCheck className="size-3 text-muted-foreground" />
                 )}
-                <CommandShortcut className="text-[11px] tracking-normal">
-                  {ago(file.updatedAt)}
-                </CommandShortcut>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -215,13 +196,6 @@ function FileCommands({
               <CommandItem onSelect={() => run(() => void copyActive())}>
                 <IconClipboard />
                 {m.file_copy()}
-              </CommandItem>
-              <CommandItem
-                className="text-destructive data-selected:text-destructive *:[svg]:text-destructive! data-selected:bg-destructive/10"
-                onSelect={() => run(() => askDelete(activeId))}
-              >
-                <IconTrash />
-                {m.file_delete()}
               </CommandItem>
             </CommandGroup>
           </>
