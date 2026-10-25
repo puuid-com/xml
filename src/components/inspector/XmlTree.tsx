@@ -38,8 +38,13 @@ import {
   setCollapsed,
   toggleCollapsed,
 } from '#/lib/store/session'
+import {
+  addChildTo,
+  canAddChild,
+  removeElement,
+  setValue,
+} from '#/lib/document'
 import { cn } from '#/lib/utils'
-import { addChild, removeNode, setText } from '#/lib/xml/edit'
 import {
   allElements,
   ancestorPaths,
@@ -136,7 +141,9 @@ export function XmlTree() {
                   fileId={fileId}
                   top={item.start}
                   selected={row.el.path === selectedPath}
-                  color={highlights.get(row.el.name)}
+                  color={
+                    row.el.json?.item ? undefined : highlights.get(row.el.name)
+                  }
                 />
               )
             })}
@@ -162,7 +169,14 @@ function TreeRowView({
 }) {
   const { el, depth, hasChildren, collapsed } = row
   const leaf = isLeaf(el)
-  const rule = findHighlight(el.name)
+  const item = el.json?.item ?? false
+  const rule = item ? undefined : findHighlight(el.name)
+  const empty =
+    !hasChildren && el.json?.type === 'object'
+      ? '{}'
+      : !hasChildren && el.json?.type === 'array'
+        ? '[]'
+        : null
 
   const collapseChildren = (collapse: boolean) => {
     const paths = allElements([el])
@@ -227,7 +241,11 @@ function TreeRowView({
             <span
               className={cn(
                 'shrink-0 font-medium',
-                color ? 'hl-ink' : 'text-syntax-tag',
+                color
+                  ? 'hl-ink'
+                  : item
+                    ? 'text-muted-foreground'
+                    : 'text-syntax-tag',
               )}
             >
               {el.name}
@@ -255,35 +273,42 @@ function TreeRowView({
             <LeafValue path={el.path} value={leafValue(el)} />
           )}
           {leaf && el.selfClosing && <span className="flex-1" />}
+          {empty && <span className="ml-1 text-syntax-punct">{empty}</span>}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-56">
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>
-            {m.highlight_tag({ name: el.name })}
-          </ContextMenuSubTrigger>
-          <ContextMenuSubContent className="p-2">
-            <ColorSwatches
-              value={rule?.color}
-              onSelect={(c) => setHighlight(el.name, c)}
-            />
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-        {rule && (
-          <ContextMenuItem onSelect={() => removeHighlight(rule.id)}>
-            {m.highlight_remove()}
+        {!item && (
+          <>
+            <ContextMenuSub>
+              <ContextMenuSubTrigger>
+                {m.highlight_tag({ name: el.name })}
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent className="p-2">
+                <ColorSwatches
+                  value={rule?.color}
+                  onSelect={(c) => setHighlight(el.name, c)}
+                />
+              </ContextMenuSubContent>
+            </ContextMenuSub>
+            {rule && (
+              <ContextMenuItem onSelect={() => removeHighlight(rule.id)}>
+                {m.highlight_remove()}
+              </ContextMenuItem>
+            )}
+            <ContextMenuSeparator />
+          </>
+        )}
+        {canAddChild(el) && (
+          <ContextMenuItem
+            onSelect={() =>
+              editAtPath(el.path, (fresh, text) =>
+                addChildTo(text, fresh, el.json ? 'key' : 'element'),
+              )
+            }
+          >
+            {m.node_add_child()}
           </ContextMenuItem>
         )}
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          onSelect={() =>
-            editAtPath(el.path, (fresh, text) =>
-              addChild(text, fresh, 'element'),
-            )
-          }
-        >
-          {m.node_add_child()}
-        </ContextMenuItem>
         {hasChildren && (
           <>
             <ContextMenuItem onSelect={() => collapseChildren(true)}>
@@ -306,7 +331,9 @@ function TreeRowView({
         <ContextMenuItem
           variant="destructive"
           onSelect={() =>
-            editAtPath(el.path, (fresh, text) => removeNode(text, fresh))
+            editAtPath(el.path, (fresh, text, doc) =>
+              removeElement(text, fresh, doc),
+            )
           }
         >
           {m.node_delete()}
@@ -320,7 +347,7 @@ function TreeRowView({
 function LeafValue({ path, value }: { path: string; value: string }) {
   const [editing, setEditing] = useState(false)
   const draft = useDraft(value, (next) =>
-    editAtPath(path, (el) => setText(el, next)),
+    editAtPath(path, (el) => setValue(el, next)),
   )
 
   if (editing) {

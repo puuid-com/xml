@@ -93,5 +93,14 @@ export function displayPath(path: string): Array<string> {
   return path
     .split('/')
     .filter(Boolean)
-    .map((part) => part.replace(/\[1\]$/, ''))
+    .map((part) => decodeSegment(part.replace(/\[1\]$/, '')))
+}
+
+/** JSON keys can hold `/`, so path segments escape it (and `%`). */
+export function encodeSegment(name: string) {
+  return name.replaceAll('%', '%25').replaceAll('/', '%2F')
+}
+
+function decodeSegment(segment: string) {
+  return segment.replaceAll('%2F', '/').replaceAll('%25', '%')
 }

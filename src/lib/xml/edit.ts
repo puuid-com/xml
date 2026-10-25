@@ -146,7 +146,7 @@ function openTagContentEnd(el: XmlElement) {
   return el.attrs.length > 0 ? el.attrs[el.attrs.length - 1].to : el.nameTo
 }
 
-function lineIndent(text: string, pos: number) {
+export function lineIndent(text: string, pos: number) {
   const start = text.lastIndexOf('\n', pos - 1) + 1
   return /^[ \t]*/.exec(text.slice(start, pos))?.[0] ?? ''
 }

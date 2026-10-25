@@ -4,6 +4,7 @@ import {
   IconFilePlus,
   IconFolderOpen,
   IconHighlight,
+  IconJson,
   IconReplace,
   IconSparkles,
 } from '@tabler/icons-react'
@@ -11,7 +12,14 @@ import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
 import { useState } from 'react'
 
-import { activate, loadSample, neighbour, newFile } from './files'
+import {
+  activate,
+  loadJsonSample,
+  loadSample,
+  neighbour,
+  newFile,
+  newJsonFile,
+} from './files'
 import { askDelete, askRename, setPaletteOpen, uiStore } from './ui-store'
 import {
   applyDefaultsActive,
@@ -140,6 +148,10 @@ function PaletteCommands({ onOpenFromDisk }: { onOpenFromDisk: () => void }) {
             <IconFilePlus />
             {m.file_new()}
           </CommandItem>
+          <CommandItem onSelect={() => run(newJsonFile)}>
+            <IconJson />
+            {m.file_new_json()}
+          </CommandItem>
           <CommandItem onSelect={() => run(onOpenFromDisk)}>
             <IconFolderOpen />
             {m.file_open_disk()}
@@ -147,6 +159,10 @@ function PaletteCommands({ onOpenFromDisk }: { onOpenFromDisk: () => void }) {
           <CommandItem onSelect={() => run(loadSample)}>
             <IconSparkles />
             {m.file_sample()}
+          </CommandItem>
+          <CommandItem onSelect={() => run(loadJsonSample)}>
+            <IconSparkles />
+            {m.file_sample_json()}
           </CommandItem>
           <CommandItem onSelect={() => run(() => void highlightAtCursor())}>
             <IconHighlight />

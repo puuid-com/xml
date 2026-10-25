@@ -1,3 +1,4 @@
+import { forceLinting } from '@codemirror/lint'
 import { Annotation, EditorState, Transaction } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
@@ -9,7 +10,13 @@ import {
   highlightAtCursor,
   saveActive,
 } from './actions'
-import { publishCursor, publishParse, setView } from './editor-store'
+import {
+  parseActive,
+  publishCursor,
+  publishParse,
+  setView,
+} from './editor-store'
+import { docLanguage, languageCompartment, languageExtension } from './language'
 import { TagContextMenu } from './TagContextMenu'
 import {
   editorExtensions,
@@ -18,10 +25,10 @@ import {
   tagHighlightsFacet,
 } from './extensions'
 import { useHighlightMap } from '#/hooks/use-highlights'
+import { languageOf } from '#/lib/document'
 import { filesCollection, saveContent } from '#/lib/store/files'
 import { writerId } from '#/lib/store/session'
 import { diffChange } from '#/lib/xml/edit'
-import { parseXml } from '#/lib/xml/parse'
 import { m } from '#/paraglide/messages'
 import type { Extension } from '@codemirror/state'
 import type { ViewUpdate } from '@codemirror/view'
@@ -63,7 +70,8 @@ function sharedExtensions(highlights: ReadonlyMap<string, string>) {
 }
 
 function stateFor(fileId: string, highlights: ReadonlyMap<string, string>) {
-  const content = filesCollection.get(fileId)?.content ?? ''
+  const file = filesCollection.get(fileId)
+  const content = file?.content ?? ''
   const cached = states.get(fileId)
   if (cached) {
     // Catch up with edits made elsewhere while this file was not shown.
@@ -76,8 +84,28 @@ function stateFor(fileId: string, highlights: ReadonlyMap<string, string>) {
   }
   return EditorState.create({
     doc: content,
-    extensions: [fileIdField.init(() => fileId), sharedExtensions(highlights)],
+    extensions: [
+      fileIdField.init(() => fileId),
+      languageCompartment.of(
+        languageExtension(languageOf(file?.name ?? '', content)),
+      ),
+      sharedExtensions(highlights),
+    ],
   })
+}
+
+/**
+ * Switches the editor to the language the file's name calls for, e.g. after
+ * a rename. Returns whether it changed.
+ */
+function syncLanguage(view: EditorView, name: string) {
+  const language = languageOf(name, view.state.doc.toString())
+  if (view.state.facet(docLanguage) === language) return false
+  view.dispatch({
+    effects: languageCompartment.reconfigure(languageExtension(language)),
+  })
+  forceLinting(view)
+  return true
 }
 
 export function CodeEditor({ fileId }: { fileId: string }) {
@@ -85,6 +113,7 @@ export function CodeEditor({ fileId }: { fileId: string }) {
   const viewRef = useRef<EditorView | null>(null)
   const highlights = useHighlightMap()
   const highlightsRef = useRef(highlights)
+  const activeName = useRef<string | null>(null)
 
   useEffect(() => {
     const view = new EditorView({ parent: parentRef.current! })
@@ -98,11 +127,16 @@ export function CodeEditor({ fileId }: { fileId: string }) {
           states.delete(String(change.key))
           continue
         }
-        if (change.type !== 'update' || change.value.writer === writerId) {
-          continue
-        }
+        if (change.type !== 'update') continue
         const file = change.value
         const active = view.state.field(fileIdField, false) === file.id
+        if (active && file.name !== activeName.current) {
+          activeName.current = file.name
+          if (syncLanguage(view, file.name)) {
+            publishParse(file.id, parseActive())
+          }
+        }
+        if (file.writer === writerId) continue
         const state = active ? view.state : states.get(file.id)
         if (!state) continue
         const diff = diffChange(state.doc.toString(), file.content)
@@ -142,13 +176,16 @@ export function CodeEditor({ fileId }: { fileId: string }) {
 
     const state = stateFor(fileId, highlightsRef.current)
     view.setState(state)
+    activeName.current = filesCollection.get(fileId)?.name ?? null
+    // A cached state keeps the language it had; the file may since be renamed.
+    if (activeName.current) syncLanguage(view, activeName.current)
     view.dispatch({
       effects: tagHighlightsCompartment.reconfigure(
         tagHighlightsFacet.of(highlightsRef.current),
       ),
     })
     publishCursorFrom(view.state)
-    publishParse(fileId, parseXml(view.state.doc.toString()))
+    publishParse(fileId, parseActive())
     view.focus()
   }, [fileId])
 

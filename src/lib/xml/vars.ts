@@ -45,6 +45,15 @@ export function maskVars(text: string): string {
   )
 }
 
+/**
+ * For the JSON grammar: each variable becomes a same-length number, so a bare
+ * `<<qty>>` value parses and one inside a string stays part of it.
+ */
+export function maskVarsAsNumbers(text: string): string {
+  if (!text.includes('<<')) return text
+  return text.replace(varRegExp(), (whole) => '1'.padEnd(whole.length, '0'))
+}
+
 export function unmaskVars(text: string): string {
   if (!text.includes(VAR_OPEN)) return text
   return text.replaceAll(VAR_OPEN, '<').replaceAll(VAR_CLOSE, '>')

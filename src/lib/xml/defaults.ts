@@ -6,7 +6,7 @@ import { setAttr, setText } from './edit'
 import { isLeaf, leafValue } from './model'
 import { allElements } from './locate'
 import type { TextChange } from './edit'
-import type { XmlNode } from './model'
+import type { XmlElement, XmlNode } from './model'
 
 export interface DefaultRule {
   key: string
@@ -25,6 +25,7 @@ export function isAttrKey(key: string) {
 export function defaultChanges(
   nodes: Array<XmlNode>,
   rules: ReadonlyArray<DefaultRule>,
+  setValue: (el: XmlElement, value: string) => Array<TextChange> = setText,
 ): Array<TextChange> {
   const elementRules = new Map<string, string>()
   const attrRules = new Map<string, string>()
@@ -41,9 +42,10 @@ export function defaultChanges(
         changes.push(...setAttr(attr, value))
       }
     }
+    if (el.json?.item) continue
     const value = elementRules.get(el.name)
     if (value !== undefined && isLeaf(el) && leafValue(el) !== value) {
-      changes.push(...setText(el, value))
+      changes.push(...setValue(el, value))
     }
   }
   return changes
@@ -53,7 +55,7 @@ export function defaultChanges(
 export function defaultKeys(nodes: Array<XmlNode>): Array<string> {
   const keys = new Set<string>()
   for (const el of allElements(nodes)) {
-    if (isLeaf(el)) keys.add(el.name)
+    if (isLeaf(el) && !el.json?.item) keys.add(el.name)
     for (const attr of el.attrs) keys.add(`@${attr.name}`)
   }
   return [...keys].sort()

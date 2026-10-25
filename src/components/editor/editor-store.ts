@@ -2,8 +2,9 @@ import { Store } from '@tanstack/store'
 import { EditorSelection } from '@codemirror/state'
 import type { EditorView } from '@codemirror/view'
 
+import { docLanguage } from './language'
+import { parseDocument } from '#/lib/document'
 import { elementAt, elementByPath } from '#/lib/xml/locate'
-import { parseXml } from '#/lib/xml/parse'
 import type { TextChange } from '#/lib/xml/edit'
 import type { XmlDocument, XmlElement } from '#/lib/xml/model'
 
@@ -24,7 +25,12 @@ export interface EditorSnapshot {
   selectedPath: string | null
 }
 
-const emptyDoc: XmlDocument = { nodes: [], root: null, errors: [] }
+const emptyDoc: XmlDocument = {
+  language: 'xml',
+  nodes: [],
+  root: null,
+  errors: [],
+}
 
 export const editorStore = new Store<EditorSnapshot>({
   fileId: null,
@@ -81,16 +87,26 @@ export function applyChanges(changes: Array<TextChange>) {
  */
 export function editAtPath(
   path: string,
-  build: (el: XmlElement, text: string) => Array<TextChange>,
+  build: (el: XmlElement, text: string, doc: XmlDocument) => Array<TextChange>,
 ) {
   const view = currentView
   if (!view) return
   const text = view.state.doc.toString()
-  const el = elementByPath(parseXml(text).nodes, path)
+  const doc = parseActive(text)
+  const el = elementByPath(doc.nodes, path)
   if (!el) return
-  applyChanges(build(el, text))
+  applyChanges(build(el, text, doc))
   const fileId = editorStore.state.fileId
-  if (fileId) publishParse(fileId, parseXml(view.state.doc.toString()))
+  if (fileId) publishParse(fileId, parseActive(view.state.doc.toString()))
+}
+
+/** Parses `text` as the language of the file in the editor. */
+export function parseActive(text = getText()) {
+  return parseDocument(text, activeLanguage())
+}
+
+export function activeLanguage() {
+  return currentView?.state.facet(docLanguage) ?? 'xml'
 }
 
 /** Selects an element's open tag without stealing focus from the panel. */

@@ -40,11 +40,13 @@ import {
 } from '@codemirror/view'
 import { tags as t } from '@lezer/highlight'
 
-import { xmlSupport } from './xml-language'
-import { parseXml } from '#/lib/xml/parse'
+import { docLanguage } from './language'
+import { parseDocument } from '#/lib/document'
+import { decodeString } from '#/lib/json/parse'
 import { varRegExp } from '#/lib/xml/vars'
 import { m } from '#/paraglide/messages'
-import type { Extension, Range } from '@codemirror/state'
+import type { Extension, Range, Text } from '@codemirror/state'
+import type { SyntaxNode } from '@lezer/common'
 import type { DecorationSet, KeyBinding, ViewUpdate } from '@codemirror/view'
 import type { XmlDocument } from '#/lib/xml/model'
 
@@ -178,6 +180,14 @@ const highlightStyle = HighlightStyle.define([
     color: 'var(--syntax-meta)',
   },
   { tag: t.invalid, color: 'var(--destructive)' },
+  // JSON
+  { tag: t.propertyName, color: 'var(--syntax-tag)' },
+  { tag: t.string, color: 'var(--syntax-value)' },
+  { tag: [t.number, t.bool, t.null], color: 'var(--syntax-attr)' },
+  {
+    tag: [t.separator, t.brace, t.squareBracket],
+    color: 'var(--syntax-punct)',
+  },
 ])
 
 const varDecorator = new MatchDecorator({
@@ -219,6 +229,48 @@ const tagBrackets = new Set([
   'SelfCloseEndTag',
 ])
 
+const tagParents = new Set(['OpenTag', 'CloseTag', 'SelfClosingTag'])
+
+interface NamedTag {
+  name: string
+  /** The whole tag, or the quoted JSON key. */
+  from: number
+  to: number
+  /** Ranges drawn in the highlight colour: the name and its brackets. */
+  inks: Array<{ from: number; to: number }>
+  /** An opening tag or a JSON key, where an element starts. */
+  opens: boolean
+}
+
+/** The XML tag or JSON key a syntax node names, if it is one. */
+function namedTag(node: SyntaxNode, doc: Text): NamedTag | null {
+  if (node.name === 'PropertyName') {
+    return {
+      name: decodeString(doc.sliceString(node.from, node.to)),
+      from: node.from,
+      to: node.to,
+      inks: [{ from: node.from, to: node.to }],
+      opens: true,
+    }
+  }
+  if (node.name !== 'TagName') return null
+  const tag = node.parent
+  if (!tag || !tagParents.has(tag.name)) return null
+  const inks = [{ from: node.from, to: node.to }]
+  for (let child = tag.firstChild; child; child = child.nextSibling) {
+    if (tagBrackets.has(child.name) && child.to > child.from) {
+      inks.push({ from: child.from, to: child.to })
+    }
+  }
+  return {
+    name: doc.sliceString(node.from, node.to),
+    from: tag.from,
+    to: tag.to,
+    inks,
+    opens: tag.name !== 'CloseTag',
+  }
+}
+
 interface TagHighlights {
   /** Wash over the whole tag, brackets and attributes included. */
   tags: DecorationSet
@@ -238,18 +290,9 @@ function buildTagHighlights(view: EditorView): TagHighlights {
       from,
       to,
       enter(node) {
-        if (node.name !== 'TagName') return
-        const tag = node.node.parent
-        if (
-          !tag ||
-          (tag.name !== 'OpenTag' &&
-            tag.name !== 'CloseTag' &&
-            tag.name !== 'SelfClosingTag')
-        ) {
-          return
-        }
-        const color = rules.get(doc.sliceString(node.from, node.to))
-        if (!color) return
+        const tag = namedTag(node.node, doc)
+        const color = tag && rules.get(tag.name)
+        if (!tag || !color) return
         const attributes = { style: `--hl: ${color}` }
         tags.push(
           Decoration.mark({ class: 'hl-tag', attributes }).range(
@@ -258,12 +301,7 @@ function buildTagHighlights(view: EditorView): TagHighlights {
           ),
         )
         const ink = Decoration.mark({ class: 'hl-ink', attributes })
-        inks.push(ink.range(node.from, node.to))
-        for (let child = tag.firstChild; child; child = child.nextSibling) {
-          if (tagBrackets.has(child.name) && child.to > child.from) {
-            inks.push(ink.range(child.from, child.to))
-          }
-        }
+        for (const range of tag.inks) inks.push(ink.range(range.from, range.to))
       },
     })
   }
@@ -319,10 +357,8 @@ function collectMarkers(view: EditorView): Array<Marker> {
   const markers: Array<Marker> = []
   syntaxTree(view.state).iterate({
     enter(node) {
-      if (node.name !== 'TagName') return
-      const parent = node.node.parent?.name
-      if (parent !== 'OpenTag' && parent !== 'SelfClosingTag') return
-      const color = rules.get(doc.sliceString(node.from, node.to))
+      const tag = namedTag(node.node, doc)
+      const color = tag?.opens && rules.get(tag.name)
       if (!color) return
       const top = view.lineBlockAt(node.from).top / view.contentHeight
       // Ticks closer than about a pixel would draw on top of each other.
@@ -415,7 +451,6 @@ export function editorExtensions(
     crosshairCursor(),
     highlightActiveLine(),
     highlightSelectionMatches(),
-    xmlSupport(),
     syntaxHighlighting(highlightStyle),
     theme,
     varHighlighter,
@@ -427,7 +462,10 @@ export function editorExtensions(
     linter(
       (view) => {
         const fileId = view.state.field(fileIdField)
-        const doc = parseXml(view.state.doc.toString())
+        const doc = parseDocument(
+          view.state.doc.toString(),
+          view.state.facet(docLanguage),
+        )
         callbacks.onParse(fileId, doc)
         return doc.errors.map((error) => ({
           from: error.from,

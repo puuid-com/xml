@@ -34,8 +34,45 @@ export const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?>
 </order>
 `
 
+export const NEW_JSON_CONTENT = '{\n  \n}\n'
+
+export const SAMPLE_JSON = `{
+  "id": "<<orderId>>",
+  "env": "<<env>>",
+  "customer": {
+    "type": "business",
+    "name": "Acme Corporation",
+    "email": "<<customerEmail>>",
+    "address": {
+      "country": "CA",
+      "street": "123 Rue Principale",
+      "city": "Montréal",
+      "postal": "H2X 1Y4"
+    }
+  },
+  "items": [
+    {
+      "sku": "KB-001",
+      "qty": 2,
+      "title": "Mechanical keyboard",
+      "price": 149.99
+    },
+    {
+      "sku": "MS-204",
+      "qty": <<mouseQty>>,
+      "title": "Wireless mouse \\u0026 pad",
+      "price": 59.0
+    }
+  ],
+  "currency": "CAD",
+  "gift": false,
+  "notes": null,
+  "endpoint": "<<baseUrl>>/orders/<<orderId>>"
+}
+`
+
 export const ACCEPTED_TYPES =
-  '.xml,.xsd,.xsl,.xslt,.wsdl,.svg,.plist,.config,.csproj,.xaml,.rss,.atom,.kml,.gpx,text/xml,application/xml'
+  '.xml,.xsd,.xsl,.xslt,.wsdl,.svg,.plist,.config,.csproj,.xaml,.rss,.atom,.kml,.gpx,text/xml,application/xml,.json,.geojson,.jsonld,.webmanifest,.har,application/json'
 
 /** The tab to show after closing the one at `index`: next, else previous. */
 export function neighbour<T>(list: ReadonlyArray<T>, index: number) {
@@ -47,8 +84,18 @@ export function newFile() {
   setActive(file.id)
 }
 
+export function newJsonFile() {
+  const file = createFile(m.file_untitled_json(), NEW_JSON_CONTENT)
+  setActive(file.id)
+}
+
 export function loadSample() {
   const file = createFile('sample.xml', SAMPLE_XML)
+  setActive(file.id)
+}
+
+export function loadJsonSample() {
+  const file = createFile('sample.json', SAMPLE_JSON)
   setActive(file.id)
 }
 

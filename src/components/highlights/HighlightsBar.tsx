@@ -53,6 +53,7 @@ export function useTagCounts(): ReadonlyMap<string, number> {
   const doc = useSelector(editorStore, (s) => s.doc)
   const counts = new Map<string, number>()
   for (const el of allElements(doc.nodes)) {
+    if (el.json?.item) continue
     counts.set(el.name, (counts.get(el.name) ?? 0) + 1)
   }
   return counts

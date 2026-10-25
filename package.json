@@ -26,6 +26,7 @@
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-json": "^6.0.2",
     "@codemirror/lang-xml": "^6.1.0",
     "@codemirror/language": "^6.13.1",
     "@codemirror/lint": "^6.9.7",
@@ -36,6 +37,7 @@
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@lezer/common": "^1.5.4",
     "@lezer/highlight": "^1.2.5",
+    "@lezer/json": "^1.0.3",
     "@lezer/xml": "^1.0.6",
     "@tabler/icons-react": "^3.49.0",
     "@tailwindcss/vite": "^4.3.3",

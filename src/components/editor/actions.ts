@@ -1,18 +1,23 @@
 import { syntaxTree } from '@codemirror/language'
 import { toast } from 'sonner'
 
-import { editorStore, getView, revealElement } from './editor-store'
+import {
+  activeLanguage,
+  editorStore,
+  getView,
+  parseActive,
+  revealElement,
+} from './editor-store'
 import { setQuickHighlight } from '#/components/app/ui-store'
 import { filesCollection } from '#/lib/store/files'
 import { enabledDefaults } from '#/lib/store/defaults'
 import { formatSettingsStore } from '#/lib/store/format-settings'
 import { highlightsCollection } from '#/lib/store/highlights'
-import { defaultChanges } from '#/lib/xml/defaults'
+import { MIME_TYPES, documentDefaults, formatDocument } from '#/lib/document'
+import { decodeString } from '#/lib/json/parse'
 import { diffChange } from '#/lib/xml/edit'
-import { formatXml } from '#/lib/xml/format'
 import { allElements, elementAt } from '#/lib/xml/locate'
 import { isLeaf, leafValue } from '#/lib/xml/model'
-import { parseXml } from '#/lib/xml/parse'
 import { m } from '#/paraglide/messages'
 import type { EditorView } from '@codemirror/view'
 import type { SyntaxNode } from '@lezer/common'
@@ -46,7 +51,7 @@ export function formatActive() {
         .filter((r) => r.enabled)
         .map((r) => r.tag)
     : []
-  const result = formatXml(view.state.doc.toString(), {
+  const result = formatDocument(view.state.doc.toString(), activeLanguage(), {
     removeEmptyLines,
     trimVars,
     sort,
@@ -65,8 +70,8 @@ export function applyDefaultsActive() {
     toast(m.defaults_none(), { id: 'defaults' })
     return true
   }
-  const changes = defaultChanges(
-    parseXml(view.state.doc.toString()).nodes,
+  const changes = documentDefaults(
+    parseActive(view.state.doc.toString()),
     rules,
   )
   if (changes.length === 0) {
@@ -83,7 +88,9 @@ export function applyDefaultsActive() {
 /** Leaf element at `pos` with its current text, if any. */
 export function leafAt(pos: number) {
   const el = elementAt(editorStore.state.doc.nodes, pos)
-  return el && isLeaf(el) ? { name: el.name, value: leafValue(el) } : null
+  return el && isLeaf(el) && !el.json?.item
+    ? { name: el.name, value: leafValue(el) }
+    : null
 }
 
 /** Files save as you type; this only formats when that option is on. */
@@ -98,11 +105,14 @@ export function downloadFile(id: string) {
   if (!file) return
   const view = getView()
   const content = view ? view.state.doc.toString() : file.content
-  const blob = new Blob([content], { type: 'application/xml' })
+  const language = activeLanguage()
+  const blob = new Blob([content], { type: MIME_TYPES[language] })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = /\.\w+$/.test(file.name) ? file.name : `${file.name}.xml`
+  link.download = /\.\w+$/.test(file.name)
+    ? file.name
+    : `${file.name}.${language}`
   link.click()
   URL.revokeObjectURL(url)
 }
@@ -116,7 +126,7 @@ export async function copyActive() {
 
 const TAG_PARENTS = new Set(['OpenTag', 'CloseTag', 'SelfClosingTag'])
 
-/** Tag name under the cursor, else the element the cursor is in. */
+/** Tag name or JSON key under the cursor, else the element the cursor is in. */
 function tagAtCursor(view: EditorView) {
   const pos = view.state.selection.main.head
   const tree = syntaxTree(view.state)
@@ -125,20 +135,31 @@ function tagAtCursor(view: EditorView) {
     if (node.name === 'TagName' && TAG_PARENTS.has(node.parent?.name ?? '')) {
       return { name: view.state.sliceDoc(node.from, node.to), at: node.from }
     }
+    if (node.name === 'PropertyName') {
+      return { name: keyName(view, node), at: node.from }
+    }
   }
   const el = elementAt(editorStore.state.doc.nodes, pos)
-  return el ? { name: el.name, at: pos } : null
+  return el && !el.json?.item ? { name: el.name, at: pos } : null
 }
 
-/** Name of the tag (`<a …>`, `</a>`, `<a/>`) that contains `pos`, if any. */
+/**
+ * Name of the tag (`<a …>`, `</a>`, `<a/>`) or JSON key that contains `pos`,
+ * if any.
+ */
 export function tagAt(view: EditorView, pos: number) {
   let node: SyntaxNode | null = syntaxTree(view.state).resolveInner(pos, 1)
   for (; node; node = node.parent) {
+    if (node.name === 'PropertyName') return keyName(view, node)
     if (!TAG_PARENTS.has(node.name)) continue
     const name = node.getChild('TagName')
     return name ? view.state.sliceDoc(name.from, name.to) : null
   }
   return null
+}
+
+function keyName(view: EditorView, node: SyntaxNode) {
+  return decodeString(view.state.sliceDoc(node.from, node.to))
 }
 
 /** Opens the colour picker for the tag at the cursor. */
@@ -155,14 +176,19 @@ export function highlightAtCursor() {
   return true
 }
 
+/** Elements named `tag`, in document order. */
+function tagMatches(tag: string) {
+  return allElements(editorStore.state.doc.nodes).filter(
+    (el) => el.name === tag && !el.json?.item,
+  )
+}
+
 /**
  * Steps through the elements named `tag`: starts at the first one, then each
  * call moves to the next, wrapping back to the first after the last.
  */
 export function cycleTag(tag: string) {
-  const matches = allElements(editorStore.state.doc.nodes).filter(
-    (el) => el.name === tag,
-  )
+  const matches = tagMatches(tag)
   if (matches.length === 0) return
   const i = matches.findIndex((el) => el.from === editorStore.state.pos)
   revealElement(matches[(i + 1) % matches.length], true)
@@ -170,9 +196,7 @@ export function cycleTag(tag: string) {
 
 /** Moves the cursor to the next (or previous) element named `tag`, wrapping. */
 export function revealTag(tag: string, direction: 1 | -1) {
-  const matches = allElements(editorStore.state.doc.nodes).filter(
-    (el) => el.name === tag,
-  )
+  const matches = tagMatches(tag)
   if (matches.length === 0) return
   const pos = editorStore.state.pos
   const target =

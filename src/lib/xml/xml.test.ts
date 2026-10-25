@@ -116,7 +116,12 @@ describe('parseXml', () => {
   })
 
   it('treats an empty document as valid', () => {
-    expect(parseXml('  \n')).toEqual({ nodes: [], root: null, errors: [] })
+    expect(parseXml('  \n')).toEqual({
+      language: 'xml',
+      nodes: [],
+      root: null,
+      errors: [],
+    })
   })
 })
 

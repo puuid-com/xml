@@ -2,6 +2,7 @@ import {
   IconFilePlus,
   IconFileUpload,
   IconFolderOpen,
+  IconJson,
   IconSparkles,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
@@ -10,7 +11,14 @@ import { useDefaultLayout } from 'react-resizable-panels'
 
 import { AppHeader } from './AppHeader'
 import { DeleteDialog, FilePalette, RenameDialog } from './Dialogs'
-import { ACCEPTED_TYPES, importFiles, loadSample, newFile } from './files'
+import {
+  ACCEPTED_TYPES,
+  importFiles,
+  loadJsonSample,
+  loadSample,
+  newFile,
+  newJsonFile,
+} from './files'
 import { SidePanel } from './SidePanel'
 import { StatusBar } from './StatusBar'
 import { TabStrip } from './TabStrip'
@@ -185,6 +193,10 @@ function Welcome({ onOpenFromDisk }: { onOpenFromDisk: () => void }) {
             <IconFilePlus />
             {m.file_new()}
           </Button>
+          <Button variant="outline" onClick={newJsonFile}>
+            <IconJson />
+            {m.file_new_json()}
+          </Button>
           <Button variant="outline" onClick={onOpenFromDisk}>
             <IconFolderOpen />
             {m.file_open_disk()}
@@ -192,6 +204,10 @@ function Welcome({ onOpenFromDisk }: { onOpenFromDisk: () => void }) {
           <Button variant="outline" onClick={loadSample}>
             <IconSparkles />
             {m.file_sample()}
+          </Button>
+          <Button variant="outline" onClick={loadJsonSample}>
+            <IconSparkles />
+            {m.file_sample_json()}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">

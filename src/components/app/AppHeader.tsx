@@ -4,6 +4,7 @@ import {
   IconClipboard,
   IconDownload,
   IconFilePlus,
+  IconJson,
   IconFileSearch,
   IconFolderOpen,
   IconLayoutSidebarRight,
@@ -15,7 +16,7 @@ import {
 import { useSelector } from '@tanstack/react-store'
 
 import { askDelete, askRename, setPaletteOpen } from './ui-store'
-import { loadSample, newFile } from './files'
+import { loadJsonSample, loadSample, newFile, newJsonFile } from './files'
 import { copyActive, downloadFile } from '#/components/editor/actions'
 import { Button } from '#/components/ui/button'
 import {
@@ -68,6 +69,10 @@ export function AppHeader({
             <IconFilePlus />
             {m.file_new()}
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={newJsonFile}>
+            <IconJson />
+            {m.file_new_json()}
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={onOpenFromDisk}>
             <IconFolderOpen />
             {m.file_open_disk()}
@@ -81,6 +86,10 @@ export function AppHeader({
           <DropdownMenuItem onSelect={loadSample}>
             <IconSparkles />
             {m.file_sample()}
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={loadJsonSample}>
+            <IconSparkles />
+            {m.file_sample_json()}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

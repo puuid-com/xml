@@ -20,7 +20,9 @@ const PREDEFINED = new Set(['lt', 'gt', 'amp', 'quot', 'apos'])
  * text or attribute values are.
  */
 export function parseXml(text: string): XmlDocument {
-  if (text.trim() === '') return { nodes: [], root: null, errors: [] }
+  if (text.trim() === '') {
+    return { language: 'xml', nodes: [], root: null, errors: [] }
+  }
 
   const masked = maskVars(text)
   const tree = parser.parse(masked)
@@ -81,10 +83,10 @@ export function parseXml(text: string): XmlDocument {
   }
 
   errors.sort((a, b) => a.from - b.from)
-  return { nodes, root, errors: dedupe(errors) }
+  return { language: 'xml', nodes, root, errors: dedupe(errors) }
 }
 
-function dedupe(errors: Array<XmlError>) {
+export function dedupe(errors: Array<XmlError>) {
   return errors.filter(
     (error, i) =>
       i === 0 ||

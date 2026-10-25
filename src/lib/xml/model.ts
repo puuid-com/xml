@@ -1,5 +1,29 @@
 // Positions are offsets into the document text (UTF-16 code units), matching
-// CodeMirror's. `from` is inclusive, `to` exclusive.
+// CodeMirror's. `from` is inclusive, `to` exclusive. JSON documents use the
+// same model: each property or array item is an element (see `JsonInfo`).
+
+export type DocLanguage = 'xml' | 'json'
+
+export type JsonType =
+  | 'object'
+  | 'array'
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'null'
+  | 'var'
+  | 'missing'
+
+/** Extra detail on elements that come from a JSON document. */
+export interface JsonInfo {
+  type: JsonType
+  valueFrom: number
+  valueTo: number
+  /** Position of the closing `}` or `]`, or `null` when missing. */
+  close: number | null
+  /** An array entry, named by its index instead of a key. */
+  item: boolean
+}
 
 export interface XmlAttr {
   name: string
@@ -38,6 +62,7 @@ export interface XmlElement {
   selfClosing: boolean
   attrs: Array<XmlAttr>
   children: Array<XmlNode>
+  json?: JsonInfo
 }
 
 export interface XmlText {
@@ -64,6 +89,7 @@ export interface XmlError {
 }
 
 export interface XmlDocument {
+  language: DocLanguage
   nodes: Array<XmlNode>
   /** The first top-level element, if any. */
   root: XmlElement | null
@@ -78,8 +104,12 @@ export function childElements(el: XmlElement): Array<XmlElement> {
   return el.children.filter(isElement)
 }
 
-/** A leaf element has no child elements, so its text can be edited inline. */
+/**
+ * A leaf element has no child elements, so its text can be edited inline.
+ * JSON objects and arrays are never leaves, even when empty.
+ */
 export function isLeaf(el: XmlElement): boolean {
+  if (el.json) return el.json.type !== 'object' && el.json.type !== 'array'
   return !el.children.some(isElement)
 }
 
