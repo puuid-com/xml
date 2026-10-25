@@ -2,9 +2,10 @@ import { IconFileCode, IconPlus, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
 
 import { newFile } from './files'
+import { ToolbarButton } from './ToolbarButton'
 import { askClose, askRename } from './ui-store'
-import { Button } from '#/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
+import { shortcuts } from '#/lib/shortcuts'
 import { reorderFile } from '#/lib/store/files'
 import { setActive } from '#/lib/store/session'
 import { cn } from '#/lib/utils'
@@ -97,16 +98,15 @@ export function TabStrip({
               </button>
             </div>
           ))}
-          <Button
-            variant="ghost"
+          <ToolbarButton
+            label={m.file_new()}
+            shortcut={shortcuts.newFile}
             size="icon-sm"
             className="mx-1 self-center"
-            aria-label={m.file_new()}
-            title={m.file_new()}
             onClick={newFile}
           >
             <IconPlus />
-          </Button>
+          </ToolbarButton>
         </TabsList>
       </Tabs>
     </div>

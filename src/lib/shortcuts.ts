@@ -1,11 +1,16 @@
 import { alt, mod } from './platform'
+import type { Hotkey } from '@tanstack/react-hotkeys'
 
-// Keyboard shortcuts: the CodeMirror binding, when the editor handles it, and
-// the keys as shown to people.
+// Keyboard shortcuts: the CodeMirror binding, when the editor handles it, the
+// app-wide hotkey, when the page handles it, and the keys as shown to people.
+// Browsers keep ⌘N and ⌘W for themselves, so file shortcuts that VS Code puts
+// there use the same keys as VS Code for the Web instead.
 
 export interface Shortcut {
   /** CodeMirror key name, for shortcuts bound in the editor keymap. */
   key?: string
+  /** TanStack Hotkeys binding, for shortcuts that work anywhere on the page. */
+  hotkey?: Hotkey
   keys: ReadonlyArray<string>
 }
 
@@ -14,8 +19,12 @@ export const shortcuts = {
   save: { key: 'Mod-s', keys: [mod, 'S'] },
   highlight: { key: 'Alt-h', keys: [alt, 'H'] },
   applyDefaults: { key: 'Shift-Alt-d', keys: ['⇧', alt, 'D'] },
-  palette: { keys: [mod, 'K'] },
-  openFile: { keys: [mod, 'O'] },
+  palette: { hotkey: 'Mod+K', keys: [mod, 'K'] },
+  quickOpen: { hotkey: 'Mod+P', keys: [mod, 'P'] },
+  openFile: { hotkey: 'Mod+O', keys: [mod, 'O'] },
+  newFile: { hotkey: 'Mod+Alt+N', keys: [alt, mod, 'N'] },
+  rename: { hotkey: 'F2', keys: ['F2'] },
+  togglePanel: { hotkey: 'Mod+B', keys: [mod, 'B'] },
 } satisfies Record<string, Shortcut>
 
 /** The keys run together, as in `⇧⌥F`. */

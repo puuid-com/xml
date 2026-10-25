@@ -15,7 +15,7 @@ import { ACCEPTED_TYPES, importFiles, newFile, newJsonFile } from './files'
 import { SidePanel } from './SidePanel'
 import { StatusBar } from './StatusBar'
 import { TabStrip } from './TabStrip'
-import { setPaletteOpen, uiStore } from './ui-store'
+import { useAppShortcuts } from './use-app-shortcuts'
 import { CodeEditor } from '#/components/editor/CodeEditor'
 import { QuickHighlight } from '#/components/highlights/QuickHighlight'
 import { Button } from '#/components/ui/button'
@@ -59,21 +59,7 @@ export function EditorApp() {
 
   const openFromDisk = () => inputRef.current?.click()
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return
-      const key = e.key.toLowerCase()
-      if (key === 'k') {
-        e.preventDefault()
-        setPaletteOpen(!uiStore.state.paletteOpen)
-      } else if (key === 'o') {
-        e.preventDefault()
-        inputRef.current?.click()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  useAppShortcuts({ activeId, onOpenFromDisk: openFromDisk })
 
   const layout = useDefaultLayout({
     id: `xml-main-${wide ? 'h' : 'v'}`,

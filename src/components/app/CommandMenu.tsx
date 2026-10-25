@@ -191,6 +191,9 @@ function FileCommands({
               <CommandItem onSelect={() => run(() => askRename(activeId))}>
                 <IconPencil />
                 {m.file_rename()}
+                <CommandShortcut>
+                  {shortcutLabel(shortcuts.rename)}
+                </CommandShortcut>
               </CommandItem>
               <CommandItem onSelect={() => run(() => downloadFile(activeId))}>
                 <IconDownload />
@@ -208,6 +211,9 @@ function FileCommands({
           <CommandItem onSelect={() => run(newFile)}>
             <IconFilePlus />
             {m.file_new()}
+            <CommandShortcut>
+              {shortcutLabel(shortcuts.newFile)}
+            </CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => run(newJsonFile)}>
             <IconFilePlus />

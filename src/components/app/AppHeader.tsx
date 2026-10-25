@@ -6,6 +6,7 @@ import { useSelector } from '@tanstack/react-store'
 
 import { LogoButton } from './CommandMenu'
 import { ToolbarButton } from './ToolbarButton'
+import { shortcuts } from '#/lib/shortcuts'
 import { sessionStore, setPanelOpen } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 
@@ -23,6 +24,7 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
 
       <ToolbarButton
         label={m.action_toggle_panel()}
+        shortcut={shortcuts.togglePanel}
         size="icon-sm"
         className="mx-1"
         aria-pressed={panelOpen}
