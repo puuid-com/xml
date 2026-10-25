@@ -29,17 +29,20 @@ export function newJsonFile() {
 
 /** Reads dropped or picked files and opens each in a tab. */
 export async function importFiles(list: FileList | Array<File>) {
+  const files = Array.from(list)
+  const contents = await Promise.allSettled(files.map((file) => file.text()))
   let last: string | null = null
-  for (const file of Array.from(list)) {
-    try {
-      const created = createFile(file.name, await file.text())
-      last = created.id
-    } catch (error) {
-      toast.error(m.file_import_failed({ name: file.name }), {
-        duration: 4000,
-        description: error instanceof Error ? error.message : undefined,
-      })
+  for (const [i, result] of contents.entries()) {
+    const { name } = files[i]
+    if (result.status === 'fulfilled') {
+      last = createFile(name, result.value).id
+      continue
     }
+    toast.error(m.file_import_failed({ name }), {
+      duration: 4000,
+      description:
+        result.reason instanceof Error ? result.reason.message : undefined,
+    })
   }
   if (last) setActive(last)
 }

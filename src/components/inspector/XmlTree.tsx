@@ -126,14 +126,9 @@ export function XmlTree() {
   // Follow the editor cursor: expand collapsed ancestors and scroll to it.
   useEffect(() => {
     if (!selectedPath || !fileId) return
-    const hidden = new Set(
-      ancestorPaths(selectedPath).filter((p) => collapsed.has(p)),
-    )
-    if (hidden.size > 0) {
-      setCollapsed(
-        fileId,
-        collapsedList.filter((p) => !hidden.has(p)),
-      )
+    const hidden = ancestorPaths(selectedPath).filter((p) => collapsed.has(p))
+    if (hidden.length > 0) {
+      setCollapsed(fileId, hidden, false)
       return
     }
     const index = rows.findIndex((r) => r.el.path === selectedPath)
@@ -278,17 +273,16 @@ function TreeRowView({
         ? '[]'
         : null
 
+  // Collapsing keeps this row open; expanding opens it too.
   const collapseChildren = (collapse: boolean) => {
-    const paths = allElements([el])
+    const descendants = allElements([el])
       .filter((e) => e !== el && !isLeaf(e))
       .map((e) => e.path)
-    const current = new Set(sessionStore.state.collapsed[fileId] ?? [])
-    for (const p of paths) {
-      if (collapse) current.add(p)
-      else current.delete(p)
-    }
-    if (!collapse) current.delete(el.path)
-    setCollapsed(fileId, [...current])
+    setCollapsed(
+      fileId,
+      collapse ? descendants : [el.path, ...descendants],
+      collapse,
+    )
   }
 
   return (

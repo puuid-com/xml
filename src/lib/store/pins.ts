@@ -1,32 +1,16 @@
-import {
-  createCollection,
-  localStorageCollectionOptions,
-} from '@tanstack/react-db'
 import { z } from 'zod'
 
-import { newId } from './files'
-import { singleton } from './singleton'
+import { localCollection, newId } from './persist'
 
-export const pinSchema = z.object({
+const pinSchema = z.object({
   id: z.string(),
   /** Exact tag or key name, prefix included (`soap:Body`). */
   tag: z.string(),
   createdAt: z.number(),
 })
 
-export type Pin = z.infer<typeof pinSchema>
-
 // Global across files, synced across browser tabs like the highlights.
-export const pinsCollection = singleton('pins', () =>
-  createCollection(
-    localStorageCollectionOptions({
-      id: 'pins',
-      storageKey: 'xml-editor:pins',
-      getKey: (pin) => pin.id,
-      schema: pinSchema,
-    }),
-  ),
-)
+export const pinsCollection = localCollection('pins', pinSchema)
 
 export function findPin(tag: string) {
   return [...pinsCollection.values()].find((p) => p.tag === tag)

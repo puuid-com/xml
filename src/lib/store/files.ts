@@ -1,15 +1,10 @@
-import {
-  createCollection,
-  createPacedMutations,
-  debounceStrategy,
-  localStorageCollectionOptions,
-} from '@tanstack/react-db'
+import { createPacedMutations, debounceStrategy } from '@tanstack/react-db'
 import { z } from 'zod'
 
+import { localCollection, newId } from './persist'
 import { writerId } from './session'
-import { singleton } from './singleton'
 
-export const fileSchema = z.object({
+const fileSchema = z.object({
   id: z.string(),
   name: z.string(),
   content: z.string(),
@@ -21,12 +16,10 @@ export const fileSchema = z.object({
 
 export type XmlFile = z.infer<typeof fileSchema>
 
-const STORAGE_KEY = 'xml-editor:files'
-
 // Files used to outlive their tab. Drop those so storage only holds tabs.
-function pruneClosed() {
+function pruneClosed(storageKey: string) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(storageKey)
     if (!raw) return
     const stored = JSON.parse(raw) as Record<
       string,
@@ -35,28 +28,13 @@ function pruneClosed() {
     const kept = Object.fromEntries(
       Object.entries(stored).filter(([, item]) => item.data?.open !== false),
     )
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(kept))
+    localStorage.setItem(storageKey, JSON.stringify(kept))
   } catch {
     // No storage (SSR, private mode).
   }
 }
 
-// localStorage events keep every browser tab of the site in sync.
-export const filesCollection = singleton('files', () => {
-  pruneClosed()
-  return createCollection(
-    localStorageCollectionOptions({
-      id: 'files',
-      storageKey: STORAGE_KEY,
-      getKey: (file) => file.id,
-      schema: fileSchema,
-    }),
-  )
-})
-
-export function newId() {
-  return crypto.randomUUID()
-}
+export const filesCollection = localCollection('files', fileSchema, pruneClosed)
 
 function nextOrder() {
   let max = 0

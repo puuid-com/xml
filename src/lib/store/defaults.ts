@@ -1,13 +1,8 @@
-import {
-  createCollection,
-  localStorageCollectionOptions,
-} from '@tanstack/react-db'
 import { z } from 'zod'
 
-import { newId } from './files'
-import { singleton } from './singleton'
+import { localCollection, newId } from './persist'
 
-export const defaultValueSchema = z.object({
+const defaultValueSchema = z.object({
   id: z.string(),
   /** Tag name (`soap:Body`), or `@name` for an attribute. */
   key: z.string(),
@@ -19,15 +14,9 @@ export const defaultValueSchema = z.object({
 export type DefaultValue = z.infer<typeof defaultValueSchema>
 
 // Global across files, synced across browser tabs like the highlights.
-export const defaultsCollection = singleton('defaults', () =>
-  createCollection(
-    localStorageCollectionOptions({
-      id: 'defaults',
-      storageKey: 'xml-editor:defaults',
-      getKey: (rule) => rule.id,
-      schema: defaultValueSchema,
-    }),
-  ),
+export const defaultsCollection = localCollection(
+  'defaults',
+  defaultValueSchema,
 )
 
 export function findDefault(key: string) {

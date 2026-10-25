@@ -1,11 +1,6 @@
-import {
-  createCollection,
-  localStorageCollectionOptions,
-} from '@tanstack/react-db'
 import { z } from 'zod'
 
-import { newId } from './files'
-import { singleton } from './singleton'
+import { localCollection, newId } from './persist'
 
 /** Preset swatches; each maps to a `--hl-<name>` token in styles.css. */
 export const HIGHLIGHT_PRESETS = [
@@ -21,7 +16,7 @@ export const HIGHLIGHT_PRESETS = [
 
 export type HighlightPreset = (typeof HIGHLIGHT_PRESETS)[number]
 
-export const highlightSchema = z.object({
+const highlightSchema = z.object({
   id: z.string(),
   /** Exact tag name, prefix included (`soap:Body`). */
   tag: z.string(),
@@ -34,15 +29,9 @@ export const highlightSchema = z.object({
 export type Highlight = z.infer<typeof highlightSchema>
 
 // Global across files, synced across browser tabs like the files.
-export const highlightsCollection = singleton('highlights', () =>
-  createCollection(
-    localStorageCollectionOptions({
-      id: 'highlights',
-      storageKey: 'xml-editor:highlights',
-      getKey: (rule) => rule.id,
-      schema: highlightSchema,
-    }),
-  ),
+export const highlightsCollection = localCollection(
+  'highlights',
+  highlightSchema,
 )
 
 export function isPreset(color: string): color is HighlightPreset {
