@@ -164,13 +164,6 @@ const theme = EditorView.theme({
     right: '0',
     height: '2px',
   },
-  // <<variables>> get a tinted pill so they stand out from markup.
-  '.cm-var': {
-    color: 'var(--syntax-var)',
-    backgroundColor: 'color-mix(in oklch, var(--syntax-var) 20%, transparent)',
-    boxShadow: 'inset 0 -1.5px 0 var(--syntax-var)',
-    borderRadius: '3px',
-  },
 })
 
 const highlightStyle = HighlightStyle.define([
@@ -191,7 +184,7 @@ const varDecorator = new MatchDecorator({
   regexp: varRegExp(),
   decoration: (match) =>
     Decoration.mark({
-      class: 'cm-var',
+      class: 'cm-var var-chip',
       attributes: { title: m.var_tooltip({ name: match[1] }) },
     }),
 })

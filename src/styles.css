@@ -55,7 +55,7 @@
   --syntax-comment: oklch(0.6 0 0);
   --syntax-meta: oklch(0.58 0.14 60);
   --syntax-entity: oklch(0.55 0.2 355);
-  --syntax-var: oklch(0.52 0.1 195);
+  --syntax-var: oklch(0.5 0 0);
   --syntax-gutter: oklch(0.72 0 0);
   --syntax-selection: oklch(0.53 0.19 257 / 16%);
   --syntax-active-line: oklch(0.145 0 0 / 3%);
@@ -116,7 +116,7 @@
   --syntax-comment: oklch(0.56 0 0);
   --syntax-meta: oklch(0.82 0.13 78);
   --syntax-entity: oklch(0.77 0.15 355);
-  --syntax-var: oklch(0.82 0.11 190);
+  --syntax-var: oklch(0.7 0 0);
   --syntax-gutter: oklch(0.42 0 0);
   --syntax-selection: oklch(0.76 0.13 250 / 22%);
   --syntax-active-line: oklch(1 0 0 / 3%);
@@ -207,6 +207,28 @@
     background-color: color-mix(in oklch, var(--hl) 11%, transparent);
     box-shadow: 0 0 0 1px color-mix(in oklch, var(--hl) 40%, transparent);
     border-radius: 3px;
+  }
+
+  /*
+   * A `<<variable>>`: neutral grey with a dashed ring and a leading `(x)` icon,
+   * so it never reads as one of the coloured tag highlights.
+   */
+  .var-chip {
+    color: var(--syntax-var);
+    background-color: color-mix(in oklch, var(--syntax-var) 12%, transparent);
+    outline: 1px dashed color-mix(in oklch, var(--syntax-var) 60%, transparent);
+    border-radius: 3px;
+  }
+  .var-chip::before {
+    content: '';
+    display: inline-block;
+    width: 0.9em;
+    height: 0.9em;
+    margin-inline: 0.15em 0.2em;
+    vertical-align: -0.1em;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 21s-4-3-4-9 4-9 4-9'/%3E%3Cpath d='M16 3s4 3 4 9-4 9-4 9'/%3E%3Cpath d='M15 9l-6 6M9 9l6 6'/%3E%3C/svg%3E")
+      center / contain no-repeat;
   }
 }
 

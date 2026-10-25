@@ -13,10 +13,7 @@ export function VarText({
     <span className={cn('truncate', className)}>
       {splitVars(text).map((part, i) =>
         part.kind === 'var' ? (
-          <span
-            key={i}
-            className="rounded-[3px] bg-syntax-var/20 text-syntax-var shadow-[inset_0_-1.5px_0_var(--syntax-var)]"
-          >
+          <span key={i} className="var-chip">
             {part.value}
           </span>
         ) : (
