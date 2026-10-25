@@ -28,18 +28,24 @@ import { Button } from '#/components/ui/button'
 import { ButtonGroup } from '#/components/ui/button-group'
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
 import { Kbd, KbdGroup } from '#/components/ui/kbd'
+import { Label } from '#/components/ui/label'
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from '#/components/ui/popover'
 import { Separator } from '#/components/ui/separator'
+import { Switch } from '#/components/ui/switch'
+import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import {
   Tooltip,
   TooltipContent,
@@ -199,8 +205,8 @@ function FormatControls({ disabled }: { disabled: boolean }) {
           </KbdGroup>
         </TooltipContent>
       </Tooltip>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      <Popover>
+        <PopoverTrigger asChild>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -208,58 +214,100 @@ function FormatControls({ disabled }: { disabled: boolean }) {
           >
             <IconChevronDown className="text-muted-foreground" />
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-64">
-          <DropdownMenuCheckboxItem
-            checked={settings.formatOnSave}
-            onCheckedChange={(v) => setFormatSetting('formatOnSave', v)}
-            onSelect={(e) => e.preventDefault()}
-          >
-            {m.format_on_save()}
-            <DropdownMenuShortcut>{mod}S</DropdownMenuShortcut>
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>{m.format_options()}</DropdownMenuLabel>
-          <DropdownMenuCheckboxItem
-            checked={settings.removeEmptyLines}
-            onCheckedChange={(v) => setFormatSetting('removeEmptyLines', v)}
-            onSelect={(e) => e.preventDefault()}
-          >
-            {m.format_remove_empty_lines()}
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem
-            checked={settings.trimVars}
-            onCheckedChange={(v) => setFormatSetting('trimVars', v)}
-            onSelect={(e) => e.preventDefault()}
-          >
-            {m.format_trim_vars()}
-          </DropdownMenuCheckboxItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>{m.format_sort()}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup
-            value={settings.sort}
-            onValueChange={(v) => setFormatSetting('sort', v as SortOrder)}
-          >
-            <DropdownMenuRadioItem value="none">
-              {m.format_sort_none()}
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="asc">
-              {m.format_sort_asc()}
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="desc">
-              {m.format_sort_desc()}
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem
-            checked={settings.highlightedFirst}
-            onCheckedChange={(v) => setFormatSetting('highlightedFirst', v)}
-            onSelect={(e) => e.preventDefault()}
-          >
-            {m.format_highlighted_first()}
-          </DropdownMenuCheckboxItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72 gap-0 p-0">
+          <PopoverHeader className="px-3 py-2.5">
+            <PopoverTitle>{m.format_options()}</PopoverTitle>
+          </PopoverHeader>
+          <Separator />
+          <div className="flex flex-col py-1">
+            <SettingSwitch
+              id="format-on-save"
+              checked={settings.formatOnSave}
+              onCheckedChange={(v) => setFormatSetting('formatOnSave', v)}
+            >
+              {m.format_on_save()}
+              <KbdGroup>
+                <Kbd>{mod}</Kbd>
+                <Kbd>S</Kbd>
+              </KbdGroup>
+            </SettingSwitch>
+            <SettingSwitch
+              id="format-remove-empty-lines"
+              checked={settings.removeEmptyLines}
+              onCheckedChange={(v) => setFormatSetting('removeEmptyLines', v)}
+            >
+              {m.format_remove_empty_lines()}
+            </SettingSwitch>
+            <SettingSwitch
+              id="format-trim-vars"
+              checked={settings.trimVars}
+              onCheckedChange={(v) => setFormatSetting('trimVars', v)}
+            >
+              {m.format_trim_vars()}
+            </SettingSwitch>
+            <SettingSwitch
+              id="format-highlighted-first"
+              checked={settings.highlightedFirst}
+              onCheckedChange={(v) => setFormatSetting('highlightedFirst', v)}
+            >
+              {m.format_highlighted_first()}
+            </SettingSwitch>
+          </div>
+          <Separator />
+          <div className="flex flex-col gap-2 px-3 py-2.5">
+            <span className="text-muted-foreground">{m.format_sort()}</span>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              spacing={0}
+              className="w-full"
+              value={settings.sort}
+              onValueChange={(v) => {
+                if (v) setFormatSetting('sort', v as SortOrder)
+              }}
+            >
+              <ToggleGroupItem value="none" className="flex-1">
+                {m.format_sort_none()}
+              </ToggleGroupItem>
+              <ToggleGroupItem value="asc" className="flex-1">
+                {m.format_sort_asc()}
+              </ToggleGroupItem>
+              <ToggleGroupItem value="desc" className="flex-1">
+                {m.format_sort_desc()}
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        </PopoverContent>
+      </Popover>
     </ButtonGroup>
+  )
+}
+
+function SettingSwitch({
+  id,
+  checked,
+  onCheckedChange,
+  children,
+}: {
+  id: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+  children: React.ReactNode
+}) {
+  return (
+    <Label
+      htmlFor={id}
+      className="justify-between gap-4 px-3 py-2 leading-normal hover:bg-muted"
+    >
+      <span className="flex items-center gap-2">{children}</span>
+      <Switch
+        id={id}
+        size="sm"
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+      />
+    </Label>
   )
 }
