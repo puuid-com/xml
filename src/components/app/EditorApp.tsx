@@ -13,6 +13,7 @@ import { ArchiveDialog } from './ArchiveDialog'
 import { CommandMenu } from './CommandMenu'
 import { CloseDialog, DefaultsConfirmDialog, RenameDialog } from './Dialogs'
 import { ACCEPTED_TYPES, importFiles, newFile, newJsonFile } from './files'
+import { ShareDialog } from './ShareDialog'
 import { SidePanel } from './SidePanel'
 import { StatusBar } from './StatusBar'
 import { TabStrip } from './TabStrip'
@@ -138,6 +139,7 @@ export function EditorApp() {
       <ProfileDialog />
       <DeleteProfileDialog />
       <QuickHighlight />
+      <ShareDialog />
 
       <div
         aria-hidden={!dragging}

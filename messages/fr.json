@@ -196,5 +196,19 @@
   "profile_delete_title": "Supprimer {name} ?",
   "profile_delete_description": "Ses options de format, surlignages, épingles et valeurs par défaut sont supprimés. Ses fichiers passent à {fallback}.",
   "profile_delete_confirm": "Supprimer le profil",
-  "profile_delete_failed": "Impossible de supprimer le profil."
+  "profile_delete_failed": "Impossible de supprimer le profil.",
+  "share_copy": "Copier le lien de partage",
+  "share_copy_hint": "Le contenu du fichier voyage dans le lien.",
+  "share_keywords": "partager url lien",
+  "share_copied": "Lien de partage copié",
+  "share_copied_detail": "Toute personne ayant le lien peut lire le fichier.",
+  "share_too_large": "Ce fichier est trop volumineux pour être partagé par lien.",
+  "share_failed": "Impossible de copier le lien de partage.",
+  "share_open_title": "Ouvrir le fichier partagé {name} ?",
+  "share_open_description": "Il s'ouvre dans un nouvel onglet. Le contenu provient du lien : vérifiez-le avant de vous y fier.",
+  "share_open_confirm": "Ouvrir",
+  "share_open_cancel": "Annuler",
+  "share_opened": "{name} ouvert",
+  "share_open_invalid": "Ce lien de partage est invalide.",
+  "share_open_too_large": "Ce lien de partage est trop volumineux pour être ouvert."
 }

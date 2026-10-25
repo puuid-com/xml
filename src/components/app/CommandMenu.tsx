@@ -11,6 +11,7 @@ import {
   IconHighlight,
   IconJson,
   IconLanguage,
+  IconLink,
   IconPencil,
   IconPlus,
   IconReplace,
@@ -34,6 +35,7 @@ import {
 import {
   applyDefaultsActive,
   copyActive,
+  copyShareLink,
   downloadFile,
   highlightAtCursor,
   resolveVarsActive,
@@ -224,6 +226,18 @@ function FileCommands({
               <CommandItem onSelect={() => run(() => void copyActive())}>
                 <IconClipboard />
                 {m.file_copy()}
+              </CommandItem>
+              <CommandItem
+                keywords={[m.share_keywords()]}
+                onSelect={() => run(() => void copyShareLink())}
+              >
+                <IconLink />
+                <div className="flex flex-col">
+                  {m.share_copy()}
+                  <span className="text-xs text-muted-foreground">
+                    {m.share_copy_hint()}
+                  </span>
+                </div>
               </CommandItem>
             </CommandGroup>
           </>

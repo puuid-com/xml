@@ -196,5 +196,19 @@
   "profile_delete_title": "Delete {name}?",
   "profile_delete_description": "Its format settings, highlights, pins and defaults are deleted. Its files switch to {fallback}.",
   "profile_delete_confirm": "Delete profile",
-  "profile_delete_failed": "Could not delete the profile."
+  "profile_delete_failed": "Could not delete the profile.",
+  "share_copy": "Copy share link",
+  "share_copy_hint": "The file's content travels inside the link.",
+  "share_keywords": "share url link",
+  "share_copied": "Share link copied",
+  "share_copied_detail": "Anyone with the link can read the file.",
+  "share_too_large": "This file is too large to share as a link.",
+  "share_failed": "Couldn't copy the share link.",
+  "share_open_title": "Open shared file {name}?",
+  "share_open_description": "It opens in a new tab. The content came inside the link, so check it before you trust it.",
+  "share_open_confirm": "Open",
+  "share_open_cancel": "Cancel",
+  "share_opened": "Opened {name}",
+  "share_open_invalid": "This share link is broken.",
+  "share_open_too_large": "This share link is too large to open."
 }
