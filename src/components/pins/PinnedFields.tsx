@@ -1,13 +1,18 @@
 import { IconPin, IconX } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 
-import { cycleTag, revealTag } from '#/components/editor/actions'
+import { PanelHeading } from '#/components/app/PanelHeading'
+import { cycleTag } from '#/components/editor/actions'
 import { editAtPath, editorStore } from '#/components/editor/editor-store'
+import { hlStyle } from '#/components/highlights/hl-style'
+import {
+  MatchNavItems,
+  PinMenuItem,
+} from '#/components/highlights/TagMenuItems'
 import { useDraft } from '#/components/inspector/use-draft'
 import {
   ContextMenu,
   ContextMenuContent,
-  ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '#/components/ui/context-menu'
@@ -24,7 +29,7 @@ import { setValue } from '#/lib/document'
 import { unpinTag } from '#/lib/store/pins'
 import { cn } from '#/lib/utils'
 import { allElements } from '#/lib/xml/locate'
-import { isLeaf, leafValue } from '#/lib/xml/model'
+import { hasName, isTextLeaf, leafValue } from '#/lib/xml/model'
 import { m } from '#/paraglide/messages'
 import type { XmlElement } from '#/lib/xml/model'
 
@@ -38,7 +43,7 @@ export function PinnedFields() {
   if (pins.length === 0) return null
 
   const leaves = allElements(doc.nodes).filter(
-    (el) => isLeaf(el) && !el.selfClosing && !el.json?.item,
+    (el) => hasName(el) && isTextLeaf(el),
   )
 
   return (
@@ -46,11 +51,11 @@ export function PinnedFields() {
       aria-label={m.pins_title()}
       className="flex max-h-[45%] shrink-0 flex-col border-b"
     >
-      <h2 className="flex h-8 shrink-0 items-center gap-1.5 border-b px-3 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+      <PanelHeading>
         <IconPin aria-hidden className="size-3.5" />
         {m.pins_title()}
         <span className="tabular-nums">{pins.length}</span>
-      </h2>
+      </PanelHeading>
       <div className="grid min-h-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 overflow-auto px-3 py-2">
         {pins.map((pin) => {
           const matches = leaves.filter((el) => el.name === pin.tag)
@@ -100,31 +105,16 @@ function PinnedField({
               'max-w-40 cursor-pointer truncate text-left font-mono text-xs font-medium',
               color ? 'hl-tag px-1' : 'text-syntax-tag',
             )}
-            style={
-              color ? ({ '--hl': color } as React.CSSProperties) : undefined
-            }
+            style={hlStyle(color)}
             onClick={() => cycleTag(tag)}
           >
             <span className={cn(color && 'hl-ink')}>{tag}</span>
           </button>
         </ContextMenuTrigger>
         <ContextMenuContent className="w-48">
-          <ContextMenuItem
-            disabled={count === 0}
-            onSelect={() => revealTag(tag, 1)}
-          >
-            {m.highlight_next()}
-          </ContextMenuItem>
-          <ContextMenuItem
-            disabled={count === 0}
-            onSelect={() => revealTag(tag, -1)}
-          >
-            {m.highlight_prev()}
-          </ContextMenuItem>
+          <MatchNavItems tag={tag} count={count} />
           <ContextMenuSeparator />
-          <ContextMenuItem onSelect={() => unpinTag(tag)}>
-            {m.pin_remove({ name: tag })}
-          </ContextMenuItem>
+          <PinMenuItem tag={tag} />
         </ContextMenuContent>
       </ContextMenu>
       <InputGroup className="h-6 bg-background font-mono">

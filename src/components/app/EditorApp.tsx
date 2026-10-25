@@ -35,6 +35,7 @@ import {
 } from '#/components/ui/resizable'
 import { useOpenFiles } from '#/hooks/use-files'
 import { useMediaQuery } from '#/hooks/use-media-query'
+import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import { sessionStore, setActive } from '#/lib/store/session'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
@@ -197,7 +198,9 @@ function Welcome({ onOpenFromDisk }: { onOpenFromDisk: () => void }) {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          {m.welcome_hint_prefix()} <Kbd>⌘K</Kbd> {m.welcome_hint_suffix()}
+          {m.welcome_hint_prefix()}{' '}
+          <Kbd>{shortcutLabel(shortcuts.palette)}</Kbd>{' '}
+          {m.welcome_hint_suffix()}
         </p>
       </EmptyContent>
     </Empty>

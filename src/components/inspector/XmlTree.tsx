@@ -6,7 +6,7 @@ import {
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { toast } from 'sonner'
 
@@ -20,26 +20,21 @@ import {
   revealElement,
   revealRange,
 } from '#/components/editor/editor-store'
-import { ColorSwatches } from '#/components/highlights/ColorSwatches'
+import { hlStyle } from '#/components/highlights/hl-style'
+import {
+  HighlightMenuItems,
+  PinMenuItem,
+} from '#/components/highlights/TagMenuItems'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '#/components/ui/context-menu'
 import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
 import { usePins } from '#/hooks/use-pins'
-import {
-  findHighlight,
-  removeHighlight,
-  setHighlight,
-} from '#/lib/store/highlights'
-import { togglePin } from '#/lib/store/pins'
 import {
   sessionStore,
   setCollapsed,
@@ -65,13 +60,16 @@ import {
   displayPath,
   flattenVisible,
 } from '#/lib/xml/locate'
-import { isLeaf, leafValue } from '#/lib/xml/model'
+import { hasName, isLeaf, isTextLeaf, leafValue } from '#/lib/xml/model'
 import { m } from '#/paraglide/messages'
 import type { DefaultIndex } from '#/lib/xml/defaults'
 import type { TreeRow } from '#/lib/xml/locate'
+import type { XmlElement } from '#/lib/xml/model'
 
 const ROW_HEIGHT = 26
 const INDENT = 14
+/** Attributes shown inline; the rest are counted. */
+const MAX_ATTRS = 3
 const NO_COLLAPSED: Array<string> = []
 
 export function XmlTree() {
@@ -124,16 +122,19 @@ export function XmlTree() {
   useScrollSync(scrollRef, rows, ROW_HEIGHT, fileId)
 
   // Follow the editor cursor: expand collapsed ancestors and scroll to it.
-  useEffect(() => {
+  // Only a cursor move triggers this, so collapsing a row by hand sticks.
+  const followCursor = useEffectEvent(() => {
     if (!selectedPath || !fileId) return
     const hidden = ancestorPaths(selectedPath).filter((p) => collapsed.has(p))
     if (hidden.length > 0) {
       setCollapsed(fileId, hidden, false)
       return
     }
-    const index = rows.findIndex((r) => r.el.path === selectedPath)
+    const index = indexOf(selectedPath)
     if (index >= 0) virtualizer.scrollToIndex(index, { align: 'auto' })
-  }, [selectedPath, fileId, rows.length])
+  })
+  // `rows.length` re-runs it once expanded ancestors have rendered their rows.
+  useEffect(() => followCursor(), [selectedPath, fileId, rows.length])
 
   if (!fileId) return null
 
@@ -213,6 +214,7 @@ export function XmlTree() {
           >
             {virtualizer.getVirtualItems().map((item) => {
               const row = rows[item.index]
+              const named = hasName(row.el)
               return (
                 <TreeRowView
                   key={row.el.path}
@@ -224,10 +226,8 @@ export function XmlTree() {
                   top={item.start}
                   defaults={defaults}
                   selected={row.el.path === selectedPath}
-                  color={
-                    row.el.json?.item ? undefined : highlights.get(row.el.name)
-                  }
-                  pinned={!row.el.json?.item && pinned.has(row.el.name)}
+                  color={named ? highlights.get(row.el.name) : undefined}
+                  pinned={named && pinned.has(row.el.name)}
                 />
               )
             })}
@@ -263,27 +263,8 @@ function TreeRowView({
   pinned: boolean
 }) {
   const { el, depth, hasChildren, collapsed } = row
-  const leaf = isLeaf(el)
-  const item = el.json?.item ?? false
-  const rule = item ? undefined : findHighlight(el.name)
-  const empty =
-    !hasChildren && el.json?.type === 'object'
-      ? '{}'
-      : !hasChildren && el.json?.type === 'array'
-        ? '[]'
-        : null
-
-  // Collapsing keeps this row open; expanding opens it too.
-  const collapseChildren = (collapse: boolean) => {
-    const descendants = allElements([el])
-      .filter((e) => e !== el && !isLeaf(e))
-      .map((e) => e.path)
-    setCollapsed(
-      fileId,
-      collapse ? descendants : [el.path, ...descendants],
-      collapse,
-    )
-  }
+  const textLeaf = isTextLeaf(el)
+  const empty = hasChildren ? null : emptyContainer(el)
 
   return (
     <ContextMenu>
@@ -295,7 +276,7 @@ function TreeRowView({
           aria-level={depth + 1}
           aria-selected={selected}
           aria-expanded={hasChildren ? !collapsed : undefined}
-          aria-keyshortcuts={leaf && !el.selfClosing ? 'F2' : undefined}
+          aria-keyshortcuts={textLeaf ? 'F2' : undefined}
           onFocus={() => onFocusRow(el.path)}
           onClick={() => revealElement(el)}
           className={cn(
@@ -328,58 +309,8 @@ function TreeRowView({
           ) : (
             <span className="size-4 shrink-0" />
           )}
-          <span
-            className={cn(
-              'flex min-w-0 shrink items-center gap-1',
-              color && 'hl-tag mx-0.5 px-1',
-            )}
-            style={
-              color ? ({ '--hl': color } as React.CSSProperties) : undefined
-            }
-          >
-            <span
-              className={cn(
-                'shrink-0 font-medium',
-                color
-                  ? 'hl-ink'
-                  : item
-                    ? 'text-muted-foreground'
-                    : 'text-syntax-tag',
-              )}
-            >
-              {el.name}
-            </span>
-            {el.attrs.slice(0, 3).map((attr) => (
-              <span
-                key={attr.name}
-                className="flex min-w-0 shrink items-center truncate"
-              >
-                <span className="text-syntax-attr">{attr.name}</span>
-                <span className="text-syntax-punct">=</span>
-                {isDefaultAttr(defaults, attr) ? (
-                  <DefaultChip name={`@${attr.name}`} className="max-w-32">
-                    <VarText text={attr.value} />
-                  </DefaultChip>
-                ) : (
-                  <VarText
-                    text={attr.value}
-                    className={cn(
-                      'max-w-32 text-syntax-value',
-                      attrDiffers(defaults, attr) &&
-                        attr.value !== '' &&
-                        'default-differs leading-5',
-                    )}
-                  />
-                )}
-              </span>
-            ))}
-            {el.attrs.length > 3 && (
-              <span className="shrink-0 text-muted-foreground">
-                +{el.attrs.length - 3}
-              </span>
-            )}
-          </span>
-          {leaf && !el.selfClosing && (
+          <TagLabel el={el} color={color} defaults={defaults} />
+          {textLeaf && (
             <LeafValue
               path={el.path}
               value={leafValue(el)}
@@ -387,7 +318,7 @@ function TreeRowView({
               differs={leafDiffers(defaults, el)}
             />
           )}
-          {leaf && el.selfClosing && <span className="flex-1" />}
+          {isLeaf(el) && el.selfClosing && <span className="flex-1" />}
           {empty && <span className="ml-1 text-syntax-punct">{empty}</span>}
           {pinned && (
             <IconPin
@@ -397,77 +328,152 @@ function TreeRowView({
           )}
         </div>
       </ContextMenuTrigger>
-      <ContextMenuContent className="w-56">
-        {!item && (
-          <>
-            <ContextMenuSub>
-              <ContextMenuSubTrigger>
-                {m.highlight_tag({ name: el.name })}
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="p-2">
-                <ColorSwatches
-                  value={rule?.color}
-                  onSelect={(c) => setHighlight(el.name, c)}
-                />
-              </ContextMenuSubContent>
-            </ContextMenuSub>
-            {rule && (
-              <ContextMenuItem onSelect={() => removeHighlight(rule.id)}>
-                {m.highlight_remove()}
-              </ContextMenuItem>
-            )}
-            {leaf && !el.selfClosing && (
-              <ContextMenuItem onSelect={() => togglePin(el.name)}>
-                {pinned
-                  ? m.pin_remove({ name: el.name })
-                  : m.pin_tag({ name: el.name })}
-              </ContextMenuItem>
-            )}
-            <ContextMenuSeparator />
-          </>
+      <TreeRowMenu el={el} fileId={fileId} hasChildren={hasChildren} />
+    </ContextMenu>
+  )
+}
+
+/** `{}` or `[]` for an empty JSON object or array, else `null`. */
+function emptyContainer(el: XmlElement) {
+  if (el.json?.type === 'object') return '{}'
+  if (el.json?.type === 'array') return '[]'
+  return null
+}
+
+/** The tag name or key, then its first few attributes. */
+function TagLabel({
+  el,
+  color,
+  defaults,
+}: {
+  el: XmlElement
+  color: string | undefined
+  defaults: DefaultIndex
+}) {
+  return (
+    <span
+      className={cn(
+        'flex min-w-0 shrink items-center gap-1',
+        color && 'hl-tag mx-0.5 px-1',
+      )}
+      style={hlStyle(color)}
+    >
+      <span
+        className={cn(
+          'shrink-0 font-medium',
+          color
+            ? 'hl-ink'
+            : hasName(el)
+              ? 'text-syntax-tag'
+              : 'text-muted-foreground',
         )}
-        {canAddChild(el) && (
-          <ContextMenuItem
-            onSelect={() =>
-              editAtPath(el.path, (fresh, text) =>
-                addChildTo(text, fresh, el.json ? 'key' : 'element'),
-              )
-            }
-          >
-            {m.node_add_child()}
-          </ContextMenuItem>
-        )}
-        {hasChildren && (
-          <>
-            <ContextMenuItem onSelect={() => collapseChildren(true)}>
-              {m.tree_collapse_all()}
-            </ContextMenuItem>
-            <ContextMenuItem onSelect={() => collapseChildren(false)}>
-              {m.tree_expand_all()}
-            </ContextMenuItem>
-          </>
-        )}
-        <ContextMenuItem
-          onSelect={() => {
-            void navigator.clipboard.writeText(displayPath(el.path).join('/'))
-            toast.success(m.copied())
-          }}
+      >
+        {el.name}
+      </span>
+      {el.attrs.slice(0, MAX_ATTRS).map((attr) => (
+        <span
+          key={attr.name}
+          className="flex min-w-0 shrink items-center truncate"
         >
-          {m.node_copy_path()}
-        </ContextMenuItem>
-        <ContextMenuSeparator />
+          <span className="text-syntax-attr">{attr.name}</span>
+          <span className="text-syntax-punct">=</span>
+          {isDefaultAttr(defaults, attr) ? (
+            <DefaultChip name={`@${attr.name}`} className="max-w-32">
+              <VarText text={attr.value} />
+            </DefaultChip>
+          ) : (
+            <VarText
+              text={attr.value}
+              className={cn(
+                'max-w-32 text-syntax-value',
+                attrDiffers(defaults, attr) &&
+                  attr.value !== '' &&
+                  'default-differs leading-5',
+              )}
+            />
+          )}
+        </span>
+      ))}
+      {el.attrs.length > MAX_ATTRS && (
+        <span className="shrink-0 text-muted-foreground">
+          +{el.attrs.length - MAX_ATTRS}
+        </span>
+      )}
+    </span>
+  )
+}
+
+function TreeRowMenu({
+  el,
+  fileId,
+  hasChildren,
+}: {
+  el: XmlElement
+  fileId: string
+  hasChildren: boolean
+}) {
+  // Collapsing keeps this row open; expanding opens it too.
+  const collapseChildren = (collapse: boolean) => {
+    const descendants = allElements([el])
+      .filter((e) => e !== el && !isLeaf(e))
+      .map((e) => e.path)
+    setCollapsed(
+      fileId,
+      collapse ? descendants : [el.path, ...descendants],
+      collapse,
+    )
+  }
+
+  return (
+    <ContextMenuContent className="w-56">
+      {hasName(el) && (
+        <>
+          <HighlightMenuItems tag={el.name} />
+          {isTextLeaf(el) && <PinMenuItem tag={el.name} />}
+          <ContextMenuSeparator />
+        </>
+      )}
+      {canAddChild(el) && (
         <ContextMenuItem
-          variant="destructive"
           onSelect={() =>
-            editAtPath(el.path, (fresh, text, doc) =>
-              removeElement(text, fresh, doc),
+            editAtPath(el.path, (fresh, text) =>
+              addChildTo(text, fresh, el.json ? 'key' : 'element'),
             )
           }
         >
-          {m.node_delete()}
+          {m.node_add_child()}
         </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+      )}
+      {hasChildren && (
+        <>
+          <ContextMenuItem onSelect={() => collapseChildren(true)}>
+            {m.tree_collapse_all()}
+          </ContextMenuItem>
+          <ContextMenuItem onSelect={() => collapseChildren(false)}>
+            {m.tree_expand_all()}
+          </ContextMenuItem>
+        </>
+      )}
+      <ContextMenuItem
+        onSelect={() => {
+          void navigator.clipboard.writeText(displayPath(el.path).join('/'))
+          toast.success(m.copied())
+        }}
+      >
+        {m.node_copy_path()}
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem
+        variant="destructive"
+        onSelect={() =>
+          editAtPath(el.path, (fresh, text, doc) =>
+            removeElement(text, fresh, doc),
+          )
+        }
+      >
+        {m.node_delete()}
+      </ContextMenuItem>
+    </ContextMenuContent>
   )
 }
 

@@ -26,7 +26,7 @@ import {
 import { defaultSummary } from '#/lib/xml/defaults'
 import { diffChange } from '#/lib/xml/edit'
 import { allElements, elementAt } from '#/lib/xml/locate'
-import { isLeaf, leafValue } from '#/lib/xml/model'
+import { hasName, isLeaf, leafValue } from '#/lib/xml/model'
 import { m } from '#/paraglide/messages'
 import type { EditorView } from '@codemirror/view'
 
@@ -95,7 +95,7 @@ export function commitDefaultsActive() {
 /** Leaf element at `pos` with its current text, if any. */
 export function leafAt(pos: number) {
   const el = elementAt(editorStore.state.doc.nodes, pos)
-  return el && isLeaf(el) && !el.json?.item
+  return el && isLeaf(el) && hasName(el)
     ? { name: el.name, value: leafValue(el) }
     : null
 }
@@ -137,7 +137,7 @@ function tagAtCursor(view: EditorView) {
   const near = tagNameNear(view.state, pos)
   if (near) return near
   const el = elementAt(editorStore.state.doc.nodes, pos)
-  return el && !el.json?.item ? { name: el.name, at: pos } : null
+  return el && hasName(el) ? { name: el.name, at: pos } : null
 }
 
 /** Opens the colour picker for the tag at the cursor. */
@@ -157,7 +157,7 @@ export function highlightAtCursor() {
 /** Elements named `tag`, in document order. */
 function tagMatches(tag: string) {
   return allElements(editorStore.state.doc.nodes).filter(
-    (el) => el.name === tag && !el.json?.item,
+    (el) => hasName(el) && el.name === tag,
   )
 }
 

@@ -1,49 +1,31 @@
 import { IconWand } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 
+import { ShortcutKeys } from './ShortcutKeys'
+import { ToolbarButton } from './ToolbarButton'
 import { formatActive } from '#/components/editor/actions'
-import { Button } from '#/components/ui/button'
-import { Kbd, KbdGroup } from '#/components/ui/kbd'
 import { Label } from '#/components/ui/label'
 import { Separator } from '#/components/ui/separator'
 import { Switch } from '#/components/ui/switch'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '#/components/ui/tooltip'
+import { shortcuts } from '#/lib/shortcuts'
 import {
   formatSettingsStore,
   setFormatSetting,
 } from '#/lib/store/format-settings'
-import { alt, mod } from '#/lib/platform'
 import { m } from '#/paraglide/messages'
 import type { SortOrder } from '#/lib/xml/format'
 
 /** Format button in the bottom bar. */
 export function FormatButton() {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          aria-label={m.action_format()}
-          onClick={formatActive}
-        >
-          <IconWand />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent className="flex items-center gap-2">
-        {m.action_format()}
-        <KbdGroup>
-          <Kbd>⇧</Kbd>
-          <Kbd>{alt}</Kbd>
-          <Kbd>F</Kbd>
-        </KbdGroup>
-      </TooltipContent>
-    </Tooltip>
+    <ToolbarButton
+      label={m.action_format()}
+      shortcut={shortcuts.format}
+      onClick={formatActive}
+    >
+      <IconWand />
+    </ToolbarButton>
   )
 }
 
@@ -60,10 +42,7 @@ export function FormatOptions() {
           onCheckedChange={(v) => setFormatSetting('formatOnSave', v)}
         >
           {m.format_on_save()}
-          <KbdGroup>
-            <Kbd>{mod}</Kbd>
-            <Kbd>S</Kbd>
-          </KbdGroup>
+          <ShortcutKeys shortcut={shortcuts.save} />
         </SettingSwitch>
         <SettingSwitch
           id="format-remove-empty-lines"

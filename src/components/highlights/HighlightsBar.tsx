@@ -1,16 +1,11 @@
-import {
-  IconArrowDown,
-  IconArrowUp,
-  IconPlus,
-  IconTrash,
-} from '@tabler/icons-react'
+import { IconPlus, IconTrash } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form'
-import { useSelector } from '@tanstack/react-store'
 import { useState } from 'react'
 
 import { ColorSwatches } from './ColorSwatches'
-import { cycleTag, revealTag } from '#/components/editor/actions'
-import { editorStore } from '#/components/editor/editor-store'
+import { hlStyle } from './hl-style'
+import { MatchNavItems } from './TagMenuItems'
+import { cycleTag } from '#/components/editor/actions'
 import { Button } from '#/components/ui/button'
 import {
   ContextMenu,
@@ -34,7 +29,8 @@ import {
   PopoverTrigger,
 } from '#/components/ui/popover'
 import { useHighlights } from '#/hooks/use-highlights'
-import { alt } from '#/lib/platform'
+import { useTagCounts } from '#/hooks/use-tag-counts'
+import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import {
   highlightCss,
   nextPreset,
@@ -43,20 +39,8 @@ import {
   toggleHighlight,
 } from '#/lib/store/highlights'
 import { cn } from '#/lib/utils'
-import { allElements } from '#/lib/xml/locate'
 import { m } from '#/paraglide/messages'
 import type { Highlight } from '#/lib/store/highlights'
-
-/** Tag name → number of elements with it in the active document. */
-export function useTagCounts(): ReadonlyMap<string, number> {
-  const doc = useSelector(editorStore, (s) => s.doc)
-  const counts = new Map<string, number>()
-  for (const el of allElements(doc.nodes)) {
-    if (el.json?.item) continue
-    counts.set(el.name, (counts.get(el.name) ?? 0) + 1)
-  }
-  return counts
-}
 
 /** Legend of highlight rules in the bottom bar; each chip cycles through its matches. */
 export function HighlightsBar() {
@@ -78,7 +62,8 @@ export function HighlightsBar() {
       />
       {rules.length === 0 && (
         <span className="hidden truncate sm:inline">
-          {m.highlights_hint_prefix()} <Kbd>{alt}H</Kbd>{' '}
+          {m.highlights_hint_prefix()}{' '}
+          <Kbd>{shortcutLabel(shortcuts.highlight)}</Kbd>{' '}
           {m.highlights_hint_suffix()}
         </span>
       )}
@@ -87,7 +72,6 @@ export function HighlightsBar() {
 }
 
 function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
-  const style = { '--hl': highlightCss(rule.color) } as React.CSSProperties
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -99,7 +83,7 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
           className="h-6 min-w-0 shrink-0 gap-1.5 px-1.5 font-mono text-[11px] font-normal"
         >
           <span
-            style={style}
+            style={hlStyle(highlightCss(rule.color))}
             className={cn(
               'px-0.5',
               rule.enabled
@@ -125,20 +109,7 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
           {m.highlight_show()}
         </ContextMenuCheckboxItem>
         <ContextMenuSeparator />
-        <ContextMenuItem
-          disabled={count === 0}
-          onSelect={() => revealTag(rule.tag, 1)}
-        >
-          <IconArrowDown />
-          {m.highlight_next()}
-        </ContextMenuItem>
-        <ContextMenuItem
-          disabled={count === 0}
-          onSelect={() => revealTag(rule.tag, -1)}
-        >
-          <IconArrowUp />
-          {m.highlight_prev()}
-        </ContextMenuItem>
+        <MatchNavItems tag={rule.tag} count={count} />
         <ContextMenuSeparator />
         <ContextMenuSub>
           <ContextMenuSubTrigger>{m.highlight_color()}</ContextMenuSubTrigger>

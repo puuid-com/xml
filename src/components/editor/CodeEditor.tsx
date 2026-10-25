@@ -23,6 +23,7 @@ import { TagContextMenu } from './TagContextMenu'
 import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
 import { languageOf } from '#/lib/document'
+import { shortcuts } from '#/lib/shortcuts'
 import { filesCollection, saveContent } from '#/lib/store/files'
 import { writerId } from '#/lib/store/session'
 import { diffChange } from '#/lib/xml/edit'
@@ -67,10 +68,18 @@ function sharedExtensions(
       },
       onCursor: (update) => publishCursorFrom(update.state),
       keys: [
-        { key: 'Shift-Alt-f', run: formatActive, preventDefault: true },
-        { key: 'Mod-s', run: saveActive, preventDefault: true },
-        { key: 'Alt-h', run: highlightAtCursor, preventDefault: true },
-        { key: 'Shift-Alt-d', run: applyDefaultsActive, preventDefault: true },
+        { key: shortcuts.format.key, run: formatActive, preventDefault: true },
+        { key: shortcuts.save.key, run: saveActive, preventDefault: true },
+        {
+          key: shortcuts.highlight.key,
+          run: highlightAtCursor,
+          preventDefault: true,
+        },
+        {
+          key: shortcuts.applyDefaults.key,
+          run: applyDefaultsActive,
+          preventDefault: true,
+        },
       ],
     },
     highlights,

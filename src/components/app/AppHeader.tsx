@@ -5,12 +5,7 @@ import {
 import { useSelector } from '@tanstack/react-store'
 
 import { LogoButton } from './CommandMenu'
-import { Button } from '#/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '#/components/ui/tooltip'
+import { ToolbarButton } from './ToolbarButton'
 import { sessionStore, setPanelOpen } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 
@@ -26,25 +21,19 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
         {children}
       </div>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="mx-1"
-            aria-pressed={panelOpen}
-            aria-label={m.action_toggle_panel()}
-            onClick={() => setPanelOpen(!panelOpen)}
-          >
-            {panelOpen ? (
-              <IconLayoutSidebarRightFilled />
-            ) : (
-              <IconLayoutSidebarRight />
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{m.action_toggle_panel()}</TooltipContent>
-      </Tooltip>
+      <ToolbarButton
+        label={m.action_toggle_panel()}
+        size="icon-sm"
+        className="mx-1"
+        aria-pressed={panelOpen}
+        onClick={() => setPanelOpen(!panelOpen)}
+      >
+        {panelOpen ? (
+          <IconLayoutSidebarRightFilled />
+        ) : (
+          <IconLayoutSidebarRight />
+        )}
+      </ToolbarButton>
     </header>
   )
 }

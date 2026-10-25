@@ -24,7 +24,6 @@ import {
   downloadFile,
   highlightAtCursor,
 } from '#/components/editor/actions'
-import { useTagCounts } from '#/components/highlights/HighlightsBar'
 import { localeNames } from '#/components/LocaleSwitcher'
 import { Button } from '#/components/ui/button'
 import {
@@ -47,8 +46,9 @@ import {
 import { Kbd } from '#/components/ui/kbd'
 import { useOpenFiles } from '#/hooks/use-files'
 import { useHighlights } from '#/hooks/use-highlights'
+import { useTagCounts } from '#/hooks/use-tag-counts'
 import { languageOf } from '#/lib/document'
-import { alt, mod } from '#/lib/platform'
+import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import { setHighlight } from '#/lib/store/highlights'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
@@ -125,7 +125,7 @@ export function CommandMenuButton() {
     >
       <IconSearch className="size-3.5" />
       <Kbd className="h-4 min-w-4 bg-transparent px-0 text-[11px] font-normal">
-        {mod}K
+        {shortcutLabel(shortcuts.palette)}
       </Kbd>
     </Button>
   )
@@ -216,17 +216,23 @@ function FileCommands({
           <CommandItem onSelect={() => run(onOpenFromDisk)}>
             <IconFolderOpen />
             {m.file_open_disk()}
-            <CommandShortcut>{mod}O</CommandShortcut>
+            <CommandShortcut>
+              {shortcutLabel(shortcuts.openFile)}
+            </CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => run(() => void highlightAtCursor())}>
             <IconHighlight />
             {m.highlight_at_cursor()}
-            <CommandShortcut>{alt}H</CommandShortcut>
+            <CommandShortcut>
+              {shortcutLabel(shortcuts.highlight)}
+            </CommandShortcut>
           </CommandItem>
           <CommandItem onSelect={() => run(() => void applyDefaultsActive())}>
             <IconReplace />
             {m.defaults_apply()}
-            <CommandShortcut>⇧{alt}D</CommandShortcut>
+            <CommandShortcut>
+              {shortcutLabel(shortcuts.applyDefaults)}
+            </CommandShortcut>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />

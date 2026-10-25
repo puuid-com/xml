@@ -3,6 +3,7 @@ import { useSelector } from '@tanstack/react-store'
 import { useRef } from 'react'
 
 import { ColorSwatches } from './ColorSwatches'
+import { hlStyle } from './hl-style'
 import { setQuickHighlight, uiStore } from '#/components/app/ui-store'
 import { getView } from '#/components/editor/editor-store'
 import { Button } from '#/components/ui/button'
@@ -64,13 +65,7 @@ export function QuickHighlight() {
                     ? 'hl-tag hl-ink px-0.5 font-mono'
                     : 'font-mono text-syntax-tag'
                 }
-                style={
-                  rule
-                    ? ({
-                        '--hl': highlightCss(rule.color),
-                      } as React.CSSProperties)
-                    : undefined
-                }
+                style={hlStyle(rule ? highlightCss(rule.color) : undefined)}
               >
                 {target.tag}
               </span>

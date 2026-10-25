@@ -2,20 +2,15 @@ import { IconReplace, IconTrash } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
 
+import { ToolbarButton } from '#/components/app/ToolbarButton'
 import { applyDefaultsActive } from '#/components/editor/actions'
 import { editorStore } from '#/components/editor/editor-store'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
-import { Kbd, KbdGroup } from '#/components/ui/kbd'
 import { Separator } from '#/components/ui/separator'
 import { Switch } from '#/components/ui/switch'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '#/components/ui/tooltip'
 import { useDefaults } from '#/hooks/use-defaults'
-import { alt } from '#/lib/platform'
+import { shortcuts } from '#/lib/shortcuts'
 import {
   removeDefault,
   setDefault,
@@ -29,26 +24,13 @@ import type { DefaultValue } from '#/lib/store/defaults'
 /** Apply defaults button in the bottom bar; asks to confirm before writing. */
 export function DefaultsButton() {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          aria-label={m.defaults_apply()}
-          onClick={applyDefaultsActive}
-        >
-          <IconReplace />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent className="flex items-center gap-2">
-        {m.defaults_apply()}
-        <KbdGroup>
-          <Kbd>⇧</Kbd>
-          <Kbd>{alt}</Kbd>
-          <Kbd>D</Kbd>
-        </KbdGroup>
-      </TooltipContent>
-    </Tooltip>
+    <ToolbarButton
+      label={m.defaults_apply()}
+      shortcut={shortcuts.applyDefaults}
+      onClick={applyDefaultsActive}
+    >
+      <IconReplace />
+    </ToolbarButton>
   )
 }
 

@@ -3,13 +3,13 @@ import { useSelector } from '@tanstack/react-store'
 
 import { CommandMenuButton } from './CommandMenu'
 import { FormatButton, FormatOptions } from './FormatControls'
+import { ToolbarButton } from './ToolbarButton'
 import { editorStore } from '#/components/editor/editor-store'
 import {
   DefaultsButton,
   DefaultsRules,
 } from '#/components/defaults/DefaultsControls'
 import { HighlightsBar } from '#/components/highlights/HighlightsBar'
-import { Button } from '#/components/ui/button'
 import {
   Popover,
   PopoverContent,
@@ -17,11 +17,6 @@ import {
 } from '#/components/ui/popover'
 import { Separator } from '#/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '#/components/ui/tooltip'
 import { m } from '#/paraglide/messages'
 
 /** Bottom bar: highlight chips on the left, editing tools and search on the right. */
@@ -53,20 +48,11 @@ export function StatusBar() {
 function SettingsPopover() {
   return (
     <Popover>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              aria-label={m.editor_settings()}
-            >
-              <IconAdjustmentsHorizontal />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent>{m.editor_settings()}</TooltipContent>
-      </Tooltip>
+      <PopoverTrigger asChild>
+        <ToolbarButton label={m.editor_settings()}>
+          <IconAdjustmentsHorizontal />
+        </ToolbarButton>
+      </PopoverTrigger>
       <PopoverContent side="top" align="end" className="w-96 gap-0 p-0">
         <Tabs defaultValue="format" className="gap-0">
           <TabsList variant="line" className="w-full justify-start px-2">

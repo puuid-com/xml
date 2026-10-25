@@ -3,7 +3,7 @@
 // named `name`; `@name` targets attributes named `name` on any element.
 
 import { setAttr, setText } from './edit'
-import { isLeaf, leafValue } from './model'
+import { hasName, isLeaf, leafValue } from './model'
 import { allElements } from './locate'
 import type { TextChange } from './edit'
 import type { XmlAttr, XmlElement, XmlNode } from './model'
@@ -35,7 +35,7 @@ export function defaultIndex(rules: ReadonlyArray<DefaultRule>): DefaultIndex {
 
 /** The default an element's value should have, if a rule covers it. */
 export function leafDefault(index: DefaultIndex, el: XmlElement) {
-  if (el.json?.item || !isLeaf(el)) return undefined
+  if (!hasName(el) || !isLeaf(el)) return undefined
   return index.elements.get(el.name)
 }
 
@@ -187,7 +187,7 @@ function valueRange(el: XmlElement) {
 export function defaultKeys(nodes: Array<XmlNode>): Array<string> {
   const keys = new Set<string>()
   for (const el of allElements(nodes)) {
-    if (isLeaf(el) && !el.json?.item) keys.add(el.name)
+    if (hasName(el) && isLeaf(el)) keys.add(el.name)
     for (const attr of el.attrs) keys.add(`@${attr.name}`)
   }
   return [...keys].sort()

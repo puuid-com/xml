@@ -104,6 +104,11 @@ export function childElements(el: XmlElement): Array<XmlElement> {
   return el.children.filter(isElement)
 }
 
+/** Whether an element has a name of its own: a tag or key, not an array item. */
+export function hasName(el: XmlElement): boolean {
+  return !el.json?.item
+}
+
 /**
  * A leaf element has no child elements, so its text can be edited inline.
  * JSON objects and arrays are never leaves, even when empty.
@@ -111,6 +116,11 @@ export function childElements(el: XmlElement): Array<XmlElement> {
 export function isLeaf(el: XmlElement): boolean {
   if (el.json) return el.json.type !== 'object' && el.json.type !== 'array'
   return !el.children.some(isElement)
+}
+
+/** A leaf with text to edit in place, so not a self-closing `<a/>`. */
+export function isTextLeaf(el: XmlElement): boolean {
+  return isLeaf(el) && !el.selfClosing
 }
 
 /** Decoded text content of a leaf element (text and CDATA). */
