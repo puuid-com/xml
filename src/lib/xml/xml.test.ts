@@ -52,7 +52,15 @@ describe('vars', () => {
   })
 
   it('ignores things that are not variables', () => {
-    expect(findVars('<<1abc>> << >> <a>')).toEqual([])
+    expect(findVars('<<1abc>> << >> <<$>> <a>')).toEqual([])
+  })
+
+  it('accepts Postman dynamic variables', () => {
+    expect(findVars('TEST_<<$randomInt>>')).toEqual([
+      { name: '$randomInt', from: 5, to: 19 },
+    ])
+    const doc = parseXml('<MessageType>TEST_<<$randomInt>></MessageType>')
+    expect(doc.errors).toEqual([])
   })
 })
 

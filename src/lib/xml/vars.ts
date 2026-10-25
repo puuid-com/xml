@@ -8,10 +8,11 @@ export const VAR_CLOSE = ''
 
 /** Longest variable name accepted; keeps masking windows bounded. */
 export const VAR_MAX_NAME = 64
-/** Longest possible `<<name>>` sequence. */
-export const VAR_MAX_LENGTH = VAR_MAX_NAME + 4
+/** Longest possible `<<$name>>` sequence. */
+export const VAR_MAX_LENGTH = VAR_MAX_NAME + 5
 
-const NAME = `[A-Za-z_][\\w.-]{0,${VAR_MAX_NAME - 1}}`
+// A leading `$` marks Postman's dynamic variables, such as `<<$randomInt>>`.
+const NAME = `\\$?[A-Za-z_][\\w.-]{0,${VAR_MAX_NAME - 1}}`
 
 export const VAR_PATTERN = `<<\\s*(${NAME})\\s*>>`
 
