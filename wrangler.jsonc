@@ -7,6 +7,7 @@
   "observability": {
     "enabled": true,
   },
+  "routes": [{ "pattern": "xml.puuid.com", "custom_domain": true }],
   // Public, non-secret values. Secrets go in .dev.vars locally and
   // `wrangler secret put` in production. Run `bun run cf-typegen` after edits.
   "vars": {},
