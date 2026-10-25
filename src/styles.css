@@ -49,6 +49,7 @@
 
   /* Syntax palette, from the Geist colour scale. Shared by editor and tree. */
   --syntax-tag: oklch(0.53 0.19 257);
+  --syntax-leaf: oklch(0.52 0.1 195);
   --syntax-attr: oklch(0.5 0.2 302);
   --syntax-value: oklch(0.5 0.13 152);
   --syntax-punct: oklch(0.62 0.02 257);
@@ -110,6 +111,7 @@
   --sidebar-ring: oklch(0.556 0 0);
 
   --syntax-tag: oklch(0.76 0.13 250);
+  --syntax-leaf: oklch(0.78 0.1 195);
   --syntax-attr: oklch(0.76 0.14 305);
   --syntax-value: oklch(0.8 0.14 155);
   --syntax-punct: oklch(0.56 0.02 257);
@@ -177,6 +179,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-syntax-tag: var(--syntax-tag);
+  --color-syntax-leaf: var(--syntax-leaf);
   --color-syntax-attr: var(--syntax-attr);
   --color-syntax-value: var(--syntax-value);
   --color-syntax-punct: var(--syntax-punct);
@@ -230,6 +233,12 @@
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 21s-4-3-4-9 4-9 4-9'/%3E%3Cpath d='M16 3s4 3 4 9-4 9-4 9'/%3E%3Cpath d='M15 9l-6 6M9 9l6 6'/%3E%3C/svg%3E")
       center / contain no-repeat;
   }
+}
+
+/* A tag that holds other elements; leaf tags keep `--syntax-leaf`. */
+.cm-tag-parent {
+  color: var(--syntax-tag);
+  font-weight: 500;
 }
 
 /*

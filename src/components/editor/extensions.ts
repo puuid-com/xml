@@ -169,7 +169,8 @@ const theme = EditorView.theme({
 })
 
 const highlightStyle = HighlightStyle.define([
-  { tag: t.tagName, color: 'var(--syntax-tag)' },
+  // Leaf colour; tags that contain elements are re-inked by `parentTags`.
+  { tag: t.tagName, color: 'var(--syntax-leaf)' },
   { tag: t.attributeName, color: 'var(--syntax-attr)' },
   { tag: t.attributeValue, color: 'var(--syntax-value)' },
   { tag: [t.angleBracket, t.definitionOperator], color: 'var(--syntax-punct)' },
@@ -181,7 +182,7 @@ const highlightStyle = HighlightStyle.define([
   },
   { tag: t.invalid, color: 'var(--destructive)' },
   // JSON
-  { tag: t.propertyName, color: 'var(--syntax-tag)' },
+  { tag: t.propertyName, color: 'var(--syntax-leaf)' },
   { tag: t.string, color: 'var(--syntax-value)' },
   { tag: [t.number, t.bool, t.null], color: 'var(--syntax-attr)' },
   {
@@ -210,6 +211,65 @@ const varHighlighter = ViewPlugin.fromClass(
     }
   },
   { decorations: (v) => v.decorations },
+)
+
+/** Whether a tag name or JSON key opens an element that holds other elements. */
+function namesParent(node: SyntaxNode): boolean {
+  if (node.name === 'PropertyName') {
+    const value = node.nextSibling?.nextSibling
+    return value?.name === 'Object' || value?.name === 'Array'
+  }
+  if (node.name !== 'TagName') return false
+  const tag = node.parent
+  if (tag?.name !== 'OpenTag' && tag?.name !== 'CloseTag') return false
+  return tag.parent?.getChild('Element') != null
+}
+
+const parentMark = Decoration.mark({ class: 'cm-tag-parent' })
+
+function buildParentTags(view: EditorView): DecorationSet {
+  const tree = syntaxTree(view.state)
+  const marks: Array<Range<Decoration>> = []
+  for (const { from, to } of view.visibleRanges) {
+    tree.iterate({
+      from,
+      to,
+      enter(node) {
+        if (namesParent(node.node))
+          marks.push(parentMark.range(node.from, node.to))
+      },
+    })
+  }
+  return Decoration.set(marks, true)
+}
+
+/** Sets container tags apart from leaf tags so the nesting reads at a glance. */
+const parentTags = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet
+    constructor(view: EditorView) {
+      this.decorations = buildParentTags(view)
+    }
+    update(update: ViewUpdate) {
+      if (
+        update.docChanged ||
+        update.viewportChanged ||
+        syntaxTree(update.startState) !== syntaxTree(update.state)
+      ) {
+        this.decorations = buildParentTags(update.view)
+      }
+    }
+  },
+  {
+    // Highest precedence keeps the mark innermost, inside the syntax span, so
+    // its colour wins there while user highlight inks still wrap over it.
+    provide: (plugin) =>
+      Prec.highest(
+        EditorView.decorations.of(
+          (view) => view.plugin(plugin)?.decorations ?? Decoration.none,
+        ),
+      ),
+  },
 )
 
 /** Tag name → CSS colour, for user highlight rules. */
@@ -452,6 +512,7 @@ export function editorExtensions(
     highlightActiveLine(),
     highlightSelectionMatches(),
     syntaxHighlighting(highlightStyle),
+    parentTags,
     theme,
     varHighlighter,
     tagHighlightsCompartment.of(tagHighlightsFacet.of(highlights)),
