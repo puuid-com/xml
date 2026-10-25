@@ -2,6 +2,7 @@ import {
   IconAlertTriangle,
   IconChevronDown,
   IconChevronRight,
+  IconPin,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -30,12 +31,13 @@ import {
 } from '#/components/ui/context-menu'
 import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
+import { usePins } from '#/hooks/use-pins'
 import {
   findHighlight,
   removeHighlight,
   setHighlight,
 } from '#/lib/store/highlights'
-import { findPin, togglePin } from '#/lib/store/pins'
+import { togglePin } from '#/lib/store/pins'
 import {
   sessionStore,
   setCollapsed,
@@ -78,6 +80,8 @@ export function XmlTree() {
     fileId ? (s.collapsed[fileId] ?? NO_COLLAPSED) : NO_COLLAPSED,
   )
   const highlights = useHighlightMap()
+  const pins = usePins()
+  const pinned = new Set(pins.map((p) => p.tag))
   const enabledDefaults = useEnabledDefaults()
   const defaults = useMemo(
     () => defaultIndex(enabledDefaults),
@@ -162,6 +166,7 @@ export function XmlTree() {
                   color={
                     row.el.json?.item ? undefined : highlights.get(row.el.name)
                   }
+                  pinned={!row.el.json?.item && pinned.has(row.el.name)}
                 />
               )
             })}
@@ -179,6 +184,7 @@ function TreeRowView({
   defaults,
   selected,
   color,
+  pinned,
 }: {
   row: TreeRow
   fileId: string
@@ -186,6 +192,7 @@ function TreeRowView({
   defaults: DefaultIndex
   selected: boolean
   color: string | undefined
+  pinned: boolean
 }) {
   const { el, depth, hasChildren, collapsed } = row
   const leaf = isLeaf(el)
@@ -310,6 +317,12 @@ function TreeRowView({
           )}
           {leaf && el.selfClosing && <span className="flex-1" />}
           {empty && <span className="ml-1 text-syntax-punct">{empty}</span>}
+          {pinned && (
+            <IconPin
+              aria-label={m.pins_title()}
+              className="size-3 shrink-0 text-muted-foreground"
+            />
+          )}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-56">
@@ -333,7 +346,7 @@ function TreeRowView({
             )}
             {leaf && !el.selfClosing && (
               <ContextMenuItem onSelect={() => togglePin(el.name)}>
-                {findPin(el.name)
+                {pinned
                   ? m.pin_remove({ name: el.name })
                   : m.pin_tag({ name: el.name })}
               </ContextMenuItem>
