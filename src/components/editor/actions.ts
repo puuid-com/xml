@@ -121,6 +121,14 @@ export function highlightAtCursor() {
   return true
 }
 
+/** Moves the cursor to the first element named `tag` in the document. */
+export function revealFirstTag(tag: string) {
+  const first = allElements(editorStore.state.doc.nodes).find(
+    (el) => el.name === tag,
+  )
+  if (first) revealElement(first, true)
+}
+
 /** Moves the cursor to the next (or previous) element named `tag`, wrapping. */
 export function revealTag(tag: string, direction: 1 | -1) {
   const matches = allElements(editorStore.state.doc.nodes).filter(

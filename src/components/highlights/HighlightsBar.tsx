@@ -10,11 +10,12 @@ import { useSelector } from '@tanstack/react-store'
 import { useState } from 'react'
 
 import { ColorSwatches } from './ColorSwatches'
-import { revealTag } from '#/components/editor/actions'
+import { revealFirstTag, revealTag } from '#/components/editor/actions'
 import { editorStore } from '#/components/editor/editor-store'
 import { Button } from '#/components/ui/button'
 import {
   ContextMenu,
+  ContextMenuCheckboxItem,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
@@ -33,7 +34,6 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '#/components/ui/popover'
-import { Toggle } from '#/components/ui/toggle'
 import { useHighlights } from '#/hooks/use-highlights'
 import { alt } from '#/lib/platform'
 import {
@@ -58,7 +58,7 @@ export function useTagCounts(): ReadonlyMap<string, number> {
   return counts
 }
 
-/** Legend of highlight rules under the tabs; each chip toggles its rule. */
+/** Legend of highlight rules under the tabs; each chip jumps to its first match. */
 export function HighlightsBar() {
   const rules = useHighlights()
   const counts = useTagCounts()
@@ -95,12 +95,12 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <Toggle
+        <Button
+          variant="ghost"
           size="sm"
-          pressed={rule.enabled}
-          onPressedChange={() => toggleHighlight(rule.id)}
+          onClick={() => revealFirstTag(rule.tag)}
           title={m.highlight_chip_hint()}
-          className="h-6 min-w-0 shrink-0 gap-1.5 px-1.5 font-mono text-[11px] font-normal data-[state=on]:bg-transparent"
+          className="h-6 min-w-0 shrink-0 gap-1.5 px-1.5 font-mono text-[11px] font-normal"
         >
           <span
             style={style}
@@ -119,9 +119,16 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
           >
             {count}
           </span>
-        </Toggle>
+        </Button>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-52">
+        <ContextMenuCheckboxItem
+          checked={rule.enabled}
+          onCheckedChange={() => toggleHighlight(rule.id)}
+        >
+          {m.highlight_show()}
+        </ContextMenuCheckboxItem>
+        <ContextMenuSeparator />
         <ContextMenuItem
           disabled={count === 0}
           onSelect={() => revealTag(rule.tag, 1)}
