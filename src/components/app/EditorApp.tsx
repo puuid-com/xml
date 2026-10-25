@@ -18,6 +18,7 @@ import { TabStrip } from './TabStrip'
 import { setPaletteOpen, uiStore } from './ui-store'
 import { CodeEditor } from '#/components/editor/CodeEditor'
 import { QuickHighlight } from '#/components/highlights/QuickHighlight'
+import { PinnedBar } from '#/components/pins/PinnedBar'
 import { Button } from '#/components/ui/button'
 import {
   Empty,
@@ -127,7 +128,12 @@ export function EditorApp() {
             onLayoutChanged={layout.onLayoutChanged}
           >
             <ResizablePanel id="editor" minSize="25">
-              <CodeEditor fileId={activeId} />
+              <div className="flex h-full min-h-0 flex-col">
+                <PinnedBar />
+                <div className="min-h-0 flex-1">
+                  <CodeEditor fileId={activeId} />
+                </div>
+              </div>
             </ResizablePanel>
             {panelOpen && (
               <>

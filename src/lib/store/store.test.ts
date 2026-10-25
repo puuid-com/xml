@@ -21,6 +21,7 @@ import {
   nextPreset,
   setHighlight,
 } from './highlights'
+import { findPin, pinTag, pinsCollection, togglePin, unpinTag } from './pins'
 
 function openOrder() {
   return [...filesCollection.values()]
@@ -110,5 +111,28 @@ describe('defaults', () => {
     setDefault('b', '2')
     toggleDefault(findDefault('a')!.id)
     expect(enabledDefaults().map((r) => r.key)).toEqual(['b'])
+  })
+})
+
+describe('pins', () => {
+  beforeEach(() => {
+    for (const pin of [...pinsCollection.values()]) {
+      pinsCollection.delete(pin.id)
+    }
+  })
+
+  it('pins each tag once and unpins it', () => {
+    pinTag('amount')
+    pinTag('amount')
+    expect([...pinsCollection.values()]).toHaveLength(1)
+    unpinTag('amount')
+    expect(findPin('amount')).toBeUndefined()
+  })
+
+  it('toggles a pin', () => {
+    togglePin('currency')
+    expect(findPin('currency')).toBeDefined()
+    togglePin('currency')
+    expect(findPin('currency')).toBeUndefined()
   })
 })

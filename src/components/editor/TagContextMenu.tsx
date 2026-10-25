@@ -17,6 +17,7 @@ import {
 import { useHighlights } from '#/hooks/use-highlights'
 import { setDefault } from '#/lib/store/defaults'
 import { removeHighlight, setHighlight } from '#/lib/store/highlights'
+import { findPin, togglePin } from '#/lib/store/pins'
 import { m } from '#/paraglide/messages'
 
 /**
@@ -87,6 +88,11 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
                   }}
                 >
                   {m.defaults_save_current()}
+                </ContextMenuItem>
+                <ContextMenuItem onSelect={() => togglePin(leaf.name)}>
+                  {findPin(leaf.name)
+                    ? m.pin_remove({ name: leaf.name })
+                    : m.pin_tag({ name: leaf.name })}
                 </ContextMenuItem>
               </>
             )}

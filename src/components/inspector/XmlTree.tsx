@@ -34,6 +34,7 @@ import {
   removeHighlight,
   setHighlight,
 } from '#/lib/store/highlights'
+import { findPin, togglePin } from '#/lib/store/pins'
 import {
   sessionStore,
   setCollapsed,
@@ -326,6 +327,13 @@ function TreeRowView({
             {rule && (
               <ContextMenuItem onSelect={() => removeHighlight(rule.id)}>
                 {m.highlight_remove()}
+              </ContextMenuItem>
+            )}
+            {leaf && !el.selfClosing && (
+              <ContextMenuItem onSelect={() => togglePin(el.name)}>
+                {findPin(el.name)
+                  ? m.pin_remove({ name: el.name })
+                  : m.pin_tag({ name: el.name })}
               </ContextMenuItem>
             )}
             <ContextMenuSeparator />
