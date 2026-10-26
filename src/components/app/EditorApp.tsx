@@ -99,6 +99,7 @@ export function EditorApp() {
 
   useAppShortcuts({
     activeId,
+    fileIds: files.map((f) => f.id),
     onOpenFromDisk: openFromDisk,
     onTogglePanel: () => {
       if (wide) setPanelOpen(!sessionStore.state.panelOpen)

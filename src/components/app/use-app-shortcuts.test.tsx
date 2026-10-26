@@ -1,17 +1,19 @@
 import { fireEvent, render } from '@testing-library/react'
+import { useSelector } from '@tanstack/react-store'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { newFile } from './files'
 import { askRename, setPaletteOpen, uiStore } from './ui-store'
 import { useAppShortcuts } from './use-app-shortcuts'
-import { sessionStore, setPanelOpen } from '#/lib/store/session'
+import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 
 vi.mock('./files', () => ({ newFile: vi.fn() }))
 
 const onOpenFromDisk = vi.fn()
 
 function Harness({ children }: { children?: React.ReactNode }) {
-  useAppShortcuts({ activeId: 'a', onOpenFromDisk })
+  const activeId = useSelector(sessionStore, (s) => s.activeId) ?? 'a'
+  useAppShortcuts({ activeId, fileIds: ['a', 'b', 'c'], onOpenFromDisk })
   return <>{children}</>
 }
 
@@ -20,6 +22,7 @@ afterEach(() => {
   askRename(null)
   setPaletteOpen(false)
   setPanelOpen(true)
+  setActive(null)
 })
 
 describe('useAppShortcuts', () => {
@@ -68,5 +71,31 @@ describe('useAppShortcuts', () => {
     expect(sessionStore.state.panelOpen).toBe(false)
     fireEvent.keyDown(document, { key: 'o', code: 'KeyO', ctrlKey: true })
     expect(onOpenFromDisk).toHaveBeenCalledOnce()
+  })
+  it('steps through the tabs with Control and the arrow keys', () => {
+    render(<Harness />)
+    const press = (key: string) =>
+      fireEvent.keyDown(document, { key, code: key, ctrlKey: true })
+    press('ArrowRight')
+    expect(sessionStore.state.activeId).toBe('b')
+    press('ArrowLeft')
+    press('ArrowLeft')
+    expect(sessionStore.state.activeId).toBe('c')
+    press('ArrowRight')
+    expect(sessionStore.state.activeId).toBe('a')
+  })
+
+  it('leaves Control and the arrow keys to text fields', () => {
+    const { getByRole } = render(
+      <Harness>
+        <input />
+      </Harness>,
+    )
+    fireEvent.keyDown(getByRole('textbox'), {
+      key: 'ArrowRight',
+      code: 'ArrowRight',
+      ctrlKey: true,
+    })
+    expect(sessionStore.state.activeId).toBeNull()
   })
 })

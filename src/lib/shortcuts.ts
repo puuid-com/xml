@@ -27,6 +27,8 @@ export const shortcuts = {
   rename: { hotkey: 'F2', keys: ['F2'] },
   togglePanel: { hotkey: 'Mod+B', keys: [mod, 'B'] },
   nextProfile: { hotkey: 'Mod+Alt+P', keys: [alt, mod, 'P'] },
+  previousTab: { hotkey: 'Control+ArrowLeft', keys: ['⌃', '←'] },
+  nextTab: { hotkey: 'Control+ArrowRight', keys: ['⌃', '→'] },
 } satisfies Record<string, Shortcut>
 
 /** ⌥⌘1 to ⌥⌘9 switch the current file to the profile in that position. */

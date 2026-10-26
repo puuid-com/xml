@@ -7,7 +7,7 @@ import {
   switchToProfileAt,
 } from '#/components/profiles/actions'
 import { profileShortcuts, shortcuts } from '#/lib/shortcuts'
-import { sessionStore, setPanelOpen } from '#/lib/store/session'
+import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 
 function togglePalette() {
   setPaletteOpen(!uiStore.state.paletteOpen)
@@ -16,10 +16,13 @@ function togglePalette() {
 /** Page-wide shortcuts for the editor screen. */
 export function useAppShortcuts({
   activeId,
+  fileIds = [],
   onOpenFromDisk,
   onTogglePanel = () => setPanelOpen(!sessionStore.state.panelOpen),
 }: {
   activeId: string | null
+  /** The open tabs, in order. */
+  fileIds?: ReadonlyArray<string>
   onOpenFromDisk: () => void
   onTogglePanel?: () => void
 }) {
@@ -40,6 +43,20 @@ export function useAppShortcuts({
     })),
     { enabled: !!activeId },
   )
+  // Step through the tabs, wrapping at either end. Text fields and the
+  // editor keep the keys when they use them, as for word jumps on Windows.
+  const stepTab = (step: number) => (e: KeyboardEvent) => {
+    if (e.defaultPrevented || fileIds.length < 2) return
+    const target = e.target
+    if (target instanceof Element && target.closest('input, textarea, select'))
+      return
+    e.preventDefault()
+    const index = activeId ? fileIds.indexOf(activeId) : -1
+    setActive(fileIds.at((index + step) % fileIds.length) ?? null)
+  }
+  const tabOptions = { ignoreInputs: false, preventDefault: false }
+  useHotkey(shortcuts.previousTab.hotkey, stepTab(-1), tabOptions)
+  useHotkey(shortcuts.nextTab.hotkey, stepTab(1), tabOptions)
   // Works in the editor too, but not in text fields such as the rename
   // dialog, and not on a tree row, where F2 edits the value.
   useHotkey(
