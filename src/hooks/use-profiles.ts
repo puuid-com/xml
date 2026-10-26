@@ -2,7 +2,7 @@ import { eq, useLiveQuery } from '@tanstack/react-db'
 import { useSelector } from '@tanstack/react-store'
 
 import { filesCollection } from '#/lib/store/files'
-import { DEFAULT_FORMAT } from '#/lib/store/format-settings'
+import { withDefaults } from '#/lib/store/format-settings'
 import { DEFAULT_PROFILE_ID } from '#/lib/store/persist'
 import { profilesCollection, resolveProfile } from '#/lib/store/profiles'
 import { sessionStore } from '#/lib/store/session'
@@ -37,5 +37,5 @@ export function useActiveProfileId() {
 }
 
 export function useFormatSettings() {
-  return useActiveProfile()?.format ?? DEFAULT_FORMAT
+  return withDefaults(useActiveProfile()?.format)
 }

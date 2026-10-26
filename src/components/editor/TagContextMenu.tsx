@@ -10,6 +10,7 @@ import { CopyPathMenuItems } from '#/components/inspector/CopyPathMenuItems'
 import {
   HighlightMenuItems,
   PinMenuItem,
+  SortOrderMenuItem,
   TagMenuHeader,
 } from '#/components/highlights/TagMenuItems'
 import {
@@ -95,6 +96,7 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
         {variable && tag && <ContextMenuSeparator />}
         {tag && <TagMenuHeader tag={tag} el={element} />}
         {tag && <HighlightMenuItems tag={tag} />}
+        {tag && <SortOrderMenuItem tag={tag} />}
         {tag && element && (
           <>
             <ContextMenuSeparator />

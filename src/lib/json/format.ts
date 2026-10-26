@@ -1,4 +1,5 @@
 import { parseJsonAst } from './parse'
+import { nameOrder } from '#/lib/xml/format'
 import { varRegExp } from '#/lib/xml/vars'
 import type { JsonValue } from './parse'
 import type { FormatOptions, FormatResult } from '#/lib/xml/format'
@@ -15,6 +16,7 @@ export function formatJson(
     removeEmptyLines = true,
     trimVars = false,
     sort = 'none',
+    order = [],
     first = [],
   }: FormatOptions = {},
 ): FormatResult {
@@ -22,12 +24,11 @@ export function formatJson(
   if (errors.length > 0) return { ok: false, errors }
   if (!value) return { ok: true, text }
 
-  const sign = sort === 'desc' ? -1 : 1
+  const byName = nameOrder(sort, order)
   const leading = new Set(first)
-  const ordered = sort !== 'none' || leading.size > 0
+  const ordered = byName !== null || leading.size > 0
   const compare = (a: string, b: string) =>
-    Number(leading.has(b)) - Number(leading.has(a)) ||
-    (sort === 'none' ? 0 : sign * a.localeCompare(b))
+    Number(leading.has(b)) - Number(leading.has(a)) || (byName?.(a, b) ?? 0)
 
   // Keeps one blank line where the source had any, unless asked not to.
   const gap = (before: number, at: number) =>

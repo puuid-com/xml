@@ -5,7 +5,7 @@ import type { XmlAttr, XmlElement, XmlError, XmlNode } from './model'
 export type FormatResult =
   { ok: true; text: string } | { ok: false; errors: Array<XmlError> }
 
-export type SortOrder = 'none' | 'asc' | 'desc'
+export type SortOrder = 'none' | 'asc' | 'desc' | 'custom'
 
 export interface FormatOptions {
   indent?: string
@@ -15,6 +15,11 @@ export interface FormatOptions {
   trimVars?: boolean
   /** Order sibling elements by tag name and attributes by name. */
   sort?: SortOrder
+  /**
+   * With `sort: 'custom'`, names in the order they go: tag names, and
+   * `@name` for attributes. Unlisted ones follow, in document order.
+   */
+  order?: ReadonlyArray<string>
   /** Tag names moved ahead of their siblings, e.g. highlighted ones. */
   first?: Iterable<string>
 }
@@ -31,6 +36,7 @@ export function formatXml(
     removeEmptyLines = true,
     trimVars = false,
     sort = 'none',
+    order: custom = [],
     first = [],
   }: FormatOptions = {},
 ): FormatResult {
@@ -38,7 +44,8 @@ export function formatXml(
   if (doc.errors.length > 0) return { ok: false, errors: doc.errors }
 
   const lines: Array<string> = []
-  const compare = sort === 'none' ? null : byName(sort)
+  const compare = nameOrder(sort, custom, 'element')
+  const attrCompare = nameOrder(sort, custom, 'attribute')
   const order = elementOrder(compare, new Set(first))
 
   const writeAll = (nodes: Array<XmlNode>, depth: number) => {
@@ -70,7 +77,7 @@ export function formatXml(
       lines.push(pad + node.raw)
       return
     }
-    const open = openTag(node, compare)
+    const open = openTag(node, attrCompare)
     if (node.selfClosing) {
       lines.push(pad + open)
       return
@@ -104,12 +111,34 @@ export function formatXml(
   return { ok: true, text: out }
 }
 
-function byName(order: 'asc' | 'desc') {
-  const sign = order === 'asc' ? 1 : -1
-  return (a: string, b: string) => sign * a.localeCompare(b)
-}
-
 type Compare = (a: string, b: string) => number
+
+/**
+ * Compares names for `sort`, or `null` to keep document order. A custom
+ * `order` ranks the names it lists and ties the rest, so a stable sort keeps
+ * those in place after. In XML, `@name` entries rank attributes; JSON keys
+ * match entries as written.
+ */
+export function nameOrder(
+  sort: SortOrder,
+  order: ReadonlyArray<string>,
+  target: 'element' | 'attribute' | 'key' = 'key',
+): Compare | null {
+  if (sort === 'asc') return (a, b) => a.localeCompare(b)
+  if (sort === 'desc') return (a, b) => b.localeCompare(a)
+  if (sort === 'none') return null
+  const rank = new Map<string, number>()
+  for (const entry of order) {
+    const attr = entry.startsWith('@')
+    if (target === 'element' && attr) continue
+    if (target === 'attribute' && !attr) continue
+    const name = target === 'attribute' ? entry.slice(1) : entry
+    if (!rank.has(name)) rank.set(name, rank.size)
+  }
+  if (rank.size === 0) return null
+  const of = (name: string) => rank.get(name) ?? rank.size
+  return (a, b) => of(a) - of(b)
+}
 
 /** Tags in `first` lead, then `compare` (or document order) decides. */
 function elementOrder(compare: Compare | null, first: Set<string>) {

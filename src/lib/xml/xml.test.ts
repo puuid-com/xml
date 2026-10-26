@@ -191,6 +191,28 @@ describe('formatXml', () => {
     })
   })
 
+  it('sorts by a custom order', () => {
+    const input = '<r><c z="1" a="2" m="3"/><!--b--><b/><a/><c/></r>'
+    const order = ['c', 'b', '@m', '@a', 'missing']
+    expect(formatXml(input, { sort: 'custom', order })).toEqual({
+      ok: true,
+      text: '<r>\n  <c m="3" a="2" z="1" />\n  <c />\n  <!--b-->\n  <b />\n  <a />\n</r>\n',
+    })
+    // Highlighted tags still lead; an empty order keeps the document's.
+    expect(
+      formatXml('<r><c/><b/><a/></r>', { sort: 'custom', order, first: ['a'] }),
+    ).toEqual({ ok: true, text: '<r>\n  <a />\n  <c />\n  <b />\n</r>\n' })
+    expect(
+      formatXml('<r><c/>\n\n<b/></r>', {
+        sort: 'custom',
+        removeEmptyLines: false,
+      }),
+    ).toEqual({
+      ok: true,
+      text: '<r>\n  <c />\n\n  <b />\n</r>\n',
+    })
+  })
+
   it('refuses invalid documents', () => {
     expect(formatXml('<a><b></a>').ok).toBe(false)
   })
