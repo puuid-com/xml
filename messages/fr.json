@@ -235,5 +235,19 @@
   "variables_save": "Enregistrer",
   "variables_saved": "Valeur enregistrée pour <<{name}>>",
   "variables_dialog_title": "Valeur de <<{name}>>",
-  "variables_dialog_description": "Utilisée dans ce profil lors du remplacement des variables. Écrite telle quelle."
+  "variables_dialog_description": "Utilisée dans ce profil lors du remplacement des variables. Écrite telle quelle.",
+  "share_copy": "Copier le lien de partage",
+  "share_copy_hint": "Le contenu du fichier voyage dans le lien.",
+  "share_keywords": "partager url lien",
+  "share_copied": "Lien de partage copié",
+  "share_copied_detail": "Toute personne ayant le lien peut lire le fichier.",
+  "share_too_large": "Ce fichier est trop volumineux pour être partagé par lien.",
+  "share_failed": "Impossible de copier le lien de partage.",
+  "share_open_title": "Ouvrir le fichier partagé {name} ?",
+  "share_open_description": "Il s'ouvre dans un nouvel onglet. Le contenu provient du lien : vérifiez-le avant de vous y fier.",
+  "share_open_confirm": "Ouvrir",
+  "share_open_cancel": "Annuler",
+  "share_opened": "{name} ouvert",
+  "share_open_invalid": "Ce lien de partage est invalide.",
+  "share_open_too_large": "Ce lien de partage est trop volumineux pour être ouvert."
 }

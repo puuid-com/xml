@@ -13,6 +13,7 @@ import {
   setDefaultsPreview,
   setQuickHighlight,
 } from '#/components/app/ui-store'
+import { encodeShare, ShareError } from '#/lib/share'
 import { createFile, filesCollection } from '#/lib/store/files'
 import { enabledDefaults } from '#/lib/store/defaults'
 import { profileHighlights } from '#/lib/store/highlights'
@@ -253,4 +254,21 @@ export function revealTag(tag: string, direction: 1 | -1) {
       : ([...matches].reverse().find((el) => el.from < pos) ??
         matches[matches.length - 1])
   revealElement(target, true)
+}
+
+/** Copies a link that carries the active file, compressed, in its fragment. */
+export async function copyShareLink() {
+  const { fileId } = editorStore.state
+  const file = fileId ? filesCollection.get(fileId) : undefined
+  if (!getView() || !file) return
+  try {
+    const hash = await encodeShare({ name: file.name, content: getText() })
+    const { origin, pathname } = window.location
+    await navigator.clipboard.writeText(origin + pathname + hash)
+    notify.success(m.share_copied(), { detail: m.share_copied_detail() })
+  } catch (error) {
+    notify.error(
+      error instanceof ShareError ? m.share_too_large() : m.share_failed(),
+    )
+  }
 }
