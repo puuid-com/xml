@@ -1,171 +1,184 @@
 # Tasks
 
-Feature ideas that keep the editor local-first and simple: no accounts, no server storage, everything stays in the browser.
+Follow-ups from the five features merged on 2026-10-25: backup and restore, profile variables, share links, compare, and offline. The editor stays local-first and simple: no accounts, no server storage, everything stays in the browser.
 
-**Order:** what to build first. Value for the effort, with the riskiest last.
+**Order:** what to do first. Fixes that lose or hide data come before polish.
 
 **Reasoning** uses the Claude Code effort scale: low, medium, high, xhigh, max.
 
-| #   | Feature                            | Reasoning | In one line                                                       |
-| --- | ---------------------------------- | --------- | ----------------------------------------------------------------- |
-| 1   | Back up and restore the workspace  | medium    | Protects the only copy of the data before we add more to it.      |
-| 2   | Variable values per profile        | medium    | Lets `<<name>>` be filled in, finishing the variables feature.    |
-| 3   | Share a file as a link             | low       | Send a file to someone with no server, using the URL fragment.    |
-| 4   | Compare two files                  | high      | Side-by-side diff of two tabs, optionally ignoring formatting.    |
-| 5   | Work offline and install as an app | xhigh     | Service worker so the app opens without a network. Easy to break. |
+| #   | Task                                   | Reasoning | In one line                                                         |
+| --- | -------------------------------------- | --------- | ------------------------------------------------------------------- |
+| 1   | Include variables in backups           | low       | Backups miss profile variables, and a restore can orphan them.      |
+| 2   | Keep the update notice from being lost | medium    | Any later notice replaces "A new version is available" for good.    |
+| 3   | Make restore all-or-nothing            | medium    | A failure halfway through leaves the workspace half restored.       |
+| 4   | Report every failed save               | low       | Only file content saves show an error; other writes fail silently.  |
+| 5   | Cache every page for offline use       | high      | Only `/` and `/fr/` open offline.                                   |
+| 6   | Check the merged features in a browser | medium    | Four of the five features were only checked by tests and the build. |
+| 7   | Clean up after the parallel run        | low       | Old branches, worktrees, scratch scripts and lint warnings.         |
 
 ---
 
-## 1. Back up and restore the workspace
+## 1. Include variables in backups
 
-Export everything (open and archived files, profiles, highlights, pins, defaults) to one JSON file, and restore from it. Show an error when the browser refuses to save.
+Add the profile variables to the backup file, to restore and to the counts in the restore dialog.
 
 **Why do it**
 
-- All data lives in one place: this browser's localStorage. Clearing site data, a new laptop or a different browser loses all of it. The archive only covers the last 10 closed tabs.
-- Safari deletes a site's script-writable storage after 7 days of use without the user interacting with the site.
-- Saves fail silently today. `saveContent` in `src/lib/store/files.ts` swallows the rejected write, so a full storage quota (about 5 MB) looks like a working save until the next reload.
-- Stays local-first: a file goes out, a file comes in.
+- The backup feature was built before variables existed, so `src/lib/store/backup.ts` never writes them. Restoring in a new browser loses every variable.
+- A restore replaces the profiles but keeps the current variables. Their `profileId` can then point at a profile that no longer exists, leaving hidden rows in localStorage.
+- No backup files exist outside development yet, so changing the format now costs nothing. Later it would need a migration.
 
 **Why not**
 
-- Backups go stale and people forget to make them. It's insurance, not sync.
-- The file format becomes a contract: it needs a version field and migrations as the schemas change.
-- Merging is hard (the same ids and names in two browsers). Replace-only keeps it simple but can't combine two workspaces.
-- A backup holds everything, including any secrets typed into files.
+- Variables often hold tokens and passwords. Putting them in a backup spreads them to wherever that file goes.
 
-**Reasoning: medium.** Simple mechanics, with a few decisions to get right: replace or merge, validation, versioning, and what a failed save does.
+**Reasoning: low.** The other collections already show the pattern: schema, export, replace, count.
 
 **Approach**
 
-- Backup file: `{ app: 'xml-editor', version: 1, exportedAt, files, profiles, highlights, pins, defaults }`. Leave out session state (active tab, collapsed nodes).
-- Restore validates with the existing zod schemas, lists the counts in an AlertDialog, downloads a backup of the current data, then replaces it. Adding single files already works by drag and drop.
-- Command menu: "Back up workspace" and "Restore from backup…".
-- A failed write shows an error notice ("Not saved: browser storage is full") with a backup action.
-- Tests: round trip, invalid file rejected, newer version rejected.
+- Add `variables` to the backup schema and to `replaceWorkspace`. Restore replaces them like highlights and pins.
+- Read version 1 files that have no `variables` as an empty list, so files made during development still restore. Keep `version: 1`.
+- Add a "Variables" row to the restore dialog counts.
+- Say in the backup copy that the file holds everything typed into the workspace, variables included, unencrypted.
+- Tests: round trip with variables, a file without `variables` restores, restored variables belong to restored profiles.
 
-**Done when** a backup made in one browser restores the same tabs, archive and profiles in another, and a failed save shows an error.
+**Done when** a backup with variables restores them under the right profiles in another browser, and no variable is left pointing at a missing profile.
 
 ---
 
-## 2. Variable values per profile
+## 2. Keep the update notice from being lost
 
-Give plain `<<name>>` variables a value in each profile, so ⇧⌥V fills them in along with the dynamic `<<$…>>` ones. Profiles then work as environments (dev, staging, prod).
+The status bar shows one notice at a time. The sticky "A new version is available" notice is replaced by the next notice of any kind, such as "Share link copied", and never comes back. The save-failed error competes for the same slot.
 
 **Why do it**
 
-- Finishes the app's signature feature. Plain variables are highlighted, but nothing fills them; only dynamic ones resolve today.
-- Reuses what exists: profile scoping and clone/delete (`src/lib/store/profile-actions.ts`), the key/value UI of Defaults, the resolve-into-a-new-file action and the completion preview panel.
-- Small data that fits in localStorage.
+- Missing the reload prompt keeps people on an old version until they happen to reload.
+- A save-failed error that gets replaced is worse: the user believes their work is saved.
 
 **Why not**
 
-- Two similar key/value lists: Defaults set tag values, Variables fill placeholders. Easy to confuse without clear names and copy.
-- Ties environments to profiles. SOAP formatting with staging values means cloning a profile. Fine with a few profiles, messy with many.
-- People will paste tokens and passwords, which then sit in plain localStorage and in backups.
-- Replacing text can break the document, for example a value containing `&` or `"`.
+- A queue or stack of notices adds UI to a deliberately small status bar.
 
-**Reasoning: medium.** The pattern already exists three times (highlights, pins, defaults). The real decisions are escaping and naming.
+**Reasoning: medium.** Small code, but it needs a rule for which notice wins.
 
 **Approach**
 
-- `src/lib/store/variables.ts`: `{ id, name, value, createdAt, profileId }`, modelled on `defaults.ts`. Add it to `cloneProfile` and `deleteProfile`.
-- A "Variables" tab in the Settings popover, next to Format and Defaults.
-- Editor: the chip tooltip shows the value; variables without one look different; completion after `<<` lists the profile's variables with their values in the preview panel; right-clicking a chip offers "Set value…".
-- Resolve replaces text as written, like Postman, then parses the result and warns if it now has errors. The notice says how many variables were left unresolved.
-- Values are literal text in v1, with no `<<$guid>>` inside a value.
+- In `src/components/app/notice-store.ts`, keep sticky notices and errors underneath short-lived ones: when an info or success notice times out, show the sticky one again instead of clearing.
+- An error replaces a sticky notice while it's up, and the sticky one comes back when the error is dismissed.
+- Tests: an update notice survives a "copied" notice, a save error and an update notice both stay reachable.
 
-**Done when** a file with `<<host>>` resolves to different values under two profiles and the original file is unchanged.
+**Done when** the update notice is still there after copying a share link, and a save error can't be silently replaced.
 
 ---
 
-## 3. Share a file as a link
+## 3. Make restore all-or-nothing
 
-"Copy share link" puts the file, compressed, in the URL fragment (`/#share=…`). Opening the link asks before adding it as a new tab.
+Restore writes six collections one after another. If one write fails, for example on a full storage quota, the workspace is left half old and half restored.
 
 **Why do it**
 
-- Send a payload to a colleague with no server, account or upload. Browsers never send the fragment to the server, so the Worker never sees the content.
-- Native APIs only: `CompressionStream('deflate-raw')` and base64url. No new dependency.
-- Small and self-contained: one helper, one dialog, a few strings.
+- Restore exists to recover data. A half restore is the worst result it can have.
+- Storage-full is the likeliest reason to need a restore in the first place.
 
 **Why not**
 
-- Links get long. Chat apps and email clients may truncate them, so it only suits small files.
-- The content goes wherever the link goes: chat logs, browser history, bookmarks. A payload with credentials leaks them.
-- A link is a snapshot, not a live document. People may expect edits to sync.
-- Untrusted input: a short link can inflate to gigabytes (a compression bomb).
+- localStorage has no transactions, so this needs a snapshot and rollback by hand.
+- The backup of the old data downloaded just before restoring already gives a way back.
 
-**Reasoning: low.** Well scoped, and every risk is listed here. Follow the notes.
+**Reasoning: medium.** The rollback has to restore the exact old values, including keys that didn't exist before.
 
 **Approach**
 
-- `src/lib/share.ts`: `encodeShare({ name, content })` and `decodeShare(hash)`, with a round-trip test. Validate with zod, stop decompressing past a size cap (for example 1 MB), and refuse links over a set length.
-- On load, the editor reads `#share=`, asks in an AlertDialog ("Open shared file {name}?"), creates the file with `createFile` on confirm, then clears the fragment with `history.replaceState` so a reload doesn't ask again.
-- "Copy share link" in the command menu. The copy says the content travels inside the link.
+- Before writing, read the raw localStorage value of every key restore touches.
+- Write the new values. On any failure, write the saved raw values back (removing keys that were absent) and show the existing restore-failed error.
+- Tests: a write that throws partway leaves every key as it was.
 
-**Done when** a copied link opens the same file in a fresh browser after confirmation, and a broken or oversized link shows an error.
+**Done when** a restore that fails on its fourth write leaves the workspace exactly as it was before.
 
 ---
 
-## 4. Compare two files
+## 4. Report every failed save
 
-Compare the active file with another tab, side by side, with an option to ignore formatting.
+Only file content saves report a refused write. Adding a highlight, pinning a field, renaming a file or setting a variable still fails silently when storage is full.
 
 **Why do it**
 
-- A common job with payloads: what changed between this request and that one, or before and after Apply defaults.
-- `@codemirror/merge`, the official CodeMirror package, does the diff and both layouts.
-- The formatter already normalizes both sides (`formatDocument`), so "ignore formatting" is cheap.
+- The same quota problem the backup feature fixed for content still hides here. The change looks saved until the next reload.
 
 **Why not**
 
-- A new mode in a layout built around one editor and a side panel. Mobile needs its own unified view.
-- Diffing large documents on the main thread can stall the page.
-- Read-only in v1 means you can't fix a difference in place. Editable means syncing two editors with the per-file undo history.
-- Diff colours bend the monochrome design and need restraint.
+- Many small writes failing at once could flood the status bar. It needs one notice, not one per write.
 
-**Reasoning: high.** Several systems meet: the per-file `EditorState` cache in `CodeEditor.tsx`, the resizable layout, theming, mobile and performance.
+**Reasoning: low.** `onSaveFailed` in `src/lib/store/files.ts` already does this for content; reuse it.
 
 **Approach**
 
-- Add `@codemirror/merge`. "Compare with…" in the command menu lists the open tabs.
-- Desktop shows `MergeView` in place of the editor panel; mobile shows `unifiedMergeView`. Both read-only in v1, closed with a button or Esc.
-- An "Ignore formatting" toggle formats both sides with the active profile's options when both parse.
-- Mark inserted and deleted ranges with existing tokens (`--destructive`, `--hl-green`), not new colours. Test with a large file.
+- Route every collection's localStorage write through one helper that catches the error and calls the existing save-failed handler.
+- Report once until a write succeeds again, as content saves already do.
 
-**Done when** two tabs holding the same data with different formatting show no differences with the toggle on, and real changes are marked.
+**Done when** filling storage and then adding a highlight shows "Not saved: browser storage is full".
 
 ---
 
-## 5. Work offline and install as an app
+## 5. Cache every page for offline use
 
-A service worker caches the app so it opens without a network, and the manifest gets what browsers need to install it.
+The service worker caches the HTML for `/` and `/fr/` only. Opening any other page directly with no network fails, for example `/about`. Moving to it from inside the app still works because the router loads it on the client.
 
 **Why do it**
 
-- Makes local-first true at load time too. The data is local, but the app still needs a network to open: planes, VPNs, bad Wi-Fi.
-- Installed, it gets its own window and dock or taskbar icon.
-- Safari counts days of use separately for web apps added to the Home Screen, so installed users are far less exposed to the 7-day storage purge.
+- An installed app or a bookmark to another page opens to the browser's offline error.
 
 **Why not**
 
-- The hardest feature here to keep simple. Service worker bugs stick: a bad cache keeps serving an old or broken app, and users can't fix it themselves.
-- Needs an update flow ("New version available, reload") and a way to retire a bad worker.
-- Dev and prod diverge because the worker only runs in production builds, so problems show up after a deploy.
-- The Worker already serves the app quickly from Cloudflare's edge. Only worth it if people really work offline.
+- Every cached page is one more shell that must match its build's assets. The worker already never refreshes cached pages on purpose, because a newer page in an older cache breaks the app.
+- Few people open those pages directly.
 
-**Reasoning: xhigh.** TanStack Start, the Cloudflare Vite plugin, hashed Rolldown chunks, Paraglide's locale URLs (`/` and `/fr`) and the cache lifecycle all interact, and mistakes ship silently and stay on users' devices.
+**Reasoning: high.** It touches the same cache lifecycle that makes service worker bugs stick on users' devices.
 
 **Approach**
 
-- Build the precache list from the client build output, with a small Vite plugin or a tool such as Serwist if it fits the Start build. Cache-first for hashed assets; network-first with a cache fallback for each locale's HTML shell.
-- Name caches per build and delete old ones on `activate`. Serve the worker from `/sw.js` so it controls every route.
-- When a new worker is waiting, show a status bar notice with a Reload action (notices already support actions).
-- Keep a kill switch ready: a worker that unregisters itself.
-- Manifest: add raster icons (192 and 512 px, maskable) and an `apple-touch-icon`.
+- Simplest: for navigations to a page that isn't cached, serve the locale's cached shell and let the router render the page on the client. Check that TanStack Start hydrates a different route from that shell without errors.
+- Otherwise, add each route from `site.sitemapPaths` to the precache list in `plugins/service-worker.ts`.
+- Test with the production build and preview, as the original verification did.
 
-**Done when** the app loads with the network off after one visit, a deploy shows the reload notice, and Chrome offers to install it.
+**Done when** `/about` and `/fr/about` open with the network off after one visit.
+
+---
+
+## 6. Check the merged features in a browser
+
+Each feature passed the checks on its own and after merging, but only offline support was tried in a real browser.
+
+**Why do it**
+
+- Layout, colours, dialogs and focus can't be checked by type checks and unit tests.
+- The features now meet each other: the compare view's code loads on first use, so it has to be in the offline cache, and share links have to work when the app opens offline.
+
+**Reasoning: medium.** Mostly clicking through, with a few combinations to think about.
+
+**Checklist**
+
+- **Backup:** restore in a second browser gives the same tabs, archive and profiles. Filling storage shows the save-failed error with its backup action.
+- **Variables:** chips show values in tooltips and look muted without one. "Set value…" works from a right-click. The Variables tab adds, edits and removes. Completion after `<<` shows values. ⇧⌥V fills them into a new file.
+- **Share link:** a copied link opens in a fresh browser after confirming. Broken and oversized links show an error. Reloading doesn't ask again.
+- **Compare:** diff colours in light and dark mode, the mobile layout, Esc to close, and "Ignore formatting" on files that contain `<<variables>>`.
+- **Together:** in a production build, open the compare view and a share link with the network off.
+
+**Done when** every item above works, or has its own task here.
+
+---
+
+## 7. Clean up after the parallel run
+
+**What's left**
+
+- Five `feat/*` branches, five `t3/*` branches and five worktrees under `~/.t3/worktrees/xml/`. All five features are merged.
+- The service worker verification scripts in `/tmp/sw-verify/` (`verify.mjs`, `verify-kill.mjs`). They'll be lost on reboot. Move them into the repo, under `scripts/`, if they're worth rerunning before a deploy.
+- React Doctor warnings: CodeMirror loads eagerly in the editor files (this was already the case before the features) and the skip link in `src/routes/__root.tsx`. Fix them or turn those rules off, so the commit hook stops reporting them.
+
+**Reasoning: low.**
+
+**Done when** `git branch` and `git worktree list` show only `main`, and the commit hook has no warnings.
 
 ---
 
