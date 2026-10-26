@@ -48,4 +48,50 @@ describe('notice store', () => {
     dismissNotice(first)
     expect(noticeStore.state?.message).toBe('Second')
   })
+
+  it('brings an update notice back after a copied notice', () => {
+    notify.info('New version', { sticky: true })
+    notify.success('Share link copied')
+    expect(noticeStore.state?.message).toBe('Share link copied')
+    vi.advanceTimersByTime(NOTICE_MS)
+    expect(noticeStore.state?.message).toBe('New version')
+  })
+
+  it('brings an update notice back after a dismissed copied notice', () => {
+    notify.info('New version', { sticky: true })
+    notify.success('Copied')
+    dismissNotice(noticeStore.state?.id)
+    expect(noticeStore.state?.message).toBe('New version')
+  })
+
+  it('shows an error over an update notice until the error is dismissed', () => {
+    notify.info('New version', { sticky: true })
+    notify.error('Save failed')
+    expect(noticeStore.state?.message).toBe('Save failed')
+    dismissNotice(noticeStore.state?.id)
+    expect(noticeStore.state?.message).toBe('New version')
+  })
+
+  it('keeps a save error above a later update notice', () => {
+    notify.error('Save failed')
+    notify.info('New version', { sticky: true })
+    expect(noticeStore.state?.message).toBe('Save failed')
+    dismissNotice(noticeStore.state?.id)
+    expect(noticeStore.state?.message).toBe('New version')
+  })
+
+  it('brings a save error back after a copied notice', () => {
+    notify.error('Save failed')
+    notify.success('Copied')
+    vi.advanceTimersByTime(NOTICE_MS)
+    expect(noticeStore.state?.message).toBe('Save failed')
+  })
+
+  it('shows a lasting notice at once over a short-lived one', () => {
+    notify.success('Copied')
+    notify.error('Save failed')
+    expect(noticeStore.state?.message).toBe('Save failed')
+    vi.advanceTimersByTime(NOTICE_MS)
+    expect(noticeStore.state?.message).toBe('Save failed')
+  })
 })
