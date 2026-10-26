@@ -7,7 +7,7 @@ import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
 import type { Backup } from '#/lib/store/backup'
 
-/** Downloads every file, profile and rule as one JSON file. */
+/** Downloads every file, profile, rule and variable as one JSON file. */
 export function downloadBackup() {
   // The editor holds edits that may not be saved yet, or failed to save.
   const { fileId } = editorStore.state
@@ -23,7 +23,7 @@ export function downloadBackup() {
   link.download = m.backup_file_name({ date: backup.exportedAt.slice(0, 10) })
   link.click()
   URL.revokeObjectURL(url)
-  notify.success(m.backup_downloaded())
+  notify.success(m.backup_downloaded(), { detail: m.backup_contents() })
 }
 
 /** Asks for a backup file, then shows what it holds before replacing anything. */

@@ -12,6 +12,7 @@ import { closeFile, createFile, filesCollection } from './files'
 import { highlightsCollection, setHighlight } from './highlights'
 import { pinTag, pinsCollection } from './pins'
 import { createProfile, profilesCollection } from './profiles'
+import { setVariable, variablesCollection } from './variables'
 
 function clearAll() {
   for (const collection of [
@@ -19,6 +20,7 @@ function clearAll() {
     highlightsCollection,
     pinsCollection,
     defaultsCollection,
+    variablesCollection,
   ]) {
     const ids = [...collection.values()].map((item) => item.id)
     if (ids.length) collection.delete(ids)
@@ -55,6 +57,7 @@ describe('workspace backup', () => {
       highlights: 1,
       pins: 1,
       defaults: 1,
+      variables: 0,
     })
 
     clearAll()
@@ -79,6 +82,63 @@ describe('workspace backup', () => {
       'Jane',
     ])
     expect(localStorage.getItem('xml-editor:files')).not.toContain('other.xml')
+  })
+
+  it('restores variables under their profiles', async () => {
+    const staging = createProfile({ name: 'Staging' })
+    setVariable('host', 'example.com', 'default')
+    setVariable('token', 'secret', staging.id)
+    const parsed = parseBackup(JSON.stringify(createBackup()))
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(backupCounts(parsed.backup).variables).toBe(2)
+
+    clearAll()
+    setVariable('stale', 'x', 'default')
+    await restoreBackup(parsed.backup)
+
+    const vars = [...variablesCollection.values()]
+      .map((v) => [v.name, v.value, v.profileId])
+      .sort()
+    expect(vars).toEqual([
+      ['host', 'example.com', 'default'],
+      ['token', 'secret', staging.id],
+    ])
+  })
+
+  it('restores a version 1 file without variables', async () => {
+    setVariable('stale', 'x', 'default')
+    const { variables: _, ...old } = createBackup()
+    const parsed = parseBackup(JSON.stringify(old))
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(parsed.backup.variables).toEqual([])
+    await restoreBackup(parsed.backup)
+    expect(variablesCollection.size).toBe(0)
+  })
+
+  it('leaves no variable pointing at a missing profile', async () => {
+    const staging = createProfile({ name: 'Staging' })
+    setVariable('token', 'secret', staging.id)
+    const backup = createBackup()
+    const parsed = parseBackup(
+      JSON.stringify({
+        ...backup,
+        profiles: backup.profiles.filter((p) => p.id !== staging.id),
+      }),
+    )
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    await restoreBackup(parsed.backup)
+    const profileIds = new Set(
+      [...profilesCollection.values()].map((p) => p.id),
+    )
+    expect(
+      [...variablesCollection.values()].every((v) =>
+        profileIds.has(v.profileId),
+      ),
+    ).toBe(true)
+    expect(variablesCollection.size).toBe(0)
   })
 
   it('rejects files that are not a valid backup', () => {

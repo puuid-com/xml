@@ -259,6 +259,7 @@ export function RestoreDialog() {
       [m.restore_count_highlights(), counts.highlights],
       [m.restore_count_pins(), counts.pins],
       [m.restore_count_defaults(), counts.defaults],
+      [m.restore_count_variables(), counts.variables],
     ] as const)
 
   const confirm = async () => {
