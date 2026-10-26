@@ -221,6 +221,7 @@ export async function restoreBackup(backup: Backup) {
   )
   try {
     // One at a time, so the first failure stops the writes after it.
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop
     for (const { write } of writes) await write()
   } catch (error) {
     rollBack(saved)
