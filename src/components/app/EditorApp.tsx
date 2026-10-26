@@ -11,7 +11,12 @@ import { useDefaultLayout } from 'react-resizable-panels'
 import { AppHeader } from './AppHeader'
 import { ArchiveDialog } from './ArchiveDialog'
 import { CommandMenu } from './CommandMenu'
-import { CloseDialog, DefaultsConfirmDialog, RenameDialog } from './Dialogs'
+import {
+  CloseDialog,
+  DefaultsConfirmDialog,
+  RenameDialog,
+  VariableValueDialog,
+} from './Dialogs'
 import { ACCEPTED_TYPES, importFiles, newFile, newJsonFile } from './files'
 import { SidePanel } from './SidePanel'
 import { StatusBar } from './StatusBar'
@@ -135,6 +140,7 @@ export function EditorApp() {
       <CommandMenu activeId={activeId} onOpenFromDisk={openFromDisk} />
       <CloseDialog openIds={files.map((f) => f.id)} />
       <DefaultsConfirmDialog />
+      <VariableValueDialog />
       <ProfileDialog />
       <DeleteProfileDialog />
       <QuickHighlight />

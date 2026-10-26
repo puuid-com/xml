@@ -18,14 +18,16 @@ import { enabledDefaults } from '#/lib/store/defaults'
 import { profileHighlights } from '#/lib/store/highlights'
 import { activeFormat } from '#/lib/store/profiles'
 import { setActive } from '#/lib/store/session'
+import { variableValues } from '#/lib/store/variables'
 import {
   MIME_TYPES,
   documentDefaults,
   formatDocument,
   languageOf,
+  parseDocument,
 } from '#/lib/document'
 import { defaultSummary } from '#/lib/xml/defaults'
-import { resolveDynamicVars } from '#/lib/xml/dynamic-vars'
+import { resolveVars } from '#/lib/xml/dynamic-vars'
 import { diffChange } from '#/lib/xml/edit'
 import { allElements, elementAt } from '#/lib/xml/locate'
 import { hasName, isLeaf, leafValue } from '#/lib/xml/model'
@@ -101,8 +103,9 @@ export function commitDefaultsActive() {
 }
 
 /**
- * Opens a copy of the active file with dynamic variables such as
- * `<<$randomInt>>` swapped for generated values, leaving the original as is.
+ * Opens a copy of the active file with its variables filled in: plain ones
+ * from the file's profile, dynamic ones such as `<<$randomInt>>` with
+ * generated values. The original stays as is.
  */
 export function resolveVarsActive() {
   if (!getView()) return true
@@ -111,12 +114,19 @@ export function resolveVarsActive() {
     const { fileId } = editorStore.state
     const file = fileId ? filesCollection.get(fileId) : undefined
     if (!getView() || !file) return
-    const { text, count } = resolveDynamicVars(getText(), {
+    // Only errors the values brought in are worth a warning.
+    const wasValid = parseActive().errors.length === 0
+    const { text, count, unresolved } = resolveVars(getText(), {
       faker,
       now: new Date(),
+      values: variableValues(file.profileId),
     })
     if (count === 0) {
-      notify.info(m.vars_resolve_none())
+      notify.info(
+        unresolved > 0
+          ? m.vars_resolve_none_set({ count: unresolved })
+          : m.vars_resolve_none(),
+      )
       return
     }
     const dot = file.name.lastIndexOf('.')
@@ -126,7 +136,28 @@ export function resolveVarsActive() {
     })
     const copy = createFile(name, text, file.profileId)
     setActive(copy.id)
-    notify.success(m.vars_resolved({ count, name: copy.name }))
+    // Values are written as is, so one with `<` or `&` can break the markup.
+    const error = wasValid
+      ? parseDocument(text, languageOf(copy.name, text)).errors.at(0)
+      : undefined
+    const message =
+      unresolved > 0
+        ? m.vars_resolved_partly({ count, name: copy.name, unresolved })
+        : m.vars_resolved({ count, name: copy.name })
+    if (error) {
+      notify.error(m.vars_resolved_invalid({ message }), {
+        detail: error.message,
+        action: {
+          label: m.notice_go_to(),
+          run: () => {
+            if (editorStore.state.fileId === copy.id)
+              revealRange(error.from, error.to)
+          },
+        },
+      })
+      return
+    }
+    notify.success(message)
   })
   return true
 }

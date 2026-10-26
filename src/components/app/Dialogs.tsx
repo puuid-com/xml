@@ -4,7 +4,13 @@ import { useState } from 'react'
 
 import { neighbour } from './files'
 import { notify } from './notice-store'
-import { askClose, askRename, setDefaultsPreview, uiStore } from './ui-store'
+import {
+  askClose,
+  askRename,
+  askVariableValue,
+  setDefaultsPreview,
+  uiStore,
+} from './ui-store'
 import { commitDefaultsActive } from '#/components/editor/actions'
 import { dropEditorState } from '#/components/editor/CodeEditor'
 import {
@@ -31,6 +37,7 @@ import { Label } from '#/components/ui/label'
 import { mod } from '#/lib/platform'
 import { closeFile, filesCollection, renameFile } from '#/lib/store/files'
 import { sessionStore, setActive } from '#/lib/store/session'
+import { findVariable, setVariable } from '#/lib/store/variables'
 import { m } from '#/paraglide/messages'
 
 export function RenameDialog() {
@@ -231,5 +238,81 @@ export function DefaultsConfirmDialog() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  )
+}
+
+/** Sets the active profile's value for a variable picked in the editor. */
+export function VariableValueDialog() {
+  const name = useSelector(uiStore, (s) => s.variableName)
+
+  return (
+    <Dialog
+      open={!!name}
+      onOpenChange={(open) => {
+        if (!open) askVariableValue(null)
+      }}
+    >
+      <DialogContent className="sm:max-w-sm">
+        {name && (
+          <VariableValueForm
+            key={name}
+            name={name}
+            value={findVariable(name)?.value ?? ''}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function VariableValueForm({ name, value }: { name: string; value: string }) {
+  const form = useForm({
+    defaultValues: { value },
+    onSubmit: ({ value: submitted }) => {
+      setVariable(name, submitted.value)
+      askVariableValue(null)
+      notify.success(m.variables_saved({ name }))
+    },
+  })
+
+  return (
+    <form
+      className="grid gap-4"
+      onSubmit={(e) => {
+        e.preventDefault()
+        void form.handleSubmit()
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>{m.variables_dialog_title({ name })}</DialogTitle>
+        <DialogDescription>
+          {m.variables_dialog_description()}
+        </DialogDescription>
+      </DialogHeader>
+      <form.Field name="value">
+        {(field) => (
+          <div className="grid gap-1.5">
+            <Label htmlFor="variable-value">{m.variables_value()}</Label>
+            <Input
+              id="variable-value"
+              autoFocus
+              className="font-mono"
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          </div>
+        )}
+      </form.Field>
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => askVariableValue(null)}
+        >
+          {m.cancel()}
+        </Button>
+        <Button type="submit">{m.variables_save()}</Button>
+      </DialogFooter>
+    </form>
   )
 }

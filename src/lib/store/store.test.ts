@@ -26,6 +26,13 @@ import {
   setHighlight,
 } from './highlights'
 import { findPin, pinTag, pinsCollection, togglePin, unpinTag } from './pins'
+import {
+  findVariable,
+  removeVariable,
+  setVariable,
+  variableValues,
+  variablesCollection,
+} from './variables'
 
 function openOrder() {
   return [...filesCollection.values()]
@@ -206,5 +213,34 @@ describe('pins', () => {
     expect(findPin('currency')).toBeDefined()
     togglePin('currency')
     expect(findPin('currency')).toBeUndefined()
+  })
+})
+
+describe('variables', () => {
+  beforeEach(() => {
+    for (const variable of [...variablesCollection.values()]) {
+      variablesCollection.delete(variable.id)
+    }
+  })
+
+  it('keeps one value per name and updates it', () => {
+    setVariable('host', 'dev')
+    setVariable('host', 'prod')
+    expect([...variablesCollection.values()]).toHaveLength(1)
+    expect(variableValues()).toEqual(new Map([['host', 'prod']]))
+    expect(localStorage.getItem('xml-editor:variables')).toContain('prod')
+  })
+
+  it('rejects names a variable can’t have', () => {
+    setVariable('$guid', 'x')
+    setVariable('has space', 'x')
+    setVariable('', 'x')
+    expect(variablesCollection.size).toBe(0)
+  })
+
+  it('removes a variable', () => {
+    setVariable('token', 'abc')
+    removeVariable(findVariable('token')!.id)
+    expect(findVariable('token')).toBeUndefined()
   })
 })

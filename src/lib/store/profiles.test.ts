@@ -6,6 +6,7 @@ import type * as files from './files'
 import type * as highlights from './highlights'
 import type * as pins from './pins'
 import type * as defaults from './defaults'
+import type * as variables from './variables'
 import type * as session from './session'
 import type * as switching from '#/components/profiles/actions'
 
@@ -17,6 +18,7 @@ type Store = typeof profiles &
   typeof highlights &
   typeof pins &
   typeof defaults &
+  typeof variables &
   typeof session &
   typeof switching
 
@@ -67,6 +69,7 @@ beforeAll(async () => {
     await import('./highlights'),
     await import('./pins'),
     await import('./defaults'),
+    await import('./variables'),
     await import('./session'),
     await import('#/components/profiles/actions'),
   )
@@ -123,15 +126,20 @@ describe('profiles', () => {
     s.setActive(file.id)
     s.setHighlight('id', 'teal')
     s.pinTag('name')
+    s.setVariable('host', 'dev.example.com')
     s.setFormatSetting('removeEmptyLines', false)
 
     const copy = s.cloneProfile('default', { name: 'Copy' })!
     expect(copy.format.removeEmptyLines).toBe(false)
     expect(s.findHighlight('id', copy.id)?.color).toBe('teal')
     expect(s.findPin('name', copy.id)).toBeDefined()
+    expect(s.findVariable('host', copy.id)?.value).toBe('dev.example.com')
 
     s.setHighlight('id', 'red')
+    s.setVariable('host', 'prod.example.com', copy.id)
     expect(s.findHighlight('id', copy.id)?.color).toBe('teal')
+    expect(s.variableValues().get('host')).toBe('dev.example.com')
+    expect(s.variableValues(copy.id).get('host')).toBe('prod.example.com')
   })
 
   it('deletes a profile with its rules and moves its files', async () => {
@@ -139,12 +147,16 @@ describe('profiles', () => {
     const file = s.createFile('a.xml', '', temp.id)
     s.setActive(file.id)
     s.setHighlight('gone')
+    s.setVariable('gone', 'x')
 
     expect(await s.deleteProfile(temp.id)).toMatchObject({ id: 'default' })
     expect(s.profilesCollection.has(temp.id)).toBe(false)
     expect(s.filesCollection.get(file.id)?.profileId).toBe('default')
     expect(
       [...s.highlightsCollection.values()].some((r) => r.tag === 'gone'),
+    ).toBe(false)
+    expect(
+      [...s.variablesCollection.values()].some((v) => v.name === 'gone'),
     ).toBe(false)
 
     expect(await s.deleteProfile('default')).toBeUndefined()

@@ -18,11 +18,13 @@ import {
   setView,
 } from './editor-store'
 import { docLanguage, languageCompartment, languageExtension } from './language'
+import { setVarValues } from './dynamic-vars'
 import { editorExtensions, fileIdField, setDefaultRules } from './extensions'
 import { setTagHighlights } from './tag-highlights'
 import { TagContextMenu } from './TagContextMenu'
 import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
+import { useVariableValues } from '#/hooks/use-variables'
 import { languageOf } from '#/lib/document'
 import { shortcuts } from '#/lib/shortcuts'
 import { filesCollection, saveContent } from '#/lib/store/files'
@@ -59,6 +61,7 @@ let extensions: Extension | null = null
 function sharedExtensions(
   highlights: ReadonlyMap<string, string>,
   defaults: ReadonlyArray<DefaultRule>,
+  values: ReadonlyMap<string, string>,
 ) {
   extensions ??= editorExtensions(
     {
@@ -90,6 +93,7 @@ function sharedExtensions(
     },
     highlights,
     defaults,
+    values,
   )
   return extensions
 }
@@ -98,6 +102,7 @@ function stateFor(
   fileId: string,
   highlights: ReadonlyMap<string, string>,
   defaults: ReadonlyArray<DefaultRule>,
+  values: ReadonlyMap<string, string>,
 ) {
   const file = filesCollection.get(fileId)
   const content = file?.content ?? ''
@@ -115,7 +120,7 @@ function stateFor(
       languageCompartment.of(
         languageExtension(languageOf(file?.name ?? '', content)),
       ),
-      sharedExtensions(highlights, defaults),
+      sharedExtensions(highlights, defaults, values),
     ],
   })
 }
@@ -141,6 +146,8 @@ export function CodeEditor({ fileId }: { fileId: string }) {
   const highlightsRef = useRef(highlights)
   const defaults = useEnabledDefaults()
   const defaultsRef = useRef(defaults)
+  const values = useVariableValues()
+  const valuesRef = useRef(values)
   const activeName = useRef<string | null>(null)
 
   useEffect(() => {
@@ -196,7 +203,12 @@ export function CodeEditor({ fileId }: { fileId: string }) {
     if (previous === fileId) return
     if (previous) states.set(previous, view.state)
 
-    const state = stateFor(fileId, highlightsRef.current, defaultsRef.current)
+    const state = stateFor(
+      fileId,
+      highlightsRef.current,
+      defaultsRef.current,
+      valuesRef.current,
+    )
     view.setState(state)
     activeName.current = filesCollection.get(fileId)?.name ?? null
     // A cached state keeps the language it had; the file may since be renamed.
@@ -205,6 +217,7 @@ export function CodeEditor({ fileId }: { fileId: string }) {
       effects: [
         setTagHighlights(highlightsRef.current),
         setDefaultRules(defaultsRef.current),
+        setVarValues(valuesRef.current),
       ],
     })
     publishCursorFrom(view.state)
@@ -221,6 +234,11 @@ export function CodeEditor({ fileId }: { fileId: string }) {
     defaultsRef.current = defaults
     viewRef.current?.dispatch({ effects: setDefaultRules(defaults) })
   }, [defaults])
+
+  useEffect(() => {
+    valuesRef.current = values
+    viewRef.current?.dispatch({ effects: setVarValues(values) })
+  }, [values])
 
   return (
     <TagContextMenu>

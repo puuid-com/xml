@@ -15,6 +15,8 @@ interface UiState {
   defaultsPreview: Array<DefaultSummary> | null
   profileDialog: ProfileDialog | null
   deleteProfileId: string | null
+  /** Variable whose value is being set from the editor. */
+  variableName: string | null
 }
 
 /** Creating a profile, or cloning or editing the one with `profileId`. */
@@ -38,6 +40,7 @@ export const uiStore = new Store<UiState>({
   defaultsPreview: null,
   profileDialog: null,
   deleteProfileId: null,
+  variableName: null,
 })
 
 export function setPaletteOpen(paletteOpen: boolean) {
@@ -76,4 +79,8 @@ export function setProfileDialog(profileDialog: ProfileDialog | null) {
 
 export function askDeleteProfile(deleteProfileId: string | null) {
   uiStore.setState((s) => ({ ...s, deleteProfileId }))
+}
+
+export function askVariableValue(variableName: string | null) {
+  uiStore.setState((s) => ({ ...s, variableName }))
 }
