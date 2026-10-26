@@ -249,5 +249,15 @@
   "share_open_cancel": "Cancel",
   "share_opened": "Opened {name}",
   "share_open_invalid": "This share link is broken.",
-  "share_open_too_large": "This share link is too large to open."
+  "share_open_too_large": "This share link is too large to open.",
+  "compare_with": "Compare with…",
+  "compare_with_heading": "Compare {name} with",
+  "compare_placeholder": "Search open tabs…",
+  "compare_close": "Close comparison",
+  "compare_label": "Comparison of {a} and {b}",
+  "compare_ignore_formatting": "Ignore formatting",
+  "compare_unparsed": "Shown as written: {name} has errors",
+  "compare_changes": "Differences: {count}",
+  "compare_no_changes": "No differences",
+  "compare_unchanged_lines": "Unchanged lines: {count}"
 }

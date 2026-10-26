@@ -5,7 +5,7 @@ import {
   IconJson,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
 
 import { AppHeader } from './AppHeader'
@@ -25,7 +25,7 @@ import { SidePanel } from './SidePanel'
 import { StatusBar } from './StatusBar'
 import { TabStrip } from './TabStrip'
 import { useAppShortcuts } from './use-app-shortcuts'
-import { setMobileView, uiStore } from './ui-store'
+import { setCompareId, setMobileView, uiStore } from './ui-store'
 import { CodeEditor } from '#/components/editor/CodeEditor'
 import { QuickHighlight } from '#/components/highlights/QuickHighlight'
 import {
@@ -56,6 +56,13 @@ import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
 
+// The diff package is only needed while comparing, so it loads on first use.
+const CompareView = lazy(() =>
+  import('#/components/compare/CompareView').then((mod) => ({
+    default: mod.CompareView,
+  })),
+)
+
 export function EditorApp() {
   const files = useOpenFiles()
   const storedActive = useSelector(sessionStore, (s) => s.activeId)
@@ -73,6 +80,20 @@ export function EditorApp() {
   }, [activeId, storedActive])
 
   useEffect(() => onSaveFailed(reportSaveFailed), [])
+
+  // A comparison belongs to the tab it was opened from, and needs the other
+  // tab to stay open.
+  const storedCompareId = useSelector(uiStore, (s) => s.compareId)
+  const compareId =
+    storedCompareId &&
+    storedCompareId !== activeId &&
+    files.some((f) => f.id === storedCompareId)
+      ? storedCompareId
+      : null
+  useEffect(() => setCompareId(null), [activeId])
+  useEffect(() => {
+    if (storedCompareId && !compareId) setCompareId(null)
+  }, [storedCompareId, compareId])
 
   const openFromDisk = () => inputRef.current?.click()
 
@@ -131,9 +152,9 @@ export function EditorApp() {
       <main id="main" className="min-h-0 flex-1">
         {activeId ? (
           wide ? (
-            <DesktopWorkspace fileId={activeId} />
+            <DesktopWorkspace fileId={activeId} compareId={compareId} />
           ) : (
-            <MobileWorkspace fileId={activeId} />
+            <MobileWorkspace fileId={activeId} compareId={compareId} />
           )
         ) : (
           <Welcome onOpenFromDisk={openFromDisk} />
@@ -169,7 +190,36 @@ export function EditorApp() {
   )
 }
 
-function DesktopWorkspace({ fileId }: { fileId: string }) {
+interface WorkspaceProps {
+  fileId: string
+  /** Tab to compare with, shown in place of the editor. */
+  compareId: string | null
+}
+
+/**
+ * The editor, or a comparison in its place. The editor stays mounted while
+ * hidden, so its state, undo history and the toolbar keep working.
+ */
+function EditorOrCompare({
+  fileId,
+  compareId,
+  layout,
+}: WorkspaceProps & { layout: 'split' | 'unified' }) {
+  return (
+    <>
+      <div className={cn('h-full', compareId && 'hidden')}>
+        <CodeEditor fileId={fileId} />
+      </div>
+      {compareId && (
+        <Suspense>
+          <CompareView fileId={fileId} otherId={compareId} layout={layout} />
+        </Suspense>
+      )}
+    </>
+  )
+}
+
+function DesktopWorkspace({ fileId, compareId }: WorkspaceProps) {
   const panelOpen = useSelector(sessionStore, (s) => s.panelOpen)
   const layout = useDefaultLayout({
     id: 'xml-main-h',
@@ -183,7 +233,7 @@ function DesktopWorkspace({ fileId }: { fileId: string }) {
       onLayoutChanged={layout.onLayoutChanged}
     >
       <ResizablePanel id="editor" minSize="25">
-        <CodeEditor fileId={fileId} />
+        <EditorOrCompare fileId={fileId} compareId={compareId} layout="split" />
       </ResizablePanel>
       {panelOpen && (
         <>
@@ -202,7 +252,7 @@ function DesktopWorkspace({ fileId }: { fileId: string }) {
   )
 }
 
-export function MobileWorkspace({ fileId }: { fileId: string }) {
+export function MobileWorkspace({ fileId, compareId }: WorkspaceProps) {
   const view = useSelector(uiStore, (s) => s.mobileView)
   useEffect(() => setMobileView('editor'), [fileId])
 
@@ -235,7 +285,11 @@ export function MobileWorkspace({ fileId }: { fileId: string }) {
         forceMount
         className="min-h-0 overflow-hidden data-[state=inactive]:hidden"
       >
-        <CodeEditor fileId={fileId} />
+        <EditorOrCompare
+          fileId={fileId}
+          compareId={compareId}
+          layout="unified"
+        />
       </TabsContent>
       <TabsContent
         value="structure"

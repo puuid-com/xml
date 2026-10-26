@@ -20,6 +20,10 @@ interface UiState {
   restorePreview: RestorePreview | null
   /** Variable whose value is being set from the editor. */
   variableName: string | null
+  /** Tab the active file is being compared with, shown in place of the editor. */
+  compareId: string | null
+  /** Format both sides before comparing, so only the data differs. */
+  compareIgnoreFormatting: boolean
 }
 
 /** A backup read from disk, with its date formatted for the reader's locale. */
@@ -51,6 +55,8 @@ export const uiStore = new Store<UiState>({
   deleteProfileId: null,
   restorePreview: null,
   variableName: null,
+  compareId: null,
+  compareIgnoreFormatting: false,
 })
 
 export function setPaletteOpen(paletteOpen: boolean) {
@@ -97,4 +103,17 @@ export function setRestorePreview(restorePreview: RestorePreview | null) {
 
 export function askVariableValue(variableName: string | null) {
   uiStore.setState((s) => ({ ...s, variableName }))
+}
+
+/** Compares the active file with `compareId`, or closes the comparison. */
+export function setCompareId(compareId: string | null) {
+  uiStore.setState((s) => ({
+    ...s,
+    compareId,
+    mobileView: compareId ? 'editor' : s.mobileView,
+  }))
+}
+
+export function setCompareIgnoreFormatting(compareIgnoreFormatting: boolean) {
+  uiStore.setState((s) => ({ ...s, compareIgnoreFormatting }))
 }

@@ -1,4 +1,4 @@
-import { isNull, not, useLiveQuery } from '@tanstack/react-db'
+import { eq, isNull, not, useLiveQuery } from '@tanstack/react-db'
 
 import { filesCollection } from '#/lib/store/files'
 
@@ -34,4 +34,16 @@ export function useArchivedFiles() {
       })),
   )
   return data
+}
+
+/** One file's name and content, kept current as it changes. */
+export function useFileContent(id: string) {
+  const { data } = useLiveQuery({
+    query: (q) =>
+      q
+        .from({ file: filesCollection })
+        .where(({ file }) => eq(file.id, id))
+        .select(({ file }) => ({ name: file.name, content: file.content })),
+  })
+  return data.at(0) ?? null
 }
