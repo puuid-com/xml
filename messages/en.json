@@ -196,5 +196,8 @@
   "profile_delete_title": "Delete {name}?",
   "profile_delete_description": "Its format settings, highlights, pins and defaults are deleted. Its files switch to {fallback}.",
   "profile_delete_confirm": "Delete profile",
-  "profile_delete_failed": "Could not delete the profile."
+  "profile_delete_failed": "Could not delete the profile.",
+  "offline_ready": "Ready to work offline",
+  "update_available": "A new version is available",
+  "update_reload": "Reload"
 }

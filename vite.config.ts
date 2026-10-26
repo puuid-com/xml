@@ -9,6 +9,8 @@ import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from '@cloudflare/vite-plugin'
 
+import { serviceWorker } from './plugins/service-worker.ts'
+
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   // The Cloudflare plugin turns on sourcemaps for the worker build, but
@@ -57,6 +59,11 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
     babel({ presets: [reactCompilerPreset()] }),
+    // Production builds only: emits /sw.js for offline use. See README.
+    serviceWorker({
+      project: './project.inlang',
+      pages: ['/site.webmanifest'],
+    }),
   ],
 })
 

@@ -8,11 +8,13 @@ export interface Notice {
   /** Extra detail shown after the message, such as a parser error. */
   detail?: string
   action?: { label: string; run: () => void }
+  /** Stays until dismissed or replaced, like an error. */
+  sticky?: boolean
 }
 
-type NoticeOptions = Pick<Notice, 'detail' | 'action'>
+type NoticeOptions = Pick<Notice, 'detail' | 'action' | 'sticky'>
 
-/** How long info and success messages stay up. Errors wait to be dismissed. */
+/** How long info and success messages stay up. Errors and sticky ones wait to be dismissed. */
 export const NOTICE_MS = 2500
 
 export const noticeStore = new Store<Notice | null>(null)
@@ -24,7 +26,9 @@ function show(tone: Notice['tone'], message: string, options?: NoticeOptions) {
   clearTimeout(timer)
   const id = ++lastId
   noticeStore.setState(() => ({ id, tone, message, ...options }))
-  if (tone !== 'error') timer = setTimeout(() => dismissNotice(id), NOTICE_MS)
+  if (tone !== 'error' && !options?.sticky) {
+    timer = setTimeout(() => dismissNotice(id), NOTICE_MS)
+  }
 }
 
 /** Clears the current notice, or only notice `id` if it is still showing. */

@@ -73,5 +73,5 @@ edit('README.md', (s) => s.replace(/^# .*$/m, `# ${name}`))
 console.log(`
 Done. Next:
   - Translate site_description in messages/fr.json
-  - Replace public/favicon.svg and set site.ogImage in src/site.ts
+  - Replace public/favicon.svg, run \`bun run icons\`, and set site.ogImage in src/site.ts
   - Review the commit, then delete scripts/init.ts and the "init" script`)

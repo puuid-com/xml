@@ -196,5 +196,8 @@
   "profile_delete_title": "Supprimer {name} ?",
   "profile_delete_description": "Ses options de format, surlignages, épingles et valeurs par défaut sont supprimés. Ses fichiers passent à {fallback}.",
   "profile_delete_confirm": "Supprimer le profil",
-  "profile_delete_failed": "Impossible de supprimer le profil."
+  "profile_delete_failed": "Impossible de supprimer le profil.",
+  "offline_ready": "Prêt à fonctionner hors ligne",
+  "update_available": "Une nouvelle version est disponible",
+  "update_reload": "Recharger"
 }

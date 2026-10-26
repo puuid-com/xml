@@ -7,11 +7,13 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { useEffect } from 'react'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import { TooltipProvider } from '#/components/ui/tooltip'
 import { seo } from '#/lib/seo'
+import { registerServiceWorker } from '#/lib/service-worker'
 import { themeScript } from '#/lib/theme'
 import { m } from '#/paraglide/messages'
 import { getLocale, getTextDirection } from '#/paraglide/runtime'
@@ -47,6 +49,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       links: [
         { rel: 'stylesheet', href: appCss },
         { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
         { rel: 'manifest', href: '/site.webmanifest' },
       ],
     }
@@ -84,6 +87,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function RootLayout() {
+  useEffect(registerServiceWorker, [])
+
   return (
     <TooltipProvider delayDuration={300}>
       <a
