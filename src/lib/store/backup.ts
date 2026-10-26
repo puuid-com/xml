@@ -7,6 +7,7 @@ import { highlightSchema, highlightsCollection } from './highlights'
 import { newId } from './persist'
 import { pinSchema, pinsCollection } from './pins'
 import { profileSchema, profilesCollection } from './profiles'
+import { variableSchema, variablesCollection } from './variables'
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type {
   Collection,
@@ -32,9 +33,11 @@ const backupSchema = z.object({
   highlights: z.array(highlightSchema).refine(uniqueIds),
   pins: z.array(pinSchema).refine(uniqueIds),
   defaults: z.array(defaultValueSchema).refine(uniqueIds),
+  // Files made before variables were backed up have none.
+  variables: z.array(variableSchema).refine(uniqueIds).default([]),
 })
 
-export type Backup = z.infer<typeof backupSchema>
+export type Backup = z.output<typeof backupSchema>
 
 export type ParsedBackup =
   { ok: true; backup: Backup } | { ok: false; reason: 'invalid' | 'newer' }
@@ -62,6 +65,7 @@ export function createBackup(
     highlights: rows(highlightSchema, highlightsCollection.values()),
     pins: rows(pinSchema, pinsCollection.values()),
     defaults: rows(defaultValueSchema, defaultsCollection.values()),
+    variables: rows(variableSchema, variablesCollection.values()),
   }
 }
 
@@ -95,6 +99,7 @@ export function backupCounts(backup: Backup) {
     highlights: backup.highlights.length,
     pins: backup.pins.length,
     defaults: backup.defaults.length,
+    variables: backup.variables.length,
   }
 }
 
@@ -154,6 +159,12 @@ export async function restoreBackup(backup: Backup) {
   await replaceAll(highlightsCollection, backup.highlights)
   await replaceAll(pinsCollection, backup.pins)
   await replaceAll(defaultsCollection, backup.defaults)
+  // Only variables of restored profiles, so none points at a missing one.
+  const profileIds = new Set(backup.profiles.map((p) => p.id))
+  await replaceAll(
+    variablesCollection,
+    backup.variables.filter((v) => profileIds.has(v.profileId)),
+  )
   await replaceAll(
     filesCollection,
     backup.files.map((file) => ({ ...file, writer })),

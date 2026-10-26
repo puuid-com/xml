@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { localCollection, newId } from './persist'
 import { activeProfileId } from './profiles'
 
-const variableSchema = z.object({
+export const variableSchema = z.object({
   id: z.string(),
   /** Name as written between the brackets: `host` for `<<host>>`. */
   name: z.string(),
