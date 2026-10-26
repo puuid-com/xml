@@ -6,15 +6,19 @@ Follow-ups from the five features merged on 2026-10-25: backup and restore, prof
 
 **Reasoning** uses the Claude Code effort scale: low, medium, high, xhigh, max.
 
-| #   | Task                                   | Reasoning | In one line                                                         |
-| --- | -------------------------------------- | --------- | ------------------------------------------------------------------- |
-| 1   | Include variables in backups           | low       | Backups miss profile variables, and a restore can orphan them.      |
-| 2   | Keep the update notice from being lost | medium    | Any later notice replaces "A new version is available" for good.    |
-| 3   | Make restore all-or-nothing            | medium    | A failure halfway through leaves the workspace half restored.       |
-| 4   | Report every failed save               | low       | Only file content saves show an error; other writes fail silently.  |
-| 5   | Cache every page for offline use       | high      | Only `/` and `/fr/` open offline.                                   |
-| 6   | Check the merged features in a browser | medium    | Four of the five features were only checked by tests and the build. |
-| 7   | Clean up after the parallel run        | low       | Old branches, worktrees, scratch scripts and lint warnings.         |
+| #   | Task                                   | Reasoning | In one line                                                            |
+| --- | -------------------------------------- | --------- | ---------------------------------------------------------------------- |
+| 1   | Include variables in backups           | low       | Backups miss profile variables, and a restore can orphan them.         |
+| 2   | Keep the update notice from being lost | medium    | Any later notice replaces "A new version is available" for good.       |
+| 3   | Make restore all-or-nothing            | medium    | A failure halfway through leaves the workspace half restored.          |
+| 4   | Report every failed save               | low       | Only file content saves show an error; other writes fail silently.     |
+| 5   | Cache every page for offline use       | high      | Only `/` and `/fr/` open offline.                                      |
+| 6   | Check the merged features in a browser | medium    | Four of the five features were only checked by tests and the build.    |
+| 7   | Clean up after the parallel run        | low       | Old branches, worktrees, scratch scripts and lint warnings.            |
+| 8   | Apply the first edit from another tab  | medium    | A newly opened tab drops the first content edit made elsewhere.        |
+| 9   | Roll back the editor on failed restore | low       | The open editor keeps the backup's text after a restore rolls back.    |
+| 10  | Show notices on phones                 | low       | On mobile the notice text is hidden and its buttons cover the profile. |
+| 11  | Don't confirm refused variable saves   | low       | "Value saved" shows when storage refused the value.                    |
 
 ---
 
@@ -166,6 +170,8 @@ Each feature passed the checks on its own and after merging, but only offline su
 
 **Done when** every item above works, or has its own task here.
 
+**Result (2026-10-26):** checked against the production build in headless Chrome. Everything on the list works except what tasks 8 to 11 describe. The scripts are in `/tmp/sw-verify/bc/`.
+
 ---
 
 ## 7. Clean up after the parallel run
@@ -179,6 +185,99 @@ Each feature passed the checks on its own and after merging, but only offline su
 **Reasoning: low.**
 
 **Done when** `git branch` and `git worktree list` show only `main`, and the commit hook has no warnings.
+
+---
+
+## 8. Apply the first edit from another tab
+
+Open the editor in two tabs of the same browser and type in the first one: the second tab's editor keeps the old text. The edit reaches localStorage, and the second tab's tab strip, highlights and variables update. The next content edit does reach the editor and brings it up to date. A rename made before the first edit also makes it work. Reloading the second tab brings the problem back.
+
+**Why do it**
+
+- The second tab shows stale text with no sign that it is stale. Typing there saves over the first tab's edit.
+- Cross-tab sync is a promised feature: the welcome text says files "sync across tabs".
+
+**Why not**
+
+- It only loses the first edit after a tab opens, and the next edit corrects it.
+
+**Reasoning: medium.** The cause isn't known yet. The data reaches storage and the collection, so the gap is between the collection's change events and the editor.
+
+**Approach**
+
+- Start in the `filesCollection.subscribeChanges` handler in `src/components/editor/CodeEditor.tsx`. Log the first change a new tab gets: whether it arrives, its type (`update` or not), and whether `view.state.field(fileIdField)` matches. Suspects: the first storage event is delivered as something other than `update`, or the active file's state isn't set up yet when it arrives.
+- A test with two collections sharing one storage, which opens the second one, then writes from the first.
+
+**Done when** the first edit typed in one tab shows up in a second tab that was just opened.
+
+---
+
+## 9. Roll back the editor on failed restore
+
+When a restore fails partway, storage, the highlights, variables and profiles go back to how they were, as task 3 wanted. The open editor doesn't: it keeps showing the backup's text. In the test, a backup whose file didn't fit the quota left the editor showing that file. A reload brings back the right text.
+
+**Why do it**
+
+- The editor looks restored when nothing was. Typing there saves the backup's text over the real file once there is room.
+
+**Why not**
+
+- It only happens on a failed restore, which is rare, and the error notice is up.
+
+**Reasoning: low.** The cause is clear. `restoreBackup` in `src/lib/store/backup.ts` writes the files with a new `writer`, so the editor takes the new text as a remote edit before the write fails. The rollback puts back rows whose `writer` is this tab's `writerId`, and `CodeEditor.tsx` skips changes from its own writer, so the editor never takes the old text back.
+
+**Approach**
+
+- In `rollBack`, put back the files row with a fresh `writer`, or have the editor take a change from its own writer when it differs from what it shows. The first is smaller.
+- Test: a restore that fails on the files write leaves the editor showing the old text.
+
+**Done when** a restore that fails on its last write leaves the open editor's text as it was, without a reload.
+
+---
+
+## 10. Show notices on phones
+
+On a 390 px wide screen the status notice gets no width. The message is cut off completely, so "Not saved: browser storage is full", "This share link is broken." and "A new version is available" can't be read. Its icon and the Dismiss and action buttons still draw, on top of the profile button.
+
+**Why do it**
+
+- Save errors and the update prompt are the notices that matter most, and on a phone they can't be seen.
+- The overlapping Dismiss button sits on the profile button, so a tap can hit the wrong one.
+
+**Why not**
+
+- The editor is mostly used on desktops.
+
+**Reasoning: low.** Layout only. The footer in `src/components/app/StatusBar.tsx` gives the notice `max-w-[min(32rem,50%)]` with `shrink`, and the profile and tool buttons take all the room.
+
+**Approach**
+
+- Below `md`, show the notice in its own row above the footer, or in place of the highlight bar and tools while it's up. Check the mobile layout in light and dark mode with an error that has an action, such as the save error.
+
+**Done when** on a 390 px screen the save error shows its full message and its "Back up workspace" and Dismiss buttons, and nothing overlaps.
+
+---
+
+## 11. Don't confirm refused variable saves
+
+With storage full, saving a value from "Set value…" shows "Value saved for <<host>>". The value is rolled back and the save error only shows after that success notice times out. Task 4 made the error show, but this success notice comes first and covers it.
+
+**Why do it**
+
+- The notice says the value was saved when it wasn't.
+
+**Why not**
+
+- The error does show 2.5 seconds later.
+
+**Reasoning: low.** `VariableValueForm` in `src/components/app/Dialogs.tsx` calls `notify.success` right after `setVariable`, without waiting for the write.
+
+**Approach**
+
+- Have `setVariable` return the transaction, and only show the success notice once `isPersisted` resolves. Check the other places that confirm a write the same way, such as "Save value as default".
+- Test: a refused write shows only the save error.
+
+**Done when** saving a variable with storage full shows only "Not saved: browser storage is full".
 
 ---
 
