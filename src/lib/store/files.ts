@@ -8,7 +8,7 @@ import { z } from 'zod'
 import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
 import { writerId } from './session'
 
-const fileSchema = z.object({
+export const fileSchema = z.object({
   id: z.string(),
   name: z.string(),
   content: z.string(),
@@ -220,6 +220,37 @@ const pacedSaveContent = createPacedMutations<{
 
 let pendingContentSave: Promise<unknown> | undefined
 
+/** Resolves once the debounced content save, if any, has been written. */
+export async function settleContentSave() {
+  await pendingContentSave?.catch(() => undefined)
+}
+
+/** Whether a failed write hit the storage quota (about 5 MB per site). */
+export function isStorageFull(error: unknown): boolean {
+  if (!(error instanceof Error) && !(error instanceof DOMException)) {
+    return false
+  }
+  // Transactions may wrap the browser's error, keeping its name in the message.
+  return (
+    error.name === 'QuotaExceededError' ||
+    error.message.includes('QuotaExceededError') ||
+    isStorageFull((error as Error).cause)
+  )
+}
+
+type SaveFailedListener = (error: unknown) => void
+const saveFailedListeners = new Set<SaveFailedListener>()
+// Debounced calls share a transaction; report each failed write once.
+const reported = new WeakSet<object>()
+
+/** Calls `listener` when a content save fails, such as on a full storage quota. */
+export function onSaveFailed(listener: SaveFailedListener) {
+  saveFailedListeners.add(listener)
+  return () => {
+    saveFailedListeners.delete(listener)
+  }
+}
+
 export function saveContent(variables: { id: string; content: string }) {
   const transaction = pacedSaveContent(variables)
   const pending = transaction.isPersisted.promise
@@ -227,6 +258,11 @@ export function saveContent(variables: { id: string; content: string }) {
   const clear = () => {
     if (pendingContentSave === pending) pendingContentSave = undefined
   }
-  void pending.then(clear, clear)
+  void pending.then(clear, (error: unknown) => {
+    clear()
+    if (reported.has(transaction)) return
+    reported.add(transaction)
+    for (const listener of saveFailedListeners) listener(error)
+  })
   return transaction
 }

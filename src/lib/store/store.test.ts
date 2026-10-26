@@ -6,6 +6,8 @@ import {
   ARCHIVE_LIMIT,
   createFile,
   filesCollection,
+  isStorageFull,
+  onSaveFailed,
   reorderFile,
   restoreFile,
   saveContent,
@@ -101,6 +103,28 @@ describe('files', () => {
     expect(openOrder()).toEqual([])
     expect(archivedFiles()[0].content).toBe('<latest/>')
     expect(localStorage.getItem('xml-editor:files')).toContain('<latest/>')
+  })
+
+  it('reports a content save the browser refuses, once', async () => {
+    const file = createFile('full.xml', '<old/>')
+    const failed = vi.fn()
+    const stop = onSaveFailed(failed)
+    const write = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Full', 'QuotaExceededError')
+      })
+    try {
+      saveContent({ id: file.id, content: '<a/>' })
+      const pending = saveContent({ id: file.id, content: '<ab/>' })
+      await expect(pending.isPersisted.promise).rejects.toThrow()
+      await Promise.resolve()
+      expect(failed).toHaveBeenCalledTimes(1)
+      expect(isStorageFull(failed.mock.calls[0][0])).toBe(true)
+    } finally {
+      write.mockRestore()
+      stop()
+    }
   })
 
   it('rolls back archival and eviction if storage is full', async () => {
