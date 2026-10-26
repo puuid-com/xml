@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   BACKUP_VERSION,
@@ -34,8 +34,37 @@ function clearAll() {
 const sorted = <T extends { id: string }>(items: Iterable<T>) =>
   [...items].sort((a, b) => a.id.localeCompare(b.id))
 
+const stored = () =>
+  Object.fromEntries(
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith('xml-editor:'))
+      .map((key) => [key, localStorage.getItem(key)]),
+  )
+
+// Every row without the virtual `$` props, which tell local and synced apart.
+const workspace = () =>
+  Object.fromEntries(
+    Object.entries({
+      files: filesCollection,
+      profiles: profilesCollection,
+      highlights: highlightsCollection,
+      pins: pinsCollection,
+      defaults: defaultsCollection,
+    }).map(([name, collection]) => [
+      name,
+      sorted<{ id: string }>(collection.values()).map((row) =>
+        Object.fromEntries(
+          Object.entries(row).filter(([key]) => !key.startsWith('$')),
+        ),
+      ),
+    ]),
+  )
+
 describe('workspace backup', () => {
   beforeEach(clearAll)
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
 
   it('restores the same files, archive, profiles and rules', async () => {
     const a = createFile('a.xml', '<a/>')
@@ -139,6 +168,40 @@ describe('workspace backup', () => {
       ),
     ).toBe(true)
     expect(variablesCollection.size).toBe(0)
+  })
+
+  it('leaves the workspace as it was when a write fails partway', async () => {
+    createProfile({ name: 'Staging' })
+    setHighlight('soap:Body', 'blue')
+    pinTag('id')
+    setDefault('name', 'Jane')
+    const backup = createBackup()
+
+    clearAll()
+    localStorage.removeItem('xml-editor:pins')
+    const file = createFile('kept.xml', '<kept/>')
+    setHighlight('item', 'green')
+    const before = stored()
+    expect(before['xml-editor:pins']).toBeUndefined()
+    const rowsBefore = workspace()
+
+    const setItem = Storage.prototype.setItem
+    let writes = 0
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
+      this: Storage,
+      key,
+      value,
+    ) {
+      if (++writes === 4) throw new DOMException('full', 'QuotaExceededError')
+      setItem.call(this, key, value)
+    })
+    await expect(restoreBackup(backup)).rejects.toThrow('full')
+    vi.restoreAllMocks()
+
+    expect(writes).toBeGreaterThanOrEqual(4)
+    expect(stored()).toEqual(before)
+    expect(filesCollection.get(file.id)?.content).toBe('<kept/>')
+    expect(workspace()).toEqual(rowsBefore)
   })
 
   it('rejects files that are not a valid backup', () => {

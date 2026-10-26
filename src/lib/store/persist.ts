@@ -14,6 +14,15 @@ export function newId() {
   return crypto.randomUUID()
 }
 
+const storageKeys = new WeakMap<object, string>()
+
+/** The localStorage key a collection made by `localCollection` lives under. */
+export function storageKeyOf(collection: object) {
+  const key = storageKeys.get(collection)
+  if (!key) throw new Error('Not a local collection')
+  return key
+}
+
 /** The profile that data written before profiles existed belongs to. */
 export const DEFAULT_PROFILE_ID = 'default'
 
@@ -53,7 +62,7 @@ export function localCollection<
   return singleton(name, () => {
     const storageKey = STORAGE_PREFIX + name
     prepare?.(storageKey)
-    return createCollection(
+    const collection = createCollection(
       localStorageCollectionOptions({
         id: name,
         storageKey,
@@ -62,6 +71,8 @@ export function localCollection<
         startSync: true,
       }),
     )
+    storageKeys.set(collection, storageKey)
+    return collection
   })
 }
 

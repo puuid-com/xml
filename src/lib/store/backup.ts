@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { defaultValueSchema, defaultsCollection } from './defaults'
 import { fileSchema, filesCollection, settleContentSave } from './files'
 import { highlightSchema, highlightsCollection } from './highlights'
-import { newId } from './persist'
+import { newId, storageKeyOf } from './persist'
 import { pinSchema, pinsCollection } from './pins'
 import { profileSchema, profilesCollection } from './profiles'
 import { variableSchema, variablesCollection } from './variables'
@@ -146,27 +146,84 @@ async function replaceAll<
   await transaction.isPersisted.promise
 }
 
+/** One collection's part of a restore: its storage key and the write. */
+function replacement<
+  T extends { id: string },
+  TSchema extends StandardSchemaV1,
+  TInput extends object,
+>(
+  collection: Collection<
+    T,
+    string,
+    LocalStorageCollectionUtils,
+    TSchema,
+    TInput
+  >,
+  items: Array<T & TInput>,
+) {
+  return {
+    key: storageKeyOf(collection),
+    write: () => replaceAll(collection, items),
+  }
+}
+
+/**
+ * Puts back raw stored values, removing keys that were absent, then has the
+ * collections reload them. Storage events only reach other tabs, so this tab
+ * gets one too.
+ */
+function rollBack(saved: ReadonlyMap<string, string | null>) {
+  for (const [key, value] of saved) {
+    try {
+      if (value === null) localStorage.removeItem(key)
+      else localStorage.setItem(key, value)
+    } catch {
+      // Keep putting back the other keys.
+    }
+  }
+  for (const key of saved.keys()) {
+    window.dispatchEvent(
+      new StorageEvent('storage', { key, storageArea: localStorage }),
+    )
+  }
+}
+
 /**
  * Replaces the whole workspace with `backup`. Ids are kept, so a restore in
- * the browser that made the backup updates the same tabs in place.
+ * the browser that made the backup updates the same tabs in place. All or
+ * nothing: if any write fails, every key it touches gets its old value back
+ * and the error is rethrown.
  */
 export async function restoreBackup(backup: Backup) {
   // A paced save still in flight would write old content back afterwards.
   await settleContentSave()
   // A new writer makes open editors take the restored text as a remote edit.
   const writer = newId()
-  await replaceAll(profilesCollection, backup.profiles)
-  await replaceAll(highlightsCollection, backup.highlights)
-  await replaceAll(pinsCollection, backup.pins)
-  await replaceAll(defaultsCollection, backup.defaults)
   // Only variables of restored profiles, so none points at a missing one.
   const profileIds = new Set(backup.profiles.map((p) => p.id))
-  await replaceAll(
-    variablesCollection,
-    backup.variables.filter((v) => profileIds.has(v.profileId)),
+  const writes = [
+    replacement(profilesCollection, backup.profiles),
+    replacement(highlightsCollection, backup.highlights),
+    replacement(pinsCollection, backup.pins),
+    replacement(defaultsCollection, backup.defaults),
+    replacement(
+      variablesCollection,
+      backup.variables.filter((v) => profileIds.has(v.profileId)),
+    ),
+    replacement(
+      filesCollection,
+      backup.files.map((file) => ({ ...file, writer })),
+    ),
+  ]
+  // localStorage has no transactions, so keep the raw values to put back.
+  const saved = new Map(
+    writes.map(({ key }) => [key, localStorage.getItem(key)] as const),
   )
-  await replaceAll(
-    filesCollection,
-    backup.files.map((file) => ({ ...file, writer })),
-  )
+  try {
+    // One at a time, so the first failure stops the writes after it.
+    for (const { write } of writes) await write()
+  } catch (error) {
+    rollBack(saved)
+    throw error
+  }
 }
