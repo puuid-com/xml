@@ -17,6 +17,7 @@ import {
   DefaultsRules,
 } from '#/components/defaults/DefaultsControls'
 import { HighlightsBar } from '#/components/highlights/HighlightsBar'
+import { VariablesList } from '#/components/variables/VariablesControls'
 import { ProfileMenu } from '#/components/profiles/ProfileMenu'
 import { ProfileTag } from '#/components/profiles/ProfileTag'
 import {
@@ -94,6 +95,9 @@ function SettingsPopover() {
             <TabsTrigger value="defaults" className="flex-none px-2">
               {m.defaults_tab()}
             </TabsTrigger>
+            <TabsTrigger value="variables" className="flex-none px-2">
+              {m.variables_tab()}
+            </TabsTrigger>
           </TabsList>
           <Separator />
           <TabsContent value="format">
@@ -101,6 +105,9 @@ function SettingsPopover() {
           </TabsContent>
           <TabsContent value="defaults">
             <DefaultsRules />
+          </TabsContent>
+          <TabsContent value="variables">
+            <VariablesList />
           </TabsContent>
         </Tabs>
       </PopoverContent>

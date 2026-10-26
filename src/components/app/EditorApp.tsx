@@ -17,6 +17,7 @@ import {
   DefaultsConfirmDialog,
   RenameDialog,
   RestoreDialog,
+  VariableValueDialog,
 } from './Dialogs'
 import { ACCEPTED_TYPES, importFiles, newFile, newJsonFile } from './files'
 import { SidePanel } from './SidePanel'
@@ -145,6 +146,7 @@ export function EditorApp() {
       <CloseDialog openIds={files.map((f) => f.id)} />
       <DefaultsConfirmDialog />
       <RestoreDialog />
+      <VariableValueDialog />
       <ProfileDialog />
       <DeleteProfileDialog />
       <QuickHighlight />

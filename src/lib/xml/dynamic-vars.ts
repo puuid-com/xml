@@ -63,20 +63,34 @@ export const DYNAMIC_VARS: ReadonlyArray<DynamicVar> = [
 
 const byName = new Map(DYNAMIC_VARS.map((v) => [v.name, v]))
 
+export function isDynamicVar(name: string) {
+  return byName.has(name)
+}
+
+export interface ResolveContext extends DynamicVarContext {
+  /** Values of plain variables, such as `host` for `<<host>>`. */
+  values: ReadonlyMap<string, string>
+}
+
 /**
- * Replaces each supported dynamic variable with a fresh value; every
- * occurrence gets its own. Unknown and plain variables stay as written.
+ * Replaces variables as written, like Postman: plain ones with their value
+ * and each supported dynamic one with a fresh value. Values are literal text
+ * and aren't resolved again. Unknown variables stay as written.
  */
-export function resolveDynamicVars(
+export function resolveVars(
   text: string,
-  ctx: DynamicVarContext,
-): { text: string; count: number } {
+  ctx: ResolveContext,
+): { text: string; count: number; unresolved: number } {
   let count = 0
+  let unresolved = 0
   const resolved = text.replace(varRegExp(), (whole, name: string) => {
-    const known = byName.get(name)
-    if (!known) return whole
+    const value = ctx.values.get(name) ?? byName.get(name)?.generate(ctx)
+    if (value === undefined) {
+      unresolved++
+      return whole
+    }
     count++
-    return known.generate(ctx)
+    return value
   })
-  return { text: resolved, count }
+  return { text: resolved, count, unresolved }
 }

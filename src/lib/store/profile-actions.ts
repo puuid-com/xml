@@ -9,6 +9,7 @@ import {
   profilesList,
   resolveProfile,
 } from './profiles'
+import { variablesCollection } from './variables'
 import type { Profile } from './profiles'
 
 // Operations that span the profile and every collection of its rules.
@@ -46,9 +47,17 @@ export function cloneProfile(
     createdAt: r.createdAt,
     profileId: copy.id,
   }))
+  const variables = owned(variablesCollection.values()).map((v) => ({
+    id: newId(),
+    name: v.name,
+    value: v.value,
+    createdAt: v.createdAt,
+    profileId: copy.id,
+  }))
   if (highlights.length) highlightsCollection.insert(highlights)
   if (pins.length) pinsCollection.insert(pins)
   if (defaults.length) defaultsCollection.insert(defaults)
+  if (variables.length) variablesCollection.insert(variables)
   return copy
 }
 
@@ -66,6 +75,7 @@ export async function deleteProfile(id: string) {
     highlightsCollection,
     pinsCollection,
     defaultsCollection,
+    variablesCollection,
   ]) {
     const ids = [...collection.values()]
       .filter((rule) => rule.profileId === id)

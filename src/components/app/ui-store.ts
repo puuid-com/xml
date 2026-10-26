@@ -18,6 +18,8 @@ interface UiState {
   deleteProfileId: string | null
   /** A backup waiting for confirmation before it replaces the workspace. */
   restorePreview: RestorePreview | null
+  /** Variable whose value is being set from the editor. */
+  variableName: string | null
 }
 
 /** A backup read from disk, with its date formatted for the reader's locale. */
@@ -48,6 +50,7 @@ export const uiStore = new Store<UiState>({
   profileDialog: null,
   deleteProfileId: null,
   restorePreview: null,
+  variableName: null,
 })
 
 export function setPaletteOpen(paletteOpen: boolean) {
@@ -90,4 +93,8 @@ export function askDeleteProfile(deleteProfileId: string | null) {
 
 export function setRestorePreview(restorePreview: RestorePreview | null) {
   uiStore.setState((s) => ({ ...s, restorePreview }))
+}
+
+export function askVariableValue(variableName: string | null) {
+  uiStore.setState((s) => ({ ...s, variableName }))
 }

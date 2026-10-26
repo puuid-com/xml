@@ -1,6 +1,6 @@
-import { EditorState } from '@codemirror/state'
+import { Compartment, EditorState, Facet } from '@codemirror/state'
 
-import { DYNAMIC_VARS } from '#/lib/xml/dynamic-vars'
+import { DYNAMIC_VARS, isDynamicVar } from '#/lib/xml/dynamic-vars'
 import { m } from '#/paraglide/messages'
 import type {
   Completion,
@@ -22,12 +22,42 @@ const descriptions: Partial<Record<string, () => string>> = {
   $randomAbbreviation: m.dynvar_randomAbbreviation,
 }
 
-/** Tooltip for a `<<name>>` chip; dynamic variables say what they stand for. */
-export function varTooltip(name: string) {
+/** Values of the active profile's plain variables. */
+export const varValuesFacet = Facet.define<
+  ReadonlyMap<string, string>,
+  ReadonlyMap<string, string>
+>({
+  combine: (values) => values.at(-1) ?? new Map(),
+})
+
+const varValuesCompartment = new Compartment()
+
+export function varValues(values: ReadonlyMap<string, string>) {
+  return varValuesCompartment.of(varValuesFacet.of(values))
+}
+
+/** Effect that swaps in the values of another profile, or edited ones. */
+export function setVarValues(values: ReadonlyMap<string, string>) {
+  return varValuesCompartment.reconfigure(varValuesFacet.of(values))
+}
+
+/** Whether ⇧⌥V can fill in `<<name>>`. */
+export function varHasValue(name: string, values: ReadonlyMap<string, string>) {
+  return values.has(name) || isDynamicVar(name)
+}
+
+/**
+ * Tooltip for a `<<name>>` chip: dynamic variables say what they stand for,
+ * plain ones show their value in the profile.
+ */
+export function varTooltip(name: string, values: ReadonlyMap<string, string>) {
   const description = descriptions[name]?.()
-  return description
-    ? m.var_dynamic_tooltip({ name, description })
-    : m.var_tooltip({ name })
+  if (description) return m.var_dynamic_tooltip({ name, description })
+  const value = values.get(name)
+  if (value === undefined) return m.var_unset_tooltip({ name })
+  return value === ''
+    ? m.var_empty_tooltip({ name })
+    : m.var_value_tooltip({ name, value: value.slice(0, 200) })
 }
 
 function el(tag: string, className: string, text?: string) {
@@ -38,20 +68,22 @@ function el(tag: string, className: string, text?: string) {
 }
 
 /**
- * Side panel for the selected variable: what it stands for and a fresh
- * sample shown between the text around it.
+ * Side panel for the selected variable: what it stands for and its value
+ * shown between the text around it.
  */
-async function varInfo(v: DynamicVar, before: string, after: string) {
-  const { faker } = await import('@faker-js/faker')
+function varInfo(
+  name: string,
+  description: string | undefined,
+  value: string,
+  before: string,
+  after: string,
+) {
   const preview = el('div', 'cm-varInfo-preview')
   preview.appendChild(el('span', 'cm-varInfo-context', before))
-  preview.appendChild(
-    document.createTextNode(v.generate({ faker, now: new Date() })),
-  )
+  preview.appendChild(document.createTextNode(value))
   preview.appendChild(el('span', 'cm-varInfo-context', after))
-  const description = descriptions[v.name]?.()
   const dom = el('div', 'cm-varInfo')
-  dom.appendChild(el('div', 'cm-varInfo-name', v.name))
+  dom.appendChild(el('div', 'cm-varInfo-name', name))
   if (description) {
     dom.appendChild(el('div', 'cm-varInfo-description', description))
   }
@@ -60,7 +92,17 @@ async function varInfo(v: DynamicVar, before: string, after: string) {
   return dom
 }
 
-/** Offers the dynamic variables after `<<` or `<<$`, and closes the `>>`. */
+/** A dynamic variable's panel, with a fresh sample. */
+async function dynamicVarInfo(v: DynamicVar, before: string, after: string) {
+  const { faker } = await import('@faker-js/faker')
+  const sample = v.generate({ faker, now: new Date() })
+  return varInfo(v.name, descriptions[v.name]?.(), sample, before, after)
+}
+
+/**
+ * Offers the profile's variables and the dynamic ones after `<<` or `<<$`,
+ * and closes the `>>`.
+ */
 function varCompletions(context: CompletionContext): CompletionResult | null {
   const before = context.matchBefore(/<<\s*\$?[\w.-]*/)
   if (!before) return null
@@ -77,12 +119,25 @@ function varCompletions(context: CompletionContext): CompletionResult | null {
   const rest = close
     ? (/^[^<"]*/.exec(after.slice(tail.length + close[0].length))?.[0] ?? '')
     : ''
-  const options: Array<Completion> = DYNAMIC_VARS.map((v) => ({
+  const around = [lead.slice(-32), rest.trimEnd().slice(0, 32)] as const
+  const values = context.state.facet(varValuesFacet)
+  const plain: Array<Completion> = [...values].map(([name, value]) => ({
+    label: name,
+    detail: value.length > 24 ? `${value.slice(0, 24)}…` : value,
+    type: 'variable',
+    // Listed before the dynamic variables.
+    boost: 1,
+    apply: close ? name : `${name}>>`,
+    info: () =>
+      varInfo(name, m.var_profile_value(), value.slice(0, 500), ...around),
+  }))
+  const dynamic: Array<Completion> = DYNAMIC_VARS.map((v) => ({
     label: v.name,
     type: 'variable',
     apply: close ? v.name : `${v.name}>>`,
-    info: () => varInfo(v, lead.slice(-32), rest.trimEnd().slice(0, 32)),
+    info: () => dynamicVarInfo(v, ...around),
   }))
+  const options = [...plain, ...dynamic]
   return {
     from,
     to: context.pos + tail.length,

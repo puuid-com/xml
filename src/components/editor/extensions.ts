@@ -44,7 +44,13 @@ import {
   tooltips,
 } from '@codemirror/view'
 
-import { dynamicVarCompletions, varTooltip } from './dynamic-vars'
+import {
+  dynamicVarCompletions,
+  varHasValue,
+  varTooltip,
+  varValues,
+  varValuesFacet,
+} from './dynamic-vars'
 import { docLanguage } from './language'
 import { namesParent, treeChanged } from './syntax'
 import { tagHighlights } from './tag-highlights'
@@ -69,13 +75,19 @@ export const fileIdField = StateField.define<string>({
   update: (value) => value,
 })
 
+// Variables without a value in the profile look different, so it's clear
+// which ones ⇧⌥V would leave as written.
 const varDecorator = new MatchDecorator({
   regexp: varRegExp(),
-  decoration: (match) =>
-    Decoration.mark({
-      class: 'cm-var var-chip',
-      attributes: { title: varTooltip(match[1]) },
-    }),
+  decoration: (match, view) => {
+    const values = view.state.facet(varValuesFacet)
+    return Decoration.mark({
+      class: varHasValue(match[1], values)
+        ? 'cm-var var-chip'
+        : 'cm-var var-chip var-unset',
+      attributes: { title: varTooltip(match[1], values) },
+    })
+  },
 })
 
 const varHighlighter = ViewPlugin.fromClass(
@@ -85,7 +97,11 @@ const varHighlighter = ViewPlugin.fromClass(
       this.decorations = varDecorator.createDeco(view)
     }
     update(update: ViewUpdate) {
-      this.decorations = varDecorator.updateDeco(update, this.decorations)
+      this.decorations =
+        update.startState.facet(varValuesFacet) ===
+        update.state.facet(varValuesFacet)
+          ? varDecorator.updateDeco(update, this.decorations)
+          : varDecorator.createDeco(update.view)
     }
   },
   { decorations: (v) => v.decorations },
@@ -216,6 +232,7 @@ export function editorExtensions(
   callbacks: EditorCallbacks,
   highlights: ReadonlyMap<string, string>,
   defaults: ReadonlyArray<DefaultRule>,
+  values: ReadonlyMap<string, string>,
 ): Extension {
   return [
     lineNumbers(),
@@ -243,6 +260,7 @@ export function editorExtensions(
     }),
     autocompletion({ icons: false, positionInfo: dockInfo }),
     dynamicVarCompletions,
+    varValues(values),
     rectangularSelection(),
     crosshairCursor(),
     highlightActiveLine(),
