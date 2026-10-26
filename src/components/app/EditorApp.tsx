@@ -5,7 +5,7 @@ import {
   IconJson,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
 
 import { AppHeader } from './AppHeader'
@@ -18,7 +18,6 @@ import { StatusBar } from './StatusBar'
 import { TabStrip } from './TabStrip'
 import { useAppShortcuts } from './use-app-shortcuts'
 import { setCompareId, setMobileView, uiStore } from './ui-store'
-import { CompareView } from '#/components/compare/CompareView'
 import { CodeEditor } from '#/components/editor/CodeEditor'
 import { QuickHighlight } from '#/components/highlights/QuickHighlight'
 import {
@@ -47,6 +46,13 @@ import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
+
+// The diff package is only needed while comparing, so it loads on first use.
+const CompareView = lazy(() =>
+  import('#/components/compare/CompareView').then((mod) => ({
+    default: mod.CompareView,
+  })),
+)
 
 export function EditorApp() {
   const files = useOpenFiles()
@@ -191,7 +197,9 @@ function EditorOrCompare({
         <CodeEditor fileId={fileId} />
       </div>
       {compareId && (
-        <CompareView fileId={fileId} otherId={compareId} layout={layout} />
+        <Suspense>
+          <CompareView fileId={fileId} otherId={compareId} layout={layout} />
+        </Suspense>
       )}
     </>
   )
