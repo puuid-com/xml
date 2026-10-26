@@ -27,6 +27,12 @@ describe('notice store', () => {
     expect(noticeStore.state).toBeNull()
   })
 
+  it('keeps sticky notices until dismissed', () => {
+    notify.info('New version', { sticky: true })
+    vi.advanceTimersByTime(NOTICE_MS * 10)
+    expect(noticeStore.state?.message).toBe('New version')
+  })
+
   it('replaces the current notice and ignores its stale timer', () => {
     notify.info('First')
     vi.advanceTimersByTime(NOTICE_MS - 1)

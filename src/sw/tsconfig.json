@@ -1,0 +1,11 @@
+{
+  // Service worker sources need the WebWorker lib, which clashes with DOM, so
+  // they are checked as their own project: `tsc -p src/sw`.
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "WebWorker"],
+    "types": []
+  },
+  "include": ["./**/*.ts"],
+  "exclude": []
+}

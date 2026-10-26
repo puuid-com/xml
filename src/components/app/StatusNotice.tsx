@@ -52,7 +52,7 @@ export function StatusNotice() {
               {notice.action.label}
             </Button>
           )}
-          {error && (
+          {(error || notice.sticky) && (
             <ToolbarButton
               label={m.notice_dismiss()}
               className="text-muted-foreground"
