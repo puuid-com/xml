@@ -9,6 +9,8 @@ interface UiState {
   renameId: string | null
   closeId: string | null
   archiveOpen: boolean
+  /** Choosing what a share link of the active file carries. */
+  shareOpen: boolean
   mobileView: 'editor' | 'structure'
   /** Tag whose colour picker is open next to the editor cursor. */
   quickHighlight: QuickHighlight | null
@@ -48,6 +50,7 @@ export const uiStore = new Store<UiState>({
   renameId: null,
   closeId: null,
   archiveOpen: false,
+  shareOpen: false,
   mobileView: 'editor',
   quickHighlight: null,
   defaultsPreview: null,
@@ -73,6 +76,10 @@ export function askClose(closeId: string | null) {
 
 export function setArchiveOpen(archiveOpen: boolean) {
   uiStore.setState((s) => ({ ...s, archiveOpen }))
+}
+
+export function setShareOpen(shareOpen: boolean) {
+  uiStore.setState((s) => ({ ...s, shareOpen }))
 }
 
 export function setMobileView(mobileView: 'editor' | 'structure') {

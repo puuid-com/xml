@@ -35,12 +35,12 @@ import {
   setCompareId,
   setPaletteOpen,
   setProfileDialog,
+  setShareOpen,
   uiStore,
 } from './ui-store'
 import {
   applyDefaultsActive,
   copyActive,
-  copyShareLink,
   downloadFile,
   highlightAtCursor,
   resolveVarsActive,
@@ -325,7 +325,7 @@ function RootCommands({
             </CommandItem>
             <CommandItem
               keywords={[m.share_keywords()]}
-              onSelect={() => run(() => void copyShareLink())}
+              onSelect={() => run(() => setShareOpen(true))}
             >
               <IconLink />
               <div className="flex flex-col">

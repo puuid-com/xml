@@ -17,7 +17,12 @@ import { encodeShare, ShareError } from '#/lib/share'
 import { createFile, filesCollection } from '#/lib/store/files'
 import { enabledDefaults } from '#/lib/store/defaults'
 import { profileHighlights } from '#/lib/store/highlights'
-import { activeFormat } from '#/lib/store/profiles'
+import {
+  activeFormat,
+  profilesList,
+  resolveProfile,
+} from '#/lib/store/profiles'
+import { snapshotProfile } from '#/lib/store/shared-profile'
 import { setActive } from '#/lib/store/session'
 import { variableValues } from '#/lib/store/variables'
 import {
@@ -258,19 +263,43 @@ export function revealTag(tag: string, direction: 1 | -1) {
   revealElement(target, true)
 }
 
-/** Copies a link that carries the active file, compressed, in its fragment. */
-export async function copyShareLink() {
+/**
+ * Copies a link that carries the active file, compressed, in its fragment,
+ * with its profile unless left out. Resolves to whether it was copied.
+ */
+export async function copyShareLink({
+  profile = true,
+  variables = true,
+}: { profile?: boolean; variables?: boolean } = {}) {
   const { fileId } = editorStore.state
   const file = fileId ? filesCollection.get(fileId) : undefined
-  if (!getView() || !file) return
+  if (!getView() || !file) return false
+  const shared = profile
+    ? snapshotProfile(
+        resolveProfile(profilesList(), file.profileId)?.id ?? '',
+        {
+          variables,
+        },
+      )
+    : undefined
   try {
-    const hash = await encodeShare({ name: file.name, content: getText() })
+    const hash = await encodeShare({
+      name: file.name,
+      content: getText(),
+      profile: shared,
+    })
     const { origin, pathname } = window.location
     await navigator.clipboard.writeText(origin + pathname + hash)
-    notify.success(m.share_copied(), { detail: m.share_copied_detail() })
+    notify.success(m.share_copied(), {
+      detail: shared
+        ? m.share_copied_profile_detail({ name: shared.name })
+        : m.share_copied_detail(),
+    })
+    return true
   } catch (error) {
     notify.error(
       error instanceof ShareError ? m.share_too_large() : m.share_failed(),
     )
+    return false
   }
 }

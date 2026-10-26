@@ -21,6 +21,37 @@ describe('share links', () => {
     await expect(decodeShare(hash)).resolves.toEqual(file)
   })
 
+  it('carries a profile, and still opens links without one', async () => {
+    const profile = {
+      id: 'p1',
+      name: 'Work',
+      color: '#00aa88',
+      format: {
+        formatOnSave: false,
+        removeEmptyLines: true,
+        trimVars: false,
+        sort: 'custom' as const,
+        customOrder: ['b', '@a'],
+        highlightedFirst: false,
+      },
+      highlights: [{ tag: 'b', color: 'red', enabled: true }],
+      pins: ['c'],
+      defaults: [{ key: '@a', value: '1', enabled: false }],
+      variables: [{ name: 'host', value: 'x' }],
+    }
+    const file = { name: 'a.xml', content: '<a/>', profile }
+    await expect(decodeShare(await encodeShare(file))).resolves.toEqual(file)
+    const old = await deflate(JSON.stringify({ name: 'a.xml', content: '' }))
+    await expect(decodeShare(old)).resolves.toEqual({
+      name: 'a.xml',
+      content: '',
+    })
+    const bad = await deflate(
+      JSON.stringify({ ...file, profile: { ...profile, color: 'url(x)' } }),
+    )
+    await expect(decodeShare(bad)).rejects.toMatchObject({ reason: 'invalid' })
+  })
+
   it('rejects malformed links', async () => {
     await expect(decodeShare('#share=not*base64')).rejects.toBeInstanceOf(
       ShareError,
