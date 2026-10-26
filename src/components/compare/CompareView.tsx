@@ -84,6 +84,7 @@ function CompareFiles({
     ? highlights.filter((r) => r.enabled).map((r) => r.tag)
     : []
   const firstKey = first.join('\n')
+  const orderKey = format.customOrder.join('\n')
   // Formatting large files is the costly part; only redo it when an input
   // changes. The pieces are listed one by one, as query rows are new objects.
   const { name: nameA, content: contentA } = original
@@ -98,6 +99,7 @@ function CompareFiles({
           removeEmptyLines: format.removeEmptyLines,
           trimVars: format.trimVars,
           sort: format.sort,
+          order: orderKey ? orderKey.split('\n') : [],
           first: firstKey ? firstKey.split('\n') : [],
         },
       ),
@@ -110,6 +112,7 @@ function CompareFiles({
       format.removeEmptyLines,
       format.trimVars,
       format.sort,
+      orderKey,
       firstKey,
     ],
   )

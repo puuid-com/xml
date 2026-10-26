@@ -144,6 +144,16 @@ describe('formatJson', () => {
     expect(desc.ok && desc.text).toBe('{\n  "c": 2,\n  "b": 3,\n  "a": 1\n}\n')
   })
 
+  it('sorts keys by a custom order, `@` keys included', () => {
+    const result = formatJson('{"a": 1, "@id": 2, "c": 3, "b": 4}', {
+      sort: 'custom',
+      order: ['c', '@id'],
+    })
+    expect(result.ok && result.text).toBe(
+      '{\n  "c": 3,\n  "@id": 2,\n  "a": 1,\n  "b": 4\n}\n',
+    )
+  })
+
   it('puts highlighted keys first', () => {
     const result = formatJson('{"a": 1, "b": 2, "c": 3}', { first: ['c'] })
     expect(result.ok && result.text).toBe(

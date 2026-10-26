@@ -7,7 +7,14 @@ export const formatSettingsSchema = z.object({
   formatOnSave: z.boolean(),
   removeEmptyLines: z.boolean(),
   trimVars: z.boolean(),
-  sort: z.enum(['none', 'asc', 'desc']) satisfies z.ZodType<SortOrder>,
+  sort: z.enum([
+    'none',
+    'asc',
+    'desc',
+    'custom',
+  ]) satisfies z.ZodType<SortOrder>,
+  /** Names for the custom sort, in order: tags or keys, and `@attr`. */
+  customOrder: z.array(z.string()).default([]),
   highlightedFirst: z.boolean(),
 })
 
@@ -18,5 +25,11 @@ export const DEFAULT_FORMAT: FormatSettings = {
   removeEmptyLines: true,
   trimVars: false,
   sort: 'none',
+  customOrder: [],
   highlightedFirst: false,
+}
+
+/** `format` with settings added after it was stored filled in. */
+export function withDefaults(format: Partial<FormatSettings> | undefined) {
+  return { ...DEFAULT_FORMAT, ...format }
 }

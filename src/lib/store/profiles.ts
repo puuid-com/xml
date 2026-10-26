@@ -2,9 +2,14 @@ import { z } from 'zod'
 
 import { highlightCss, unusedPreset } from './colors'
 import { filesCollection } from './files'
-import { DEFAULT_FORMAT, formatSettingsSchema } from './format-settings'
+import {
+  DEFAULT_FORMAT,
+  formatSettingsSchema,
+  withDefaults,
+} from './format-settings'
 import { DEFAULT_PROFILE_ID, localCollection, newId } from './persist'
 import { sessionStore } from './session'
+import { appendNames } from '#/lib/sort-order'
 import { m } from '#/paraglide/messages'
 import type { FormatSettings } from './format-settings'
 
@@ -91,7 +96,7 @@ export function activeProfileId() {
 }
 
 export function activeFormat(): FormatSettings {
-  return activeProfile()?.format ?? DEFAULT_FORMAT
+  return withDefaults(activeProfile()?.format)
 }
 
 export function setFormatSetting<TKey extends keyof FormatSettings>(
@@ -101,8 +106,34 @@ export function setFormatSetting<TKey extends keyof FormatSettings>(
   const profile = activeProfile()
   if (!profile) return
   profilesCollection.update(profile.id, (draft) => {
-    draft.format[key] = value
+    draft.format = { ...withDefaults(draft.format), [key]: value }
   })
+}
+
+/** Replaces the active profile's custom sort order. */
+export function setCustomOrder(order: Array<string>) {
+  setFormatSetting('customOrder', order)
+}
+
+/**
+ * Adds names to the end of the custom order and switches to it, since the
+ * order does nothing under another sort.
+ */
+export function addToCustomOrder(names: Iterable<string>) {
+  const profile = activeProfile()
+  if (!profile) return
+  profilesCollection.update(profile.id, (draft) => {
+    const format = withDefaults(draft.format)
+    draft.format = {
+      ...format,
+      sort: 'custom',
+      customOrder: appendNames(format.customOrder, names),
+    }
+  })
+}
+
+export function removeFromCustomOrder(name: string) {
+  setCustomOrder(activeFormat().customOrder.filter((n) => n !== name))
 }
 
 /** CSS colour of a profile's tag. */
@@ -133,7 +164,7 @@ export function createProfile({
       Date.now(),
       (profilesList().at(-1)?.createdAt ?? 0) + 1,
     ),
-    format: { ...format },
+    format: withDefaults(format),
   }
   profilesCollection.insert(profile)
   return profile

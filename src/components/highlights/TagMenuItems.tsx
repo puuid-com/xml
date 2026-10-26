@@ -4,18 +4,22 @@ import {
   IconHighlightOff,
   IconPin,
   IconPinnedOff,
+  IconSortAscending,
 } from '@tabler/icons-react'
 
 import { PathText } from './PathText'
 import { SwatchMenuRow } from './SwatchMenuRow'
+import { notify } from '#/components/app/notice-store'
 import { revealTag } from '#/components/editor/actions'
 import { editorStore } from '#/components/editor/editor-store'
 import { ContextMenuItem, ContextMenuLabel } from '#/components/ui/context-menu'
 import { useHighlights } from '#/hooks/use-highlights'
 import { usePins } from '#/hooks/use-pins'
+import { useFormatSettings } from '#/hooks/use-profiles'
 import { formatPath, pathFormats } from '#/lib/paths'
 import { removeHighlight, setHighlight } from '#/lib/store/highlights'
 import { togglePin } from '#/lib/store/pins'
+import { addToCustomOrder, removeFromCustomOrder } from '#/lib/store/profiles'
 import { m } from '#/paraglide/messages'
 import type { XmlElement } from '#/lib/xml/model'
 
@@ -70,6 +74,31 @@ export function PinMenuItem({ tag }: { tag: string }) {
     <ContextMenuItem onSelect={() => togglePin(tag)}>
       {pinned ? <IconPinnedOff /> : <IconPin />}
       {pinned ? m.pin_remove({ name: tag }) : m.pin_tag({ name: tag })}
+    </ContextMenuItem>
+  )
+}
+
+/** Adds a tag to the custom sort order, or takes it out. */
+export function SortOrderMenuItem({ tag }: { tag: string }) {
+  const { sort, customOrder } = useFormatSettings()
+  const listed = sort === 'custom' && customOrder.includes(tag)
+  return (
+    <ContextMenuItem
+      onSelect={() => {
+        if (listed) {
+          removeFromCustomOrder(tag)
+          return
+        }
+        addToCustomOrder([tag])
+        notify.success(m.sort_order_added({ name: tag }), {
+          detail: m.sort_order_added_detail(),
+        })
+      }}
+    >
+      <IconSortAscending />
+      {listed
+        ? m.sort_order_menu_remove({ name: tag })
+        : m.sort_order_menu_add({ name: tag })}
     </ContextMenuItem>
   )
 }

@@ -31,6 +31,7 @@ import { hlStyle } from '#/components/highlights/hl-style'
 import {
   HighlightMenuItems,
   PinMenuItem,
+  SortOrderMenuItem,
   TagMenuHeader,
 } from '#/components/highlights/TagMenuItems'
 import {
@@ -533,6 +534,7 @@ function TreeRowMenu({
         <>
           <HighlightMenuItems tag={el.name} />
           {isTextLeaf(el) && <PinMenuItem tag={el.name} />}
+          <SortOrderMenuItem tag={el.name} />
           <ContextMenuSeparator />
         </>
       )}

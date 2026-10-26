@@ -1,6 +1,7 @@
 import { IconVariable, IconWand } from '@tabler/icons-react'
 
 import { ShortcutKeys } from './ShortcutKeys'
+import { SortOrderEditor } from './SortOrderEditor'
 import { ToolbarButton } from './ToolbarButton'
 import { formatActive, resolveVarsActive } from '#/components/editor/actions'
 import { Label } from '#/components/ui/label'
@@ -99,8 +100,14 @@ export function FormatOptions() {
           <ToggleGroupItem value="desc" className="flex-1">
             {m.format_sort_desc()}
           </ToggleGroupItem>
+          <ToggleGroupItem value="custom" className="flex-1">
+            {m.format_sort_custom()}
+          </ToggleGroupItem>
         </ToggleGroup>
       </div>
+      {settings.sort === 'custom' && (
+        <SortOrderEditor order={settings.customOrder} />
+      )}
     </>
   )
 }

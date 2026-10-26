@@ -121,6 +121,22 @@ describe('profiles', () => {
     expect(s.filesCollection.get(b.id)?.profileId).toBe('default')
   })
 
+  it('adds to the custom sort order and switches to it', () => {
+    const file = s.createFile('sorted.xml')
+    s.setActive(file.id)
+    expect(s.activeFormat().customOrder).toEqual([])
+    s.addToCustomOrder(['b', 'a'])
+    s.addToCustomOrder(['a', 'c'])
+    expect(s.activeFormat()).toMatchObject({
+      sort: 'custom',
+      customOrder: ['b', 'a', 'c'],
+    })
+    s.removeFromCustomOrder('a')
+    expect(s.activeFormat().customOrder).toEqual(['b', 'c'])
+    s.setFormatSetting('sort', 'asc')
+    s.setCustomOrder([])
+  })
+
   it('clones every setting and rule into an independent profile', () => {
     const file = s.createFile('a.xml')
     s.setActive(file.id)
