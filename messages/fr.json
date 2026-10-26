@@ -258,6 +258,7 @@
   "variables_dialog_title": "Valeur de <<{name}>>",
   "variables_dialog_description": "Utilisée dans ce profil lors du remplacement des variables. Écrite telle quelle.",
   "share_copy": "Lien de partage…",
+  "share_button": "Partager le lien",
   "share_copy_hint": "Le fichier et son profil voyagent dans le lien.",
   "share_keywords": "partager url lien",
   "share_copied": "Lien de partage copié",
