@@ -9,6 +9,12 @@ export interface WorkerBuild {
   assets: ReadonlyArray<string>
   /** Locale shells and the manifest. Network-first, with the precached copy as fallback. */
   pages: ReadonlyArray<string>
+  /**
+   * The locale shells among `pages`, such as `/` and `/fr/`. A page that is
+   * not precached falls back offline to the shell its path starts with, and
+   * the router renders it on the client.
+   */
+  shells: ReadonlyArray<string>
 }
 
 /** Messages the page sends to a worker. */

@@ -10,6 +10,8 @@ const build = __WORKER_BUILD__
 const CACHE = cacheName(build.version)
 const assets = new Set(build.assets)
 const pages = new Set(build.pages)
+/** Longest first, so `/fr/about` picks `/fr/` over `/`. */
+const shells = [...build.shells].sort((a, b) => b.length - a.length)
 
 /** How long a page request waits for the network before the cached copy is used. */
 const NETWORK_TIMEOUT_MS = 3000
@@ -68,6 +70,12 @@ self.addEventListener('fetch', (event) => {
   } else if (request.mode === 'navigate' && pages.has(`${url.pathname}/`)) {
     // `/fr` redirects to `/fr/`. Offline, send the same redirect.
     event.respondWith(networkFirst(request, `${url.pathname}/`, true))
+  } else if (request.mode === 'navigate') {
+    // Any other page, such as `/about`: offline, serve its locale's shell
+    // and let the router render the page on the client. Only this build's
+    // shells are ever served, so the HTML always matches the cached assets.
+    const shell = shells.find((path) => url.pathname.startsWith(path))
+    if (shell) event.respondWith(networkFirst(request, shell))
   }
   // Anything else goes to the network as if there were no worker.
 })
