@@ -8,6 +8,7 @@ import {
   IconFileCode,
   IconFilePlus,
   IconFolderOpen,
+  IconGitCompare,
   IconHighlight,
   IconJson,
   IconLanguage,
@@ -27,6 +28,7 @@ import {
   askDeleteProfile,
   askRename,
   setArchiveOpen,
+  setCompareId,
   setPaletteOpen,
   setProfileDialog,
   uiStore,
@@ -160,11 +162,13 @@ function FileCommands({
   onOpenFromDisk: () => void
 }) {
   const files = useOpenFiles()
-  const profiles = useProfiles()
-  const activeProfile = useActiveProfile()
   const counts = useTagCounts()
   const highlighted = new Set(useHighlights().map((r) => r.tag))
   const [search, setSearch] = useState('')
+  // "Compare with…" opens a second page listing the other tabs.
+  const [page, setPage] = useState<'root' | 'compare'>('root')
+  const comparing = useSelector(uiStore, (s) => s.compareId !== null)
+  const activeFile = files.find((f) => f.id === activeId)
   // Tags only show once you type, so they don't bury files and actions.
   const tags = search.trim()
     ? [...counts.keys()].filter((t) => !highlighted.has(t)).sort()
@@ -176,219 +180,59 @@ function FileCommands({
     requestAnimationFrame(fn)
   }
 
+  const openPage = (next: 'root' | 'compare') => {
+    setPage(next)
+    setSearch('')
+  }
+
   return (
-    <Command>
+    <Command
+      onKeyDown={(e) => {
+        // Backspace in the empty search goes back, as in the cmdk docs.
+        if (page !== 'root' && e.key === 'Backspace' && !search) {
+          e.preventDefault()
+          openPage('root')
+        }
+      }}
+    >
       <CommandInput
-        placeholder={m.palette_placeholder()}
+        placeholder={
+          page === 'compare' ? m.compare_placeholder() : m.palette_placeholder()
+        }
         value={search}
         onValueChange={setSearch}
       />
       <CommandList className="h-[min(26rem,60vh)] max-h-none">
         <CommandEmpty>{m.palette_empty()}</CommandEmpty>
-        {files.length > 0 && (
-          <CommandGroup heading={m.palette_files()}>
-            {files.map((file) => (
-              <CommandItem
-                key={file.id}
-                value={`${file.name} ${file.id}`}
-                onSelect={() => run(() => setActive(file.id))}
-              >
-                {languageOf(file.name, '') === 'json' ? (
-                  <IconJson />
-                ) : (
-                  <IconFileCode />
-                )}
-                <span className="truncate font-mono">{file.name}</span>
-                {file.id === activeId && (
-                  <IconCheck className="size-3 text-muted-foreground" />
-                )}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-        {activeId && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading={m.palette_current()}>
-              <CommandItem onSelect={() => run(() => askRename(activeId))}>
-                <IconPencil />
-                {m.file_rename()}
-                <CommandShortcut>
-                  {shortcutLabel(shortcuts.rename)}
-                </CommandShortcut>
-              </CommandItem>
-              <CommandItem onSelect={() => run(() => downloadFile(activeId))}>
-                <IconDownload />
-                {m.file_download()}
-              </CommandItem>
-              <CommandItem onSelect={() => run(() => void copyActive())}>
-                <IconClipboard />
-                {m.file_copy()}
-              </CommandItem>
-            </CommandGroup>
-          </>
-        )}
-        {activeId && activeProfile && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading={m.profiles_title()}>
-              {profiles.map((profile, index) => (
+        {page === 'compare' && activeFile && (
+          <CommandGroup
+            heading={m.compare_with_heading({ name: activeFile.name })}
+          >
+            {files
+              .filter((file) => file.id !== activeFile.id)
+              .map((file) => (
                 <CommandItem
-                  key={profile.id}
-                  value={`profile ${profile.name} ${profile.id}`}
-                  onSelect={() => run(() => void switchProfile(profile.id))}
+                  key={file.id}
+                  value={`${file.name} ${file.id}`}
+                  onSelect={() => run(() => setCompareId(file.id))}
                 >
-                  <IconUserCircle />
-                  <ProfileTag profile={profile} className="max-w-60" />
-                  {profile.id === activeProfile.id && (
-                    <IconCheck className="size-3 text-muted-foreground" />
-                  )}
-                  {profileShortcuts[index] && (
-                    <CommandShortcut>
-                      {shortcutLabel(profileShortcuts[index])}
-                    </CommandShortcut>
-                  )}
+                  <IconGitCompare />
+                  <span className="truncate font-mono">{file.name}</span>
                 </CommandItem>
               ))}
-              {profiles.length > 1 && (
-                <CommandItem onSelect={() => run(switchToNextProfile)}>
-                  <IconUserCircle />
-                  {m.profile_next()}
-                  <CommandShortcut>
-                    {shortcutLabel(shortcuts.nextProfile)}
-                  </CommandShortcut>
-                </CommandItem>
-              )}
-              <CommandItem
-                onSelect={() => run(() => setProfileDialog({ mode: 'create' }))}
-              >
-                <IconPlus />
-                {m.profile_new()}
-              </CommandItem>
-              <CommandItem
-                onSelect={() =>
-                  run(() =>
-                    setProfileDialog({
-                      mode: 'clone',
-                      profileId: activeProfile.id,
-                    }),
-                  )
-                }
-              >
-                <IconCopy />
-                <span className="truncate">
-                  {m.profile_clone({ name: activeProfile.name })}
-                </span>
-              </CommandItem>
-              <CommandItem
-                onSelect={() =>
-                  run(() =>
-                    setProfileDialog({
-                      mode: 'edit',
-                      profileId: activeProfile.id,
-                    }),
-                  )
-                }
-              >
-                <IconPencil />
-                <span className="truncate">
-                  {m.profile_edit({ name: activeProfile.name })}
-                </span>
-              </CommandItem>
-              {profiles.length > 1 && (
-                <CommandItem
-                  onSelect={() => run(() => askDeleteProfile(activeProfile.id))}
-                >
-                  <IconTrash />
-                  <span className="truncate">
-                    {m.profile_delete({ name: activeProfile.name })}
-                  </span>
-                </CommandItem>
-              )}
-            </CommandGroup>
-          </>
-        )}
-        <CommandSeparator />
-        <CommandGroup heading={m.palette_actions()}>
-          <CommandItem onSelect={() => run(() => setArchiveOpen(true))}>
-            <IconArchive />
-            {m.archive_title()}
-          </CommandItem>
-          <CommandItem onSelect={() => run(newFile)}>
-            <IconFilePlus />
-            {m.file_new()}
-            <CommandShortcut>
-              {shortcutLabel(shortcuts.newFile)}
-            </CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => run(newJsonFile)}>
-            <IconFilePlus />
-            {m.file_new_json()}
-          </CommandItem>
-          <CommandItem onSelect={() => run(onOpenFromDisk)}>
-            <IconFolderOpen />
-            {m.file_open_disk()}
-            <CommandShortcut>
-              {shortcutLabel(shortcuts.openFile)}
-            </CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => run(() => void highlightAtCursor())}>
-            <IconHighlight />
-            {m.highlight_at_cursor()}
-            <CommandShortcut>
-              {shortcutLabel(shortcuts.highlight)}
-            </CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => run(() => void applyDefaultsActive())}>
-            <IconReplace />
-            {m.defaults_apply()}
-            <CommandShortcut>
-              {shortcutLabel(shortcuts.applyDefaults)}
-            </CommandShortcut>
-          </CommandItem>
-          <CommandItem onSelect={() => run(resolveVarsActive)}>
-            <IconVariable />
-            {m.vars_resolve()}
-            <CommandShortcut>
-              {shortcutLabel(shortcuts.resolveVars)}
-            </CommandShortcut>
-          </CommandItem>
-        </CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading={m.language_label()}>
-          {locales.map((locale) => (
-            <CommandItem
-              key={locale}
-              value={`language ${localeNames[locale]}`}
-              lang={locale}
-              onSelect={() => run(() => void setLocale(locale))}
-            >
-              <IconLanguage />
-              {localeNames[locale]}
-              {locale === getLocale() && (
-                <IconCheck className="size-3 text-muted-foreground" />
-              )}
-            </CommandItem>
-          ))}
-        </CommandGroup>
-        {tags.length > 0 && (
-          <CommandGroup heading={m.highlights_title()}>
-            {tags.map((tag) => (
-              <CommandItem
-                key={tag}
-                value={`highlight ${tag}`}
-                onSelect={() => run(() => setHighlight(tag))}
-              >
-                <IconHighlight />
-                <span className="truncate">
-                  {m.highlight_tag({ name: tag })}
-                </span>
-                <CommandShortcut className="text-[11px] tracking-normal tabular-nums">
-                  {counts.get(tag)}
-                </CommandShortcut>
-              </CommandItem>
-            ))}
           </CommandGroup>
+        )}
+        {page === 'root' && (
+          <RootCommands
+            files={files}
+            activeId={activeId}
+            comparing={comparing}
+            tags={tags}
+            counts={counts}
+            run={run}
+            onCompare={() => openPage('compare')}
+            onOpenFromDisk={onOpenFromDisk}
+          />
         )}
       </CommandList>
       <div className="flex items-center gap-4 border-t px-3 py-2 text-[11px] text-muted-foreground">
@@ -407,5 +251,245 @@ function FileCommands({
         </span>
       </div>
     </Command>
+  )
+}
+
+function RootCommands({
+  files,
+  activeId,
+  comparing,
+  tags,
+  counts,
+  run,
+  onCompare,
+  onOpenFromDisk,
+}: {
+  files: ReturnType<typeof useOpenFiles>
+  activeId: string | null
+  comparing: boolean
+  tags: Array<string>
+  counts: ReturnType<typeof useTagCounts>
+  run: (fn: () => void) => void
+  onCompare: () => void
+  onOpenFromDisk: () => void
+}) {
+  const profiles = useProfiles()
+  const activeProfile = useActiveProfile()
+
+  return (
+    <>
+      {files.length > 0 && (
+        <CommandGroup heading={m.palette_files()}>
+          {files.map((file) => (
+            <CommandItem
+              key={file.id}
+              value={`${file.name} ${file.id}`}
+              onSelect={() => run(() => setActive(file.id))}
+            >
+              {languageOf(file.name, '') === 'json' ? (
+                <IconJson />
+              ) : (
+                <IconFileCode />
+              )}
+              <span className="truncate font-mono">{file.name}</span>
+              {file.id === activeId && (
+                <IconCheck className="size-3 text-muted-foreground" />
+              )}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      )}
+      {activeId && (
+        <>
+          <CommandSeparator />
+          <CommandGroup heading={m.palette_current()}>
+            <CommandItem onSelect={() => run(() => askRename(activeId))}>
+              <IconPencil />
+              {m.file_rename()}
+              <CommandShortcut>
+                {shortcutLabel(shortcuts.rename)}
+              </CommandShortcut>
+            </CommandItem>
+            <CommandItem onSelect={() => run(() => downloadFile(activeId))}>
+              <IconDownload />
+              {m.file_download()}
+            </CommandItem>
+            <CommandItem onSelect={() => run(() => void copyActive())}>
+              <IconClipboard />
+              {m.file_copy()}
+            </CommandItem>
+            {files.length > 1 && (
+              <CommandItem onSelect={onCompare}>
+                <IconGitCompare />
+                {m.compare_with()}
+              </CommandItem>
+            )}
+            {comparing && (
+              <CommandItem onSelect={() => run(() => setCompareId(null))}>
+                <IconGitCompare />
+                {m.compare_close()}
+                <CommandShortcut>Esc</CommandShortcut>
+              </CommandItem>
+            )}
+          </CommandGroup>
+        </>
+      )}
+      {activeId && activeProfile && (
+        <>
+          <CommandSeparator />
+          <CommandGroup heading={m.profiles_title()}>
+            {profiles.map((profile, index) => (
+              <CommandItem
+                key={profile.id}
+                value={`profile ${profile.name} ${profile.id}`}
+                onSelect={() => run(() => void switchProfile(profile.id))}
+              >
+                <IconUserCircle />
+                <ProfileTag profile={profile} className="max-w-60" />
+                {profile.id === activeProfile.id && (
+                  <IconCheck className="size-3 text-muted-foreground" />
+                )}
+                {profileShortcuts[index] && (
+                  <CommandShortcut>
+                    {shortcutLabel(profileShortcuts[index])}
+                  </CommandShortcut>
+                )}
+              </CommandItem>
+            ))}
+            {profiles.length > 1 && (
+              <CommandItem onSelect={() => run(switchToNextProfile)}>
+                <IconUserCircle />
+                {m.profile_next()}
+                <CommandShortcut>
+                  {shortcutLabel(shortcuts.nextProfile)}
+                </CommandShortcut>
+              </CommandItem>
+            )}
+            <CommandItem
+              onSelect={() => run(() => setProfileDialog({ mode: 'create' }))}
+            >
+              <IconPlus />
+              {m.profile_new()}
+            </CommandItem>
+            <CommandItem
+              onSelect={() =>
+                run(() =>
+                  setProfileDialog({
+                    mode: 'clone',
+                    profileId: activeProfile.id,
+                  }),
+                )
+              }
+            >
+              <IconCopy />
+              <span className="truncate">
+                {m.profile_clone({ name: activeProfile.name })}
+              </span>
+            </CommandItem>
+            <CommandItem
+              onSelect={() =>
+                run(() =>
+                  setProfileDialog({
+                    mode: 'edit',
+                    profileId: activeProfile.id,
+                  }),
+                )
+              }
+            >
+              <IconPencil />
+              <span className="truncate">
+                {m.profile_edit({ name: activeProfile.name })}
+              </span>
+            </CommandItem>
+            {profiles.length > 1 && (
+              <CommandItem
+                onSelect={() => run(() => askDeleteProfile(activeProfile.id))}
+              >
+                <IconTrash />
+                <span className="truncate">
+                  {m.profile_delete({ name: activeProfile.name })}
+                </span>
+              </CommandItem>
+            )}
+          </CommandGroup>
+        </>
+      )}
+      <CommandSeparator />
+      <CommandGroup heading={m.palette_actions()}>
+        <CommandItem onSelect={() => run(() => setArchiveOpen(true))}>
+          <IconArchive />
+          {m.archive_title()}
+        </CommandItem>
+        <CommandItem onSelect={() => run(newFile)}>
+          <IconFilePlus />
+          {m.file_new()}
+          <CommandShortcut>{shortcutLabel(shortcuts.newFile)}</CommandShortcut>
+        </CommandItem>
+        <CommandItem onSelect={() => run(newJsonFile)}>
+          <IconFilePlus />
+          {m.file_new_json()}
+        </CommandItem>
+        <CommandItem onSelect={() => run(onOpenFromDisk)}>
+          <IconFolderOpen />
+          {m.file_open_disk()}
+          <CommandShortcut>{shortcutLabel(shortcuts.openFile)}</CommandShortcut>
+        </CommandItem>
+        <CommandItem onSelect={() => run(() => void highlightAtCursor())}>
+          <IconHighlight />
+          {m.highlight_at_cursor()}
+          <CommandShortcut>
+            {shortcutLabel(shortcuts.highlight)}
+          </CommandShortcut>
+        </CommandItem>
+        <CommandItem onSelect={() => run(() => void applyDefaultsActive())}>
+          <IconReplace />
+          {m.defaults_apply()}
+          <CommandShortcut>
+            {shortcutLabel(shortcuts.applyDefaults)}
+          </CommandShortcut>
+        </CommandItem>
+        <CommandItem onSelect={() => run(resolveVarsActive)}>
+          <IconVariable />
+          {m.vars_resolve()}
+          <CommandShortcut>
+            {shortcutLabel(shortcuts.resolveVars)}
+          </CommandShortcut>
+        </CommandItem>
+      </CommandGroup>
+      <CommandSeparator />
+      <CommandGroup heading={m.language_label()}>
+        {locales.map((locale) => (
+          <CommandItem
+            key={locale}
+            value={`language ${localeNames[locale]}`}
+            lang={locale}
+            onSelect={() => run(() => void setLocale(locale))}
+          >
+            <IconLanguage />
+            {localeNames[locale]}
+            {locale === getLocale() && (
+              <IconCheck className="size-3 text-muted-foreground" />
+            )}
+          </CommandItem>
+        ))}
+      </CommandGroup>
+      {tags.length > 0 && (
+        <CommandGroup heading={m.highlights_title()}>
+          {tags.map((tag) => (
+            <CommandItem
+              key={tag}
+              value={`highlight ${tag}`}
+              onSelect={() => run(() => setHighlight(tag))}
+            >
+              <IconHighlight />
+              <span className="truncate">{m.highlight_tag({ name: tag })}</span>
+              <CommandShortcut className="text-[11px] tracking-normal tabular-nums">
+                {counts.get(tag)}
+              </CommandShortcut>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      )}
+    </>
   )
 }

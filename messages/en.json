@@ -196,5 +196,15 @@
   "profile_delete_title": "Delete {name}?",
   "profile_delete_description": "Its format settings, highlights, pins and defaults are deleted. Its files switch to {fallback}.",
   "profile_delete_confirm": "Delete profile",
-  "profile_delete_failed": "Could not delete the profile."
+  "profile_delete_failed": "Could not delete the profile.",
+  "compare_with": "Compare with…",
+  "compare_with_heading": "Compare {name} with",
+  "compare_placeholder": "Search open tabs…",
+  "compare_close": "Close comparison",
+  "compare_label": "Comparison of {a} and {b}",
+  "compare_ignore_formatting": "Ignore formatting",
+  "compare_unparsed": "Shown as written: {name} has errors",
+  "compare_changes": "Differences: {count}",
+  "compare_no_changes": "No differences",
+  "compare_unchanged_lines": "Unchanged lines: {count}"
 }

@@ -15,6 +15,10 @@ interface UiState {
   defaultsPreview: Array<DefaultSummary> | null
   profileDialog: ProfileDialog | null
   deleteProfileId: string | null
+  /** Tab the active file is being compared with, shown in place of the editor. */
+  compareId: string | null
+  /** Format both sides before comparing, so only the data differs. */
+  compareIgnoreFormatting: boolean
 }
 
 /** Creating a profile, or cloning or editing the one with `profileId`. */
@@ -38,6 +42,8 @@ export const uiStore = new Store<UiState>({
   defaultsPreview: null,
   profileDialog: null,
   deleteProfileId: null,
+  compareId: null,
+  compareIgnoreFormatting: false,
 })
 
 export function setPaletteOpen(paletteOpen: boolean) {
@@ -76,4 +82,17 @@ export function setProfileDialog(profileDialog: ProfileDialog | null) {
 
 export function askDeleteProfile(deleteProfileId: string | null) {
   uiStore.setState((s) => ({ ...s, deleteProfileId }))
+}
+
+/** Compares the active file with `compareId`, or closes the comparison. */
+export function setCompareId(compareId: string | null) {
+  uiStore.setState((s) => ({
+    ...s,
+    compareId,
+    mobileView: compareId ? 'editor' : s.mobileView,
+  }))
+}
+
+export function setCompareIgnoreFormatting(compareIgnoreFormatting: boolean) {
+  uiStore.setState((s) => ({ ...s, compareIgnoreFormatting }))
 }
