@@ -10,8 +10,14 @@ import { useDefaultLayout } from 'react-resizable-panels'
 
 import { AppHeader } from './AppHeader'
 import { ArchiveDialog } from './ArchiveDialog'
+import { reportSaveFailed } from './backup'
 import { CommandMenu } from './CommandMenu'
-import { CloseDialog, DefaultsConfirmDialog, RenameDialog } from './Dialogs'
+import {
+  CloseDialog,
+  DefaultsConfirmDialog,
+  RenameDialog,
+  RestoreDialog,
+} from './Dialogs'
 import { ACCEPTED_TYPES, importFiles, newFile, newJsonFile } from './files'
 import { SidePanel } from './SidePanel'
 import { StatusBar } from './StatusBar'
@@ -43,6 +49,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useOpenFiles } from '#/hooks/use-files'
 import { useMediaQuery } from '#/hooks/use-media-query'
 import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
+import { onSaveFailed } from '#/lib/store/files'
 import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
@@ -62,6 +69,8 @@ export function EditorApp() {
   useEffect(() => {
     if (activeId !== storedActive) setActive(activeId)
   }, [activeId, storedActive])
+
+  useEffect(() => onSaveFailed(reportSaveFailed), [])
 
   const openFromDisk = () => inputRef.current?.click()
 
@@ -135,6 +144,7 @@ export function EditorApp() {
       <CommandMenu activeId={activeId} onOpenFromDisk={openFromDisk} />
       <CloseDialog openIds={files.map((f) => f.id)} />
       <DefaultsConfirmDialog />
+      <RestoreDialog />
       <ProfileDialog />
       <DeleteProfileDialog />
       <QuickHighlight />

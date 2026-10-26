@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
 import { activeProfileId } from './profiles'
 
-const pinSchema = z.object({
+export const pinSchema = z.object({
   id: z.string(),
   /** Exact tag or key name, prefix included (`soap:Body`). */
   tag: z.string(),

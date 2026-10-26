@@ -4,6 +4,8 @@ import {
   IconCheck,
   IconClipboard,
   IconCopy,
+  IconDatabaseExport,
+  IconDatabaseImport,
   IconDownload,
   IconFileCode,
   IconFilePlus,
@@ -22,6 +24,7 @@ import {
 import { useSelector } from '@tanstack/react-store'
 import { useLayoutEffect, useRef, useState } from 'react'
 
+import { downloadBackup, pickBackup } from './backup'
 import { newFile, newJsonFile } from './files'
 import {
   askDeleteProfile,
@@ -352,6 +355,14 @@ function FileCommands({
             <CommandShortcut>
               {shortcutLabel(shortcuts.resolveVars)}
             </CommandShortcut>
+          </CommandItem>
+          <CommandItem onSelect={() => run(downloadBackup)}>
+            <IconDatabaseExport />
+            {m.backup_create()}
+          </CommandItem>
+          <CommandItem onSelect={() => run(pickBackup)}>
+            <IconDatabaseImport />
+            {m.backup_restore()}
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />

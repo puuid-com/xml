@@ -1,5 +1,6 @@
 import { Store } from '@tanstack/store'
 
+import type { Backup } from '#/lib/store/backup'
 import type { DefaultSummary } from '#/lib/xml/defaults'
 
 // Transient dialog state for the editor screen.
@@ -15,6 +16,14 @@ interface UiState {
   defaultsPreview: Array<DefaultSummary> | null
   profileDialog: ProfileDialog | null
   deleteProfileId: string | null
+  /** A backup waiting for confirmation before it replaces the workspace. */
+  restorePreview: RestorePreview | null
+}
+
+/** A backup read from disk, with its date formatted for the reader's locale. */
+export interface RestorePreview {
+  backup: Backup
+  date: string
 }
 
 /** Creating a profile, or cloning or editing the one with `profileId`. */
@@ -38,6 +47,7 @@ export const uiStore = new Store<UiState>({
   defaultsPreview: null,
   profileDialog: null,
   deleteProfileId: null,
+  restorePreview: null,
 })
 
 export function setPaletteOpen(paletteOpen: boolean) {
@@ -76,4 +86,8 @@ export function setProfileDialog(profileDialog: ProfileDialog | null) {
 
 export function askDeleteProfile(deleteProfileId: string | null) {
   uiStore.setState((s) => ({ ...s, deleteProfileId }))
+}
+
+export function setRestorePreview(restorePreview: RestorePreview | null) {
+  uiStore.setState((s) => ({ ...s, restorePreview }))
 }

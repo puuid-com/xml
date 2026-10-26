@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
 import { activeProfileId } from './profiles'
 
-const defaultValueSchema = z.object({
+export const defaultValueSchema = z.object({
   id: z.string(),
   /** Tag name (`soap:Body`), or `@name` for an attribute. */
   key: z.string(),

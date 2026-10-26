@@ -2,9 +2,16 @@ import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
 import { useState } from 'react'
 
+import { replaceWorkspace } from './backup'
 import { neighbour } from './files'
 import { notify } from './notice-store'
-import { askClose, askRename, setDefaultsPreview, uiStore } from './ui-store'
+import {
+  askClose,
+  askRename,
+  setDefaultsPreview,
+  setRestorePreview,
+  uiStore,
+} from './ui-store'
 import { commitDefaultsActive } from '#/components/editor/actions'
 import { dropEditorState } from '#/components/editor/CodeEditor'
 import {
@@ -29,6 +36,7 @@ import {
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { mod } from '#/lib/platform'
+import { backupCounts } from '#/lib/store/backup'
 import { closeFile, filesCollection, renameFile } from '#/lib/store/files'
 import { sessionStore, setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
@@ -227,6 +235,76 @@ export function DefaultsConfirmDialog() {
           <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
           <AlertDialogAction onClick={commitDefaultsActive}>
             {m.defaults_confirm()}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+/** Lists what a backup holds before it replaces the workspace. */
+export function RestoreDialog() {
+  const preview = useSelector(uiStore, (s) => s.restorePreview)
+  const backup = preview?.backup
+  const [restoring, setRestoring] = useState(false)
+  const counts = backup && backupCounts(backup)
+  const rows =
+    counts &&
+    ([
+      [m.restore_count_open(), counts.open],
+      [m.restore_count_archived(), counts.archived],
+      [m.restore_count_profiles(), counts.profiles],
+      [m.restore_count_highlights(), counts.highlights],
+      [m.restore_count_pins(), counts.pins],
+      [m.restore_count_defaults(), counts.defaults],
+    ] as const)
+
+  const confirm = async () => {
+    if (!backup || restoring) return
+    setRestoring(true)
+    // Reports its own failure, so the dialog always closes afterwards.
+    await replaceWorkspace(backup)
+    setRestoring(false)
+    setRestorePreview(null)
+  }
+
+  return (
+    <AlertDialog
+      open={!!backup}
+      onOpenChange={(open) => {
+        if (!open && !restoring) setRestorePreview(null)
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{m.restore_title()}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {m.restore_description({ date: preview?.date ?? '' })}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <dl className="-mx-1 flex flex-col border-y py-1 text-xs">
+          {rows?.map(([label, count]) => (
+            <div key={label} className="flex items-center gap-3 px-1 py-1.5">
+              <dt className="min-w-0 flex-1 truncate">{label}</dt>
+              <dd className="shrink-0 text-muted-foreground tabular-nums">
+                {count}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={restoring}>
+            {m.cancel()}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            disabled={restoring}
+            onClick={(event) => {
+              event.preventDefault()
+              void confirm()
+            }}
+          >
+            {m.restore_confirm()}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

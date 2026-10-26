@@ -8,7 +8,7 @@ import type { HighlightPreset } from './colors'
 export { HIGHLIGHT_PRESETS, highlightCss, isPreset } from './colors'
 export type { HighlightPreset } from './colors'
 
-const highlightSchema = z.object({
+export const highlightSchema = z.object({
   id: z.string(),
   /** Exact tag name, prefix included (`soap:Body`). */
   tag: z.string(),

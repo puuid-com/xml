@@ -12,7 +12,7 @@ import type { FormatSettings } from './format-settings'
 // highlight, pin and default-value rules tagged with its id. Each file
 // belongs to one profile, and the editor uses the settings of the open file.
 
-const profileSchema = z.object({
+export const profileSchema = z.object({
   id: z.string(),
   name: z.string(),
   /** A preset name or a `#rrggbb` custom colour, like highlights. */
