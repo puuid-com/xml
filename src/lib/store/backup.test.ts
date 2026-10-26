@@ -104,7 +104,7 @@ describe('workspace backup', () => {
     )
     expect(profilesCollection.get(staging.id)?.name).toBe('Staging')
     expect([...highlightsCollection.values()].map((r) => r.tag)).toEqual([
-      'soap:Body',
+      'Body',
     ])
     expect([...pinsCollection.values()].map((p) => p.tag)).toEqual(['id'])
     expect([...defaultsCollection.values()].map((r) => r.value)).toEqual([

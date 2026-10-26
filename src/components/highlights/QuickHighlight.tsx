@@ -9,6 +9,7 @@ import { getView } from '#/components/editor/editor-store'
 import { Button } from '#/components/ui/button'
 import { Popover, PopoverAnchor, PopoverContent } from '#/components/ui/popover'
 import { useHighlights } from '#/hooks/use-highlights'
+import { sameName } from '#/lib/names'
 import {
   highlightCss,
   isPreset,
@@ -21,7 +22,7 @@ import { m } from '#/paraglide/messages'
 export function QuickHighlight() {
   const target = useSelector(uiStore, (s) => s.quickHighlight)
   const rules = useHighlights()
-  const rule = target && rules.find((r) => r.tag === target.tag)
+  const rule = target && rules.find((r) => sameName(r.tag, target.tag))
   const contentRef = useRef<HTMLDivElement>(null)
 
   const close = () => setQuickHighlight(null)

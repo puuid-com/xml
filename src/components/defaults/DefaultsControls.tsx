@@ -17,6 +17,7 @@ import {
   toggleDefault,
   updateDefaultValue,
 } from '#/lib/store/defaults'
+import { localName } from '#/lib/names'
 import { defaultKeys } from '#/lib/xml/defaults'
 import { m } from '#/paraglide/messages'
 import type { DefaultValue } from '#/lib/store/defaults'
@@ -95,7 +96,7 @@ function RuleRow({ rule }: { rule: DefaultValue }) {
 
 function AddDefaultForm({ existing }: { existing: Array<string> }) {
   const doc = useSelector(editorStore, (s) => s.doc)
-  const taken = new Set(existing)
+  const taken = new Set(existing.map(localName))
   const suggestions = defaultKeys(doc.nodes).filter((k) => !taken.has(k))
   const form = useForm({
     defaultValues: { key: '', value: '' },

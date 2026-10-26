@@ -1,8 +1,10 @@
+import { localName } from './names'
 import { allElements } from './xml/locate'
 import { hasName } from './xml/model'
 import type { XmlNode } from './xml/model'
 
-// The custom sort lists tag names (or JSON keys), and `@name` for attributes.
+// The custom sort lists tag names (or JSON keys), and `@name` for attributes,
+// without namespace prefixes.
 
 /** `list` with the item at `from` moved to `to`. */
 export function moveItem<T>(list: ReadonlyArray<T>, from: number, to: number) {
@@ -13,15 +15,18 @@ export function moveItem<T>(list: ReadonlyArray<T>, from: number, to: number) {
   return out
 }
 
-/** `list` followed by the names of `names` it lacks, trimmed and once each. */
+/**
+ * `list` followed by the names of `names` it lacks, trimmed, without prefix
+ * and once each.
+ */
 export function appendNames(
   list: ReadonlyArray<string>,
   names: Iterable<string>,
 ) {
   const out = [...list]
-  const seen = new Set(list)
+  const seen = new Set(list.map(localName))
   for (const raw of names) {
-    const name = raw.trim()
+    const name = localName(raw.trim())
     if (!name || seen.has(name)) continue
     seen.add(name)
     out.push(name)
@@ -36,8 +41,8 @@ export function appendNames(
 export function documentNames(nodes: Array<XmlNode>): Array<string> {
   const names = new Set<string>()
   for (const el of allElements(nodes)) {
-    if (hasName(el)) names.add(el.name)
-    for (const attr of el.attrs) names.add(`@${attr.name}`)
+    if (hasName(el)) names.add(localName(el.name))
+    for (const attr of el.attrs) names.add(`@${localName(attr.name)}`)
   }
   return [...names]
 }

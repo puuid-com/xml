@@ -1,4 +1,5 @@
 import { parseJsonAst } from './parse'
+import { localName } from '#/lib/names'
 import { nameOrder } from '#/lib/xml/format'
 import { varRegExp } from '#/lib/xml/vars'
 import type { JsonValue } from './parse'
@@ -25,10 +26,11 @@ export function formatJson(
   if (!value) return { ok: true, text }
 
   const byName = nameOrder(sort, order)
-  const leading = new Set(first)
+  const leading = new Set([...first].map(localName))
   const ordered = byName !== null || leading.size > 0
+  const lead = (name: string) => Number(leading.has(localName(name)))
   const compare = (a: string, b: string) =>
-    Number(leading.has(b)) - Number(leading.has(a)) || (byName?.(a, b) ?? 0)
+    lead(b) - lead(a) || (byName?.(a, b) ?? 0)
 
   // Keeps one blank line where the source had any, unless asked not to.
   const gap = (before: number, at: number) =>

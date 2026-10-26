@@ -28,6 +28,7 @@ import {
 } from '#/components/ui/popover'
 import { useHighlights } from '#/hooks/use-highlights'
 import { useTagCounts } from '#/hooks/use-tag-counts'
+import { localName } from '#/lib/names'
 import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import {
   highlightCss,
@@ -52,11 +53,15 @@ export function HighlightsBar() {
       className="flex h-full min-w-0 shrink items-center gap-1 overflow-x-auto [scrollbar-width:none]"
     >
       {rules.map((rule) => (
-        <RuleChip key={rule.id} rule={rule} count={counts.get(rule.tag) ?? 0} />
+        <RuleChip
+          key={rule.id}
+          rule={rule}
+          count={counts.get(localName(rule.tag)) ?? 0}
+        />
       ))}
       <AddRulePopover
         tagNames={[...counts.keys()].sort()}
-        existing={rules.map((r) => r.tag)}
+        existing={rules.map((r) => localName(r.tag))}
       />
       {rules.length === 0 && (
         <span className="hidden truncate sm:inline">

@@ -9,6 +9,7 @@ import {
 } from './format-settings'
 import { DEFAULT_PROFILE_ID, localCollection, newId } from './persist'
 import { sessionStore } from './session'
+import { sameName } from '#/lib/names'
 import { appendNames } from '#/lib/sort-order'
 import { m } from '#/paraglide/messages'
 import type { FormatSettings } from './format-settings'
@@ -133,7 +134,7 @@ export function addToCustomOrder(names: Iterable<string>) {
 }
 
 export function removeFromCustomOrder(name: string) {
-  setCustomOrder(activeFormat().customOrder.filter((n) => n !== name))
+  setCustomOrder(activeFormat().customOrder.filter((n) => !sameName(n, name)))
 }
 
 /** CSS colour of a profile's tag. */

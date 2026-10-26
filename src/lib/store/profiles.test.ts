@@ -131,6 +131,9 @@ describe('profiles', () => {
       sort: 'custom',
       customOrder: ['b', 'a', 'c'],
     })
+    s.addToCustomOrder(['ns:c', 'ns:d'])
+    expect(s.activeFormat().customOrder).toEqual(['b', 'a', 'c', 'd'])
+    s.removeFromCustomOrder('ns:d')
     s.removeFromCustomOrder('a')
     expect(s.activeFormat().customOrder).toEqual(['b', 'c'])
     s.setFormatSetting('sort', 'asc')

@@ -221,6 +221,15 @@ describe('highlights', () => {
     expect(nextPreset()).toBe('blue')
   })
 
+  it('names rules without the tag prefix', () => {
+    setHighlight('soap:Body')
+    setHighlight('s:Body', 'red')
+    expect([...highlightsCollection.values()]).toMatchObject([
+      { tag: 'Body', color: 'red' },
+    ])
+    expect(findHighlight('Body')).toBeDefined()
+  })
+
   it('resolves preset and custom colours to CSS', () => {
     expect(highlightCss('teal')).toBe('var(--hl-teal)')
     expect(highlightCss('#123456')).toBe('#123456')
@@ -239,6 +248,17 @@ describe('defaults', () => {
     setDefault('id', '2')
     expect([...defaultsCollection.values()]).toHaveLength(1)
     expect(findDefault('id')?.value).toBe('2')
+  })
+
+  it('keys rules without the tag prefix', () => {
+    setDefault('ns:id', '1')
+    setDefault('@xsi:type', 't')
+    setDefault('id', '2')
+    expect([...defaultsCollection.values()].map((r) => r.key)).toEqual([
+      'id',
+      '@type',
+    ])
+    expect(findDefault('a:id')?.value).toBe('2')
   })
 
   it('only returns enabled rules', () => {
@@ -262,6 +282,14 @@ describe('pins', () => {
     expect([...pinsCollection.values()]).toHaveLength(1)
     unpinTag('amount')
     expect(findPin('amount')).toBeUndefined()
+  })
+
+  it('pins a tag whatever its prefix', () => {
+    pinTag('ns:amount')
+    pinTag('amount')
+    expect([...pinsCollection.values()]).toMatchObject([{ tag: 'amount' }])
+    unpinTag('other:amount')
+    expect([...pinsCollection.values()]).toHaveLength(0)
   })
 
   it('toggles a pin', () => {

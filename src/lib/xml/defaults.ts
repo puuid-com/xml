@@ -1,10 +1,12 @@
 // Default values: rules that set every matching element's text, or every
 // matching attribute, to a stored value. A key `name` targets leaf elements
 // named `name`; `@name` targets attributes named `name` on any element.
+// Names match without their prefix, so `Body` covers `soap:Body`.
 
 import { setAttr, setText } from './edit'
 import { hasName, isLeaf, leafValue } from './model'
 import { allElements } from './locate'
+import { localName } from '#/lib/names'
 import type { TextChange } from './edit'
 import type { XmlAttr, XmlElement, XmlNode } from './model'
 
@@ -27,8 +29,9 @@ export function defaultIndex(rules: ReadonlyArray<DefaultRule>): DefaultIndex {
   const elements = new Map<string, string>()
   const attrs = new Map<string, string>()
   for (const rule of rules) {
-    if (isAttrKey(rule.key)) attrs.set(rule.key.slice(1), rule.value)
-    else elements.set(rule.key, rule.value)
+    const key = localName(rule.key)
+    if (isAttrKey(key)) attrs.set(key.slice(1), rule.value)
+    else elements.set(key, rule.value)
   }
   return { elements, attrs }
 }
@@ -36,7 +39,11 @@ export function defaultIndex(rules: ReadonlyArray<DefaultRule>): DefaultIndex {
 /** The default an element's value should have, if a rule covers it. */
 export function leafDefault(index: DefaultIndex, el: XmlElement) {
   if (!hasName(el) || !isLeaf(el)) return undefined
-  return index.elements.get(el.name)
+  return index.elements.get(localName(el.name))
+}
+
+function attrDefault(index: DefaultIndex, attr: XmlAttr) {
+  return index.attrs.get(localName(attr.name))
 }
 
 /** Whether a leaf element's value equals its default. */
@@ -47,7 +54,7 @@ export function isDefaultLeaf(index: DefaultIndex, el: XmlElement) {
 
 /** Whether an attribute's value equals its default. */
 export function isDefaultAttr(index: DefaultIndex, attr: XmlAttr) {
-  return index.attrs.get(attr.name) === attr.value
+  return attrDefault(index, attr) === attr.value
 }
 
 /** Whether a leaf element has a default its value doesn't equal. */
@@ -58,7 +65,7 @@ export function leafDiffers(index: DefaultIndex, el: XmlElement) {
 
 /** Whether an attribute has a default its value doesn't equal. */
 export function attrDiffers(index: DefaultIndex, attr: XmlAttr) {
-  const value = index.attrs.get(attr.name)
+  const value = attrDefault(index, attr)
   return value !== undefined && attr.value !== value
 }
 
@@ -75,14 +82,14 @@ function* differingTargets(
   const index = defaultIndex(rules)
   for (const el of allElements(nodes)) {
     for (const attr of el.attrs) {
-      const value = index.attrs.get(attr.name)
+      const value = attrDefault(index, attr)
       if (value !== undefined && attr.value !== value) {
-        yield { key: `@${attr.name}`, value, attr }
+        yield { key: `@${localName(attr.name)}`, value, attr }
       }
     }
     const value = leafDefault(index, el)
     if (value !== undefined && leafValue(el) !== value) {
-      yield { key: el.name, value, el }
+      yield { key: localName(el.name), value, el }
     }
   }
 }
@@ -123,7 +130,7 @@ export function defaultSummary(
     counts.set(key, (counts.get(key) ?? 0) + 1)
   }
   return rules.flatMap((rule) => {
-    const count = counts.get(rule.key)
+    const count = counts.get(localName(rule.key))
     return count ? [{ ...rule, count }] : []
   })
 }
@@ -150,10 +157,10 @@ export function defaultMatches(
   const matches: Array<DefaultMatch> = []
   for (const el of allElements(nodes)) {
     for (const attr of el.attrs) {
-      const value = index.attrs.get(attr.name)
+      const value = attrDefault(index, attr)
       if (value !== undefined && attr.valueTo > attr.valueFrom) {
         matches.push({
-          key: `@${attr.name}`,
+          key: `@${localName(attr.name)}`,
           from: attr.valueFrom,
           to: attr.valueTo,
           differs: attr.value !== value,
@@ -164,7 +171,11 @@ export function defaultMatches(
     if (value === undefined) continue
     const range = valueRange(el)
     if (range && range.to > range.from) {
-      matches.push({ key: el.name, ...range, differs: leafValue(el) !== value })
+      matches.push({
+        key: localName(el.name),
+        ...range,
+        differs: leafValue(el) !== value,
+      })
     }
   }
   return matches
@@ -183,12 +194,12 @@ function valueRange(el: XmlElement) {
   return first && last ? { from: first.from, to: last.to } : null
 }
 
-/** Element names and `@attribute` names in the document, sorted. */
+/** Element names and `@attribute` names in the document, unprefixed and sorted. */
 export function defaultKeys(nodes: Array<XmlNode>): Array<string> {
   const keys = new Set<string>()
   for (const el of allElements(nodes)) {
-    if (hasName(el) && isLeaf(el)) keys.add(el.name)
-    for (const attr of el.attrs) keys.add(`@${attr.name}`)
+    if (hasName(el) && isLeaf(el)) keys.add(localName(el.name))
+    for (const attr of el.attrs) keys.add(`@${localName(attr.name)}`)
   }
   return [...keys].sort()
 }

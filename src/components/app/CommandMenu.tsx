@@ -75,6 +75,7 @@ import { useHighlights } from '#/hooks/use-highlights'
 import { useActiveProfile, useProfiles } from '#/hooks/use-profiles'
 import { useTagCounts } from '#/hooks/use-tag-counts'
 import { languageOf } from '#/lib/document'
+import { localName } from '#/lib/names'
 import { profileShortcuts, shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import { setHighlight } from '#/lib/store/highlights'
 import { setActive } from '#/lib/store/session'
@@ -168,7 +169,7 @@ function FileCommands({
 }) {
   const files = useOpenFiles()
   const counts = useTagCounts()
-  const highlighted = new Set(useHighlights().map((r) => r.tag))
+  const highlighted = new Set(useHighlights().map((r) => localName(r.tag)))
   const [search, setSearch] = useState('')
   // "Compare with…" opens a second page listing the other tabs.
   const [page, setPage] = useState<'root' | 'compare'>('root')

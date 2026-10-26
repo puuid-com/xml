@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { unusedPreset } from './colors'
 import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
 import { activeProfileId } from './profiles'
+import { localName, sameName } from '#/lib/names'
 import type { HighlightPreset } from './colors'
 
 export { HIGHLIGHT_PRESETS, highlightCss, isPreset } from './colors'
@@ -10,7 +11,7 @@ export type { HighlightPreset } from './colors'
 
 export const highlightSchema = z.object({
   id: z.string(),
-  /** Exact tag name, prefix included (`soap:Body`). */
+  /** Tag name without its prefix (`Body` for `soap:Body`); see `#/lib/names`. */
   tag: z.string(),
   /** A preset name or a `#rrggbb` custom colour. */
   color: z.string(),
@@ -41,7 +42,7 @@ export function nextPreset(profileId = activeProfileId()): HighlightPreset {
 }
 
 export function findHighlight(tag: string, profileId = activeProfileId()) {
-  return profileHighlights(profileId).find((r) => r.tag === tag)
+  return profileHighlights(profileId).find((r) => sameName(r.tag, tag))
 }
 
 /** Adds or recolours the rule for `tag` in the active profile. */
@@ -51,6 +52,7 @@ export function setHighlight(tag: string, color?: string) {
   const existing = findHighlight(tag, profileId)
   if (existing) {
     highlightsCollection.update(existing.id, (draft) => {
+      draft.tag = localName(tag)
       draft.color = color
       draft.enabled = true
     })
@@ -58,7 +60,7 @@ export function setHighlight(tag: string, color?: string) {
   }
   highlightsCollection.insert({
     id: newId(),
-    tag,
+    tag: localName(tag),
     color,
     enabled: true,
     createdAt: Date.now(),

@@ -19,6 +19,17 @@ describe('sort order', () => {
     ])
   })
 
+  it('appends names without their prefix', () => {
+    expect(
+      appendNames(['Body'], ['soap:Body', 'ns:Header', '@xsi:type']),
+    ).toEqual(['Body', 'Header', '@type'])
+  })
+
+  it('lists unprefixed names', () => {
+    const doc = parseXml('<s:r xsi:type="t"><a:b/><b/></s:r>')
+    expect(documentNames(doc.nodes)).toEqual(['r', '@type', 'b'])
+  })
+
   it('lists names in the order they first appear', () => {
     const doc = parseXml('<r id="1"><b k="x"/><a/><b k="y" id="2"/></r>')
     expect(documentNames(doc.nodes)).toEqual(['r', '@id', 'b', '@k', 'a'])

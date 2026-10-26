@@ -213,6 +213,27 @@ describe('formatXml', () => {
     })
   })
 
+  it('sorts and leads by name without prefix', () => {
+    const input = '<r><x:c/><y:b/><a/></r>'
+    expect(formatXml(input, { sort: 'asc' })).toEqual({
+      ok: true,
+      text: '<r>\n  <a />\n  <y:b />\n  <x:c />\n</r>\n',
+    })
+    expect(
+      formatXml(input, { sort: 'custom', order: ['b', 'ns:c', '@m'] }),
+    ).toEqual({
+      ok: true,
+      text: '<r>\n  <y:b />\n  <x:c />\n  <a />\n</r>\n',
+    })
+    expect(formatXml(input, { first: ['z:a'] })).toEqual({
+      ok: true,
+      text: '<r>\n  <a />\n  <x:c />\n  <y:b />\n</r>\n',
+    })
+    expect(
+      formatXml('<r z="1" x:m="2"/>', { sort: 'custom', order: ['@m'] }),
+    ).toEqual({ ok: true, text: '<r x:m="2" z="1" />\n' })
+  })
+
   it('refuses invalid documents', () => {
     expect(formatXml('<a><b></a>').ok).toBe(false)
   })

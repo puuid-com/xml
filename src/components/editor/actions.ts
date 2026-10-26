@@ -13,6 +13,7 @@ import {
   setDefaultsPreview,
   setQuickHighlight,
 } from '#/components/app/ui-store'
+import { sameName } from '#/lib/names'
 import { encodeShare, ShareError } from '#/lib/share'
 import { createFile, filesCollection } from '#/lib/store/files'
 import { enabledDefaults } from '#/lib/store/defaults'
@@ -232,10 +233,10 @@ export function highlightAtCursor() {
   return true
 }
 
-/** Elements named `tag`, in document order. */
+/** Elements named `tag`, prefixes aside, in document order. */
 function tagMatches(tag: string) {
   return allElements(editorStore.state.doc.nodes).filter(
-    (el) => hasName(el) && el.name === tag,
+    (el) => hasName(el) && sameName(el.name, tag),
   )
 }
 

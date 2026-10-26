@@ -53,6 +53,7 @@ import { usePins } from '#/hooks/use-pins'
 import { useMediaQuery } from '#/hooks/use-media-query'
 import { sessionStore, setCollapsed } from '#/lib/store/session'
 import { setValue } from '#/lib/document'
+import { localName } from '#/lib/names'
 import { cn } from '#/lib/utils'
 import {
   attrDiffers,
@@ -320,7 +321,9 @@ export function XmlTree() {
                     top={item.start}
                     defaults={defaults}
                     selected={row.el.path === selectedPath}
-                    color={named ? highlights.get(row.el.name) : undefined}
+                    color={
+                      named ? highlights.get(localName(row.el.name)) : undefined
+                    }
                     pinned={named && pinned.has(row.el.name)}
                   />
                 )

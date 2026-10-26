@@ -41,6 +41,20 @@ describe('defaults', () => {
     )
   })
 
+  it('matches tags and attributes without their prefix', () => {
+    const text = '<s:r><a:id>1</a:id><id x:v="1">2</id></s:r>'
+    const rules = [
+      { key: 'b:id', value: '0' },
+      { key: '@v', value: '9' },
+    ]
+    expect(run(text, rules)).toBe('<s:r><a:id>0</a:id><id x:v="9">0</id></s:r>')
+    expect(defaultSummary(parseXml(text).nodes, rules)).toEqual([
+      { key: 'b:id', value: '0', count: 2 },
+      { key: '@v', value: '9', count: 1 },
+    ])
+    expect(defaultKeys(parseXml(text).nodes)).toEqual(['@v', 'id'])
+  })
+
   it('applies element and attribute rules together', () => {
     const text = '<r><a v="1">old</a></r>'
     expect(

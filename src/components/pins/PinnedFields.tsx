@@ -27,6 +27,7 @@ import {
 import { useHighlightMap } from '#/hooks/use-highlights'
 import { usePins } from '#/hooks/use-pins'
 import { setValue } from '#/lib/document'
+import { localName, sameName } from '#/lib/names'
 import { unpinTag } from '#/lib/store/pins'
 import { cn } from '#/lib/utils'
 import { allElements } from '#/lib/xml/locate'
@@ -59,7 +60,7 @@ export function PinnedFields() {
       </PanelHeading>
       <div className="grid min-h-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 overflow-auto px-3 py-2">
         {pins.map((pin) => {
-          const matches = leaves.filter((el) => el.name === pin.tag)
+          const matches = leaves.filter((el) => sameName(el.name, pin.tag))
           // Follow the cursor when it sits on one of several matches.
           const el = matches.find((e) => e.path === selectedPath) ?? matches[0]
           return (
@@ -68,7 +69,7 @@ export function PinnedFields() {
               tag={pin.tag}
               el={el}
               count={matches.length}
-              color={highlights.get(pin.tag)}
+              color={highlights.get(localName(pin.tag))}
             />
           )
         })}

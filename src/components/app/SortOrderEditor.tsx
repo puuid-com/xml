@@ -12,6 +12,7 @@ import { editorStore } from '#/components/editor/editor-store'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Separator } from '#/components/ui/separator'
+import { localName } from '#/lib/names'
 import { appendNames, documentNames, moveItem } from '#/lib/sort-order'
 import { setCustomOrder } from '#/lib/store/profiles'
 import { cn } from '#/lib/utils'
@@ -20,7 +21,7 @@ import { m } from '#/paraglide/messages'
 /** Edits the custom sort order: drag rows, or use the arrow keys on a handle. */
 export function SortOrderEditor({ order }: { order: Array<string> }) {
   const doc = useSelector(editorStore, (s) => s.doc)
-  const listed = new Set(order)
+  const listed = new Set(order.map(localName))
   const missing = documentNames(doc.nodes).filter((n) => !listed.has(n))
   // Moving a row re-inserts its node, which drops focus; put it back after.
   const handles = useRef(new Map<string, HTMLButtonElement>())

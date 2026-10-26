@@ -1,4 +1,5 @@
 import { parseXml } from './parse'
+import { localName } from '#/lib/names'
 import { varRegExp } from './vars'
 import type { XmlAttr, XmlElement, XmlError, XmlNode } from './model'
 
@@ -13,14 +14,18 @@ export interface FormatOptions {
   removeEmptyLines?: boolean
   /** Rewrite `<< name >>` as `<<name>>`. */
   trimVars?: boolean
-  /** Order sibling elements by tag name and attributes by name. */
+  /**
+   * Order sibling elements by tag name and attributes by name, prefixes
+   * aside: `soap:Body` sorts as `Body`.
+   */
   sort?: SortOrder
   /**
    * With `sort: 'custom'`, names in the order they go: tag names, and
-   * `@name` for attributes. Unlisted ones follow, in document order.
+   * `@name` for attributes, matched without prefix. Unlisted ones follow,
+   * in document order.
    */
   order?: ReadonlyArray<string>
-  /** Tag names moved ahead of their siblings, e.g. highlighted ones. */
+  /** Tag names moved ahead of their siblings, e.g. highlighted ones. Prefixes are ignored. */
   first?: Iterable<string>
 }
 
@@ -46,7 +51,7 @@ export function formatXml(
   const lines: Array<string> = []
   const compare = nameOrder(sort, custom, 'element')
   const attrCompare = nameOrder(sort, custom, 'attribute')
-  const order = elementOrder(compare, new Set(first))
+  const order = elementOrder(compare, new Set([...first].map(localName)))
 
   const writeAll = (nodes: Array<XmlNode>, depth: number) => {
     const items = order ? sortNodes(nodes, order) : nodes
@@ -117,34 +122,37 @@ type Compare = (a: string, b: string) => number
  * Compares names for `sort`, or `null` to keep document order. A custom
  * `order` ranks the names it lists and ties the rest, so a stable sort keeps
  * those in place after. In XML, `@name` entries rank attributes; JSON keys
- * match entries as written.
+ * match entries as written. Names compare without their prefix.
  */
 export function nameOrder(
   sort: SortOrder,
   order: ReadonlyArray<string>,
   target: 'element' | 'attribute' | 'key' = 'key',
 ): Compare | null {
-  if (sort === 'asc') return (a, b) => a.localeCompare(b)
-  if (sort === 'desc') return (a, b) => b.localeCompare(a)
+  if (sort === 'asc') return (a, b) => localName(a).localeCompare(localName(b))
+  if (sort === 'desc') return (a, b) => localName(b).localeCompare(localName(a))
   if (sort === 'none') return null
   const rank = new Map<string, number>()
   for (const entry of order) {
     const attr = entry.startsWith('@')
     if (target === 'element' && attr) continue
     if (target === 'attribute' && !attr) continue
-    const name = target === 'attribute' ? entry.slice(1) : entry
+    const name = localName(target === 'attribute' ? entry.slice(1) : entry)
     if (!rank.has(name)) rank.set(name, rank.size)
   }
   if (rank.size === 0) return null
-  const of = (name: string) => rank.get(name) ?? rank.size
+  const of = (name: string) => rank.get(localName(name)) ?? rank.size
   return (a, b) => of(a) - of(b)
 }
 
-/** Tags in `first` lead, then `compare` (or document order) decides. */
+/**
+ * Tags in `first` (local names) lead, then `compare` (or document order)
+ * decides.
+ */
 function elementOrder(compare: Compare | null, first: Set<string>) {
   if (first.size === 0) return compare
-  return (a: string, b: string) =>
-    Number(first.has(b)) - Number(first.has(a)) || (compare?.(a, b) ?? 0)
+  const lead = (name: string) => Number(first.has(localName(name)))
+  return (a: string, b: string) => lead(b) - lead(a) || (compare?.(a, b) ?? 0)
 }
 
 /**

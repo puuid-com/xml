@@ -3,13 +3,14 @@ import { Compartment, Facet, Prec } from '@codemirror/state'
 import { Decoration, EditorView, ViewPlugin } from '@codemirror/view'
 
 import { namedTag, treeChanged } from './syntax'
+import { localName } from '#/lib/names'
 import type { Range } from '@codemirror/state'
 import type { DecorationSet, ViewUpdate } from '@codemirror/view'
 
 // User highlight rules: a wash over every matching tag, its name and brackets
 // inked in the rule's colour, and ticks over the scrollbar where they open.
 
-/** Tag name → CSS colour, for user highlight rules. */
+/** Local tag name (no prefix) → CSS colour, for user highlight rules. */
 const tagHighlightsFacet = Facet.define<
   ReadonlyMap<string, string>,
   ReadonlyMap<string, string>
@@ -46,7 +47,7 @@ function buildTagHighlights(view: EditorView): TagHighlights {
       to,
       enter(node) {
         const tag = namedTag(node.node, doc)
-        const color = tag && rules.get(tag.name)
+        const color = tag && rules.get(localName(tag.name))
         if (!tag || !color) return
         const attributes = { style: `--hl: ${color}` }
         tags.push(
@@ -112,7 +113,7 @@ function collectMarkers(view: EditorView): Array<Marker> {
   syntaxTree(view.state).iterate({
     enter(node) {
       const tag = namedTag(node.node, doc)
-      const color = tag?.opens && rules.get(tag.name)
+      const color = tag?.opens && rules.get(localName(tag.name))
       if (!color) return
       const top = view.lineBlockAt(node.from).top / view.contentHeight
       // Ticks closer than about a pixel would draw on top of each other.

@@ -2,10 +2,11 @@ import { z } from 'zod'
 
 import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
 import { activeProfileId } from './profiles'
+import { localName, sameName } from '#/lib/names'
 
 export const defaultValueSchema = z.object({
   id: z.string(),
-  /** Tag name (`soap:Body`), or `@name` for an attribute. */
+  /** Tag name without its prefix (`Body`), or `@name` for an attribute. */
   key: z.string(),
   value: z.string(),
   enabled: z.boolean(),
@@ -30,7 +31,7 @@ export function profileDefaults(profileId = activeProfileId()) {
 }
 
 export function findDefault(key: string, profileId = activeProfileId()) {
-  return profileDefaults(profileId).find((r) => r.key === key)
+  return profileDefaults(profileId).find((r) => sameName(r.key, key))
 }
 
 export function enabledDefaults(profileId = activeProfileId()) {
@@ -43,6 +44,7 @@ export function setDefault(key: string, value: string) {
   const existing = findDefault(key, profileId)
   if (existing) {
     defaultsCollection.update(existing.id, (draft) => {
+      draft.key = localName(key)
       draft.value = value
       draft.enabled = true
     })
@@ -50,7 +52,7 @@ export function setDefault(key: string, value: string) {
   }
   defaultsCollection.insert({
     id: newId(),
-    key,
+    key: localName(key),
     value,
     enabled: true,
     createdAt: Date.now(),
