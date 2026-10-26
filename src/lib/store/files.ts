@@ -238,18 +238,8 @@ export function isStorageFull(error: unknown): boolean {
   )
 }
 
-type SaveFailedListener = (error: unknown) => void
-const saveFailedListeners = new Set<SaveFailedListener>()
-// Debounced calls share a transaction; report each failed write once.
-const reported = new WeakSet<object>()
-
-/** Calls `listener` when a content save fails, such as on a full storage quota. */
-export function onSaveFailed(listener: SaveFailedListener) {
-  saveFailedListeners.add(listener)
-  return () => {
-    saveFailedListeners.delete(listener)
-  }
-}
+/** Calls `listener` when a save fails, such as on a full storage quota. */
+export { onSaveFailed } from './persist'
 
 export function saveContent(variables: { id: string; content: string }) {
   const transaction = pacedSaveContent(variables)
@@ -258,11 +248,7 @@ export function saveContent(variables: { id: string; content: string }) {
   const clear = () => {
     if (pendingContentSave === pending) pendingContentSave = undefined
   }
-  void pending.then(clear, (error: unknown) => {
-    clear()
-    if (reported.has(transaction)) return
-    reported.add(transaction)
-    for (const listener of saveFailedListeners) listener(error)
-  })
+  // Failures reach `onSaveFailed` through the collection's storage.
+  void pending.then(clear, clear)
   return transaction
 }
