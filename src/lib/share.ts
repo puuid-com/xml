@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+import { isPreset } from './store/colors'
+import { formatSettingsSchema } from './store/format-settings'
+
 /** Links longer than this are refused, both when copying and when opening. */
 export const MAX_LINK_LENGTH = 64_000
 /** Decompression stops past this many bytes, so a small link can't inflate unbounded. */
@@ -7,12 +10,44 @@ export const MAX_DECODED_BYTES = 1_000_000
 
 const PREFIX = '#share='
 
+const color = z.string().refine((c) => isPreset(c) || /^#[0-9a-f]{6}$/i.test(c))
+
+/**
+ * A profile travelling with a shared file: its settings and rules, without
+ * the ids and dates that only mean something in the sender's browser. The
+ * profile id stays, so a second link from the same profile is recognised.
+ */
+const sharedProfileSchema = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string().trim().min(1).max(255),
+  color,
+  format: formatSettingsSchema,
+  highlights: z.array(
+    z.object({ tag: z.string().min(1), color, enabled: z.boolean() }),
+  ),
+  pins: z.array(z.string().min(1)),
+  defaults: z.array(
+    z.object({
+      key: z.string().min(1),
+      value: z.string(),
+      enabled: z.boolean(),
+    }),
+  ),
+  /** Left out when the sender keeps variable values to themselves. */
+  variables: z
+    .array(z.object({ name: z.string().min(1), value: z.string() }))
+    .optional(),
+})
+
 const shareSchema = z.object({
   name: z.string().trim().min(1).max(255),
   content: z.string(),
+  // Links made before profiles were shared have none.
+  profile: sharedProfileSchema.optional(),
 })
 
-export type SharedFile = z.infer<typeof shareSchema>
+export type SharedProfile = z.output<typeof sharedProfileSchema>
+export type SharedFile = z.output<typeof shareSchema>
 
 export class ShareError extends Error {
   constructor(readonly reason: 'too-long' | 'invalid') {
@@ -68,7 +103,6 @@ function pipe(
   return source.pipeThrough(transform)
 }
 
-/** Returns the `#share=…` fragment for a file. Throws `ShareError('too-long')` past the link limit. */
 /** Base64url of deflate-raw bytes, exported for tests that craft links. */
 export async function deflateToBase64Url(bytes: Uint8Array<ArrayBuffer>) {
   const compressed = await readAll(
@@ -78,7 +112,8 @@ export async function deflateToBase64Url(bytes: Uint8Array<ArrayBuffer>) {
   return toBase64Url(compressed)
 }
 
-export async function encodeShare(file: SharedFile) {
+/** Returns the `#share=…` fragment for a file. Throws `ShareError('too-long')` past the link limit. */
+export async function encodeShare(file: z.input<typeof shareSchema>) {
   const json = new TextEncoder().encode(JSON.stringify(shareSchema.parse(file)))
   if (json.byteLength > MAX_DECODED_BYTES) throw new ShareError('too-long')
   const hash = PREFIX + (await deflateToBase64Url(json))
