@@ -134,6 +134,38 @@ describe('files', () => {
     }
   })
 
+  it('reports refused writes from any collection, once until one succeeds', async () => {
+    const failed = vi.fn()
+    const stop = onSaveFailed(failed)
+    const refuse = () =>
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new DOMException('Full', 'QuotaExceededError')
+      })
+    const attempt = (write: () => void) => {
+      try {
+        write()
+      } catch {
+        // Some writes throw synchronously; the report is what matters.
+      }
+    }
+    try {
+      attempt(() => setHighlight('ok'))
+      let write = refuse()
+      attempt(() => setHighlight('a'))
+      attempt(() => togglePin('b'))
+      await vi.waitFor(() => expect(failed).toHaveBeenCalledTimes(1))
+      expect(isStorageFull(failed.mock.calls[0][0])).toBe(true)
+      write.mockRestore()
+      attempt(() => setHighlight('c'))
+      write = refuse()
+      attempt(() => setHighlight('d'))
+      await vi.waitFor(() => expect(failed).toHaveBeenCalledTimes(2))
+      write.mockRestore()
+    } finally {
+      stop()
+    }
+  })
+
   it('rolls back archival and eviction if storage is full', async () => {
     for (let i = 0; i < 10; i++) {
       const file = createFile(`archived-${i}.xml`)

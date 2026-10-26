@@ -41,6 +41,38 @@ export function backfill(storageKey: string, fields: Record<string, unknown>) {
   }
 }
 
+type SaveFailedListener = (error: unknown) => void
+const saveFailedListeners = new Set<SaveFailedListener>()
+// Many writes can fail together; report once until a write succeeds again.
+let failing = false
+
+/** Calls `listener` when a collection write fails, such as on a full quota. */
+export function onSaveFailed(listener: SaveFailedListener) {
+  saveFailedListeners.add(listener)
+  return () => {
+    saveFailedListeners.delete(listener)
+  }
+}
+
+// localStorage, reporting refused writes before passing the error on so the
+// collection rolls back.
+const reportingStorage = {
+  getItem: (key: string) => localStorage.getItem(key),
+  removeItem: (key: string) => localStorage.removeItem(key),
+  setItem: (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value)
+      failing = false
+    } catch (error) {
+      if (!failing) {
+        failing = true
+        for (const listener of saveFailedListeners) listener(error)
+      }
+      throw error
+    }
+  },
+}
+
 /**
  * A collection kept in localStorage under `xml-editor:<name>`. Storage events
  * keep every browser tab of the site in sync. `prepare` runs once, before the
@@ -57,6 +89,8 @@ export function localCollection<
       localStorageCollectionOptions({
         id: name,
         storageKey,
+        storage:
+          typeof localStorage === 'undefined' ? undefined : reportingStorage,
         getKey: (item) => item.id,
         schema,
         startSync: true,
