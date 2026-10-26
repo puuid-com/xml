@@ -18,13 +18,15 @@ describe('workerBuild', () => {
         file('/assets/styles-b2.css'),
       ],
       ['/', '/fr/'],
+      ['/site.webmanifest'],
     )
     expect(build.assets).toEqual([
       '/assets/index-a1.js',
       '/assets/styles-b2.css',
       '/favicon.svg',
     ])
-    expect(build.pages).toEqual(['/', '/fr/'])
+    expect(build.pages).toEqual(['/', '/fr/', '/site.webmanifest'])
+    expect(build.shells).toEqual(['/', '/fr/'])
   })
 
   it('keeps the version while nothing changes', () => {
@@ -44,6 +46,10 @@ describe('workerBuild', () => {
     ).not.toBe(base)
     expect(
       workerBuild([file('/favicon.svg', 'a')], ['/', '/fr/']).version,
+    ).not.toBe(base)
+    expect(
+      workerBuild([file('/favicon.svg', 'a')], ['/'], ['/site.webmanifest'])
+        .version,
     ).not.toBe(base)
   })
 })

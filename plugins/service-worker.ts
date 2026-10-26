@@ -29,11 +29,16 @@ const isPrecached = (path: string) =>
   !path.endsWith('.map') &&
   !path.split('/').some((segment) => segment.startsWith('.'))
 
-/** The precache list and its version. The version changes when any file or page does. */
+/**
+ * The precache list and its version. The version changes when any file or
+ * page does. `shells` are the locale shells, `pages` the other network-first URLs.
+ */
 export function workerBuild(
   files: ReadonlyArray<BuildFile>,
-  pages: ReadonlyArray<string>,
+  shells: ReadonlyArray<string>,
+  pages: ReadonlyArray<string> = [],
 ): WorkerBuild {
+  const allPages = [...shells, ...pages]
   const kept = [
     ...new Map(
       files.filter((f) => isPrecached(f.path)).map((f) => [f.path, f]),
@@ -41,11 +46,12 @@ export function workerBuild(
   ].sort((a, b) => (a.path < b.path ? -1 : 1))
   const hash = createHash('sha256')
   for (const file of kept) hash.update(`${file.path}\0`).update(file.source)
-  for (const page of pages) hash.update(`\0${page}`)
+  for (const page of allPages) hash.update(`\0${page}`)
   return {
     version: hash.digest('hex').slice(0, 12),
     assets: kept.map((f) => f.path),
-    pages: [...pages],
+    pages: allPages,
+    shells: [...shells],
   }
 }
 
@@ -119,11 +125,11 @@ export function serviceWorker(options: Options): Plugin {
           })),
           ...publicFiles(config.publicDir),
         ]
-        const pages = [
-          ...localeShells(resolve(config.root, options.project)),
-          ...(options.pages ?? []),
-        ]
-        const precache = workerBuild(files, pages)
+        const precache = workerBuild(
+          files,
+          localeShells(resolve(config.root, options.project)),
+          options.pages,
+        )
 
         const entry = resolve(
           config.root,
