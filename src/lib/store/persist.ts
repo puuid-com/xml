@@ -82,6 +82,34 @@ const reportingStorage = {
   },
 }
 
+type StorageListener = (event: StorageEvent) => void
+const forwarded = new WeakMap<StorageListener, StorageListener>()
+
+// Collections ignore storage events whose `storageArea` isn't their own
+// storage, so hand them events from localStorage as `reportingStorage` ones.
+// Without this, other tabs' writes and a restore rollback never reload.
+const storageEvents = {
+  addEventListener: (type: 'storage', listener: StorageListener) => {
+    const forward: StorageListener = (event) => {
+      if (event.storageArea !== localStorage) return
+      // A real StorageEvent only accepts a real Storage as its area.
+      listener({
+        key: event.key,
+        oldValue: event.oldValue,
+        newValue: event.newValue,
+        url: event.url,
+        storageArea: reportingStorage,
+      } as unknown as StorageEvent)
+    }
+    forwarded.set(listener, forward)
+    window.addEventListener(type, forward)
+  },
+  removeEventListener: (type: 'storage', listener: StorageListener) => {
+    const forward = forwarded.get(listener)
+    if (forward) window.removeEventListener(type, forward)
+  },
+}
+
 /**
  * A collection kept in localStorage under `xml-editor:<name>`. Storage events
  * keep every browser tab of the site in sync. `prepare` runs once, before the
@@ -98,8 +126,9 @@ export function localCollection<
       localStorageCollectionOptions({
         id: name,
         storageKey,
-        storage:
-          typeof localStorage === 'undefined' ? undefined : reportingStorage,
+        ...(typeof localStorage === 'undefined'
+          ? {}
+          : { storage: reportingStorage, storageEventApi: storageEvents }),
         getKey: (item) => item.id,
         schema,
         startSync: true,

@@ -299,4 +299,20 @@ describe('variables', () => {
     removeVariable(findVariable('token')!.id)
     expect(findVariable('token')).toBeUndefined()
   })
+  it('loads a value another tab wrote', async () => {
+    const raw = localStorage.getItem('xml-editor:variables')
+    setVariable('host', 'dev')
+    const written = localStorage.getItem('xml-editor:variables')!
+    variablesCollection.delete(findVariable('host')!.id)
+    localStorage.setItem('xml-editor:variables', written)
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'xml-editor:variables',
+        oldValue: raw,
+        newValue: written,
+        storageArea: localStorage,
+      }),
+    )
+    await vi.waitFor(() => expect(findVariable('host')?.value).toBe('dev'))
+  })
 })
