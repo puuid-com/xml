@@ -10,7 +10,7 @@ import { useDefaultLayout } from 'react-resizable-panels'
 
 import { AppHeader } from './AppHeader'
 import { ArchiveDialog } from './ArchiveDialog'
-import { reportSaveFailed } from './backup'
+import { keepWorkspaceSafe, reportSaveFailed } from './backup'
 import { CommandMenu } from './CommandMenu'
 import {
   CloseDialog,
@@ -88,6 +88,11 @@ export function EditorApp() {
   }, [activeId, storedActive])
 
   useEffect(() => onSaveFailed(reportSaveFailed), [])
+
+  const inUse = files.length > 0
+  useEffect(() => {
+    if (inUse) keepWorkspaceSafe()
+  }, [inUse])
 
   // A comparison belongs to the tab it was opened from, and needs the other
   // tab to stay open.

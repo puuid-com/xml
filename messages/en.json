@@ -226,6 +226,8 @@
   "backup_restore": "Restore from backup…",
   "backup_file_name": "xml-editor-backup-{date}.json",
   "backup_downloaded": "Backup downloaded",
+  "backup_reminder": "Last backup {days} days ago",
+  "backup_reminder_never": "No backup yet: your files only live in this browser",
   "backup_contents": "The file holds everything typed into the workspace, variables included, unencrypted. Keep it somewhere safe.",
   "backup_invalid": "{name} is not a workspace backup",
   "backup_newer": "{name} was made by a newer version of the editor",

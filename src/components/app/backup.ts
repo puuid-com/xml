@@ -3,6 +3,7 @@ import { setRestorePreview } from './ui-store'
 import { editorStore, getText } from '#/components/editor/editor-store'
 import { createBackup, parseBackup, restoreBackup } from '#/lib/store/backup'
 import { isStorageFull } from '#/lib/store/files'
+import { markBackedUp, workspaceInUse } from '#/lib/store/safekeeping'
 import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
 import type { Backup } from '#/lib/store/backup'
@@ -23,7 +24,23 @@ export function downloadBackup() {
   link.download = m.backup_file_name({ date: backup.exportedAt.slice(0, 10) })
   link.click()
   URL.revokeObjectURL(url)
+  markBackedUp()
   notify.success(m.backup_downloaded(), { detail: m.backup_contents() })
+}
+
+/**
+ * Once the workspace holds files: asks the browser to keep them, and every
+ * two weeks without a backup, offers one.
+ */
+export function keepWorkspaceSafe() {
+  const reminder = workspaceInUse()
+  if (!reminder) return
+  notify.info(
+    reminder.days === null
+      ? m.backup_reminder_never()
+      : m.backup_reminder({ days: reminder.days }),
+    { sticky: true, action: { label: m.backup_create(), run: downloadBackup } },
+  )
 }
 
 /** Asks for a backup file, then shows what it holds before replacing anything. */
