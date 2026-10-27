@@ -1,5 +1,5 @@
 {
-  "projectName": "web-template",
+  "projectName": "xml",
   "mode": "file-router",
   "typescript": true,
   "packageManager": "bun",

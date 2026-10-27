@@ -1,4 +1,4 @@
-# Web Template
+# xml
 
 Starting point for websites built with TanStack Start, deployed to Cloudflare Workers.
 

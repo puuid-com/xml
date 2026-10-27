@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "statement-analyser",
+      "name": "xml",
       "dependencies": {
         "@codemirror/autocomplete": "^6.20.4",
         "@codemirror/commands": "^6.11.1",
