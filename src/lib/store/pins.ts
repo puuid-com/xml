@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
+import { localCollection, newId, withDefaultProfile } from './persist'
 import { activeProfileId } from './profiles'
 import { localName, sameName } from '#/lib/names'
 
@@ -13,9 +13,9 @@ export const pinSchema = z.object({
 })
 
 // Per profile, synced across browser tabs like the highlights.
-export const pinsCollection = localCollection('pins', pinSchema, (key) =>
-  backfill(key, { profileId: DEFAULT_PROFILE_ID }),
-)
+export const pinsCollection = localCollection('pins', pinSchema, {
+  upgrade: withDefaultProfile,
+})
 
 export function findPin(tag: string, profileId = activeProfileId()) {
   return [...pinsCollection.values()].find(

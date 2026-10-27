@@ -33,40 +33,31 @@ export type Profile = z.infer<typeof profileSchema>
 const LEGACY_FORMAT_KEY = 'xml-editor:format'
 
 // The first visit, or the first since profiles, starts with one profile that
-// owns every existing setting. Written straight to storage, in the
-// collection's format, so it exists before anything reads the collection.
-function seedDefault(storageKey: string) {
+// owns every existing setting.
+function defaultProfile(): Profile {
+  let legacy: unknown = null
   try {
-    if (localStorage.getItem(storageKey)) return
-    const legacy = localStorage.getItem(LEGACY_FORMAT_KEY)
-    const format = formatSettingsSchema.safeParse({
-      ...DEFAULT_FORMAT,
-      ...(legacy ? (JSON.parse(legacy) as object) : {}),
-    })
-    const profile: Profile = {
-      id: DEFAULT_PROFILE_ID,
-      name: m.profile_default_name(),
-      color: 'blue',
-      createdAt: 0,
-      format: format.success ? format.data : DEFAULT_FORMAT,
-    }
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        [`s:${profile.id}`]: { versionKey: newId(), data: profile },
-      }),
-    )
+    legacy = JSON.parse(localStorage.getItem(LEGACY_FORMAT_KEY) ?? 'null')
     localStorage.removeItem(LEGACY_FORMAT_KEY)
   } catch {
-    // No storage (SSR, private mode).
+    // Unreadable old settings; start from the defaults.
+  }
+  const format = formatSettingsSchema.safeParse({
+    ...DEFAULT_FORMAT,
+    ...(legacy && typeof legacy === 'object' ? legacy : {}),
+  })
+  return {
+    id: DEFAULT_PROFILE_ID,
+    name: m.profile_default_name(),
+    color: 'blue',
+    createdAt: 0,
+    format: format.success ? format.data : DEFAULT_FORMAT,
   }
 }
 
-export const profilesCollection = localCollection(
-  'profiles',
-  profileSchema,
-  seedDefault,
-)
+export const profilesCollection = localCollection('profiles', profileSchema, {
+  initial: () => [defaultProfile()],
+})
 
 export function compareProfiles(a: Profile, b: Profile) {
   return a.createdAt - b.createdAt || a.id.localeCompare(b.id)

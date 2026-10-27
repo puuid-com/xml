@@ -1,6 +1,8 @@
 import {
   createCollection,
-  localStorageCollectionOptions,
+  createIndexedDB,
+  indexedDBCollectionOptions,
+  localOnlyCollectionOptions,
 } from '@tanstack/react-db'
 import { Store } from '@tanstack/store'
 
@@ -10,44 +12,37 @@ import type { z } from 'zod'
 /** Prefix of every key the editor writes to browser storage. */
 const STORAGE_PREFIX = 'xml-editor:'
 
+/** The IndexedDB database holding the workspace, one store per collection. */
+const DATABASE_NAME = 'xml-editor'
+const STORES = [
+  'files',
+  'profiles',
+  'highlights',
+  'pins',
+  'defaults',
+  'variables',
+] as const
+type StoreName = (typeof STORES)[number]
+
+// Opened before any collection exists, since a collection needs the open
+// database. Server renders never read the workspace and get none.
+const database =
+  typeof indexedDB === 'undefined'
+    ? null
+    : await singleton('database', () =>
+        createIndexedDB({ name: DATABASE_NAME, version: 1, stores: STORES }),
+      )
+
 export function newId() {
   return crypto.randomUUID()
-}
-
-const storageKeys = new WeakMap<object, string>()
-
-/** The localStorage key a collection made by `localCollection` lives under. */
-export function storageKeyOf(collection: object) {
-  const key = storageKeys.get(collection)
-  if (!key) throw new Error('Not a local collection')
-  return key
 }
 
 /** The profile that data written before profiles existed belongs to. */
 export const DEFAULT_PROFILE_ID = 'default'
 
-/** Fills fields added after a collection's items were stored. */
-export function backfill(storageKey: string, fields: Record<string, unknown>) {
-  try {
-    const raw = localStorage.getItem(storageKey)
-    if (!raw) return
-    const stored = JSON.parse(raw) as Record<
-      string,
-      { data?: Record<string, unknown> }
-    >
-    let changed = false
-    for (const item of Object.values(stored)) {
-      if (!item.data) continue
-      for (const [field, value] of Object.entries(fields)) {
-        if (item.data[field] !== undefined) continue
-        item.data[field] = value
-        changed = true
-      }
-    }
-    if (changed) localStorage.setItem(storageKey, JSON.stringify(stored))
-  } catch {
-    // No storage (SSR, private mode).
-  }
+/** Gives rows saved before profiles existed the default profile. */
+export function withDefaultProfile(row: Record<string, unknown>) {
+  return { profileId: DEFAULT_PROFILE_ID, ...row }
 }
 
 type SaveFailedListener = (error: unknown) => void
@@ -63,80 +58,173 @@ export function onSaveFailed(listener: SaveFailedListener) {
   }
 }
 
-// localStorage, reporting refused writes before passing the error on so the
-// collection rolls back.
-const reportingStorage = {
-  getItem: (key: string) => localStorage.getItem(key),
-  removeItem: (key: string) => localStorage.removeItem(key),
-  setItem: (key: string, value: string) => {
-    try {
-      localStorage.setItem(key, value)
-      failing = false
-    } catch (error) {
-      if (!failing) {
-        failing = true
-        for (const listener of saveFailedListeners) listener(error)
-      }
-      throw error
-    }
-  },
-}
+// Every write waits for the one before. A manual transaction's write would
+// otherwise skip the collection's own queue and could land before an earlier
+// insert, which would then overwrite it.
+let writes: Promise<unknown> = Promise.resolve()
 
-type StorageListener = (event: StorageEvent) => void
-const forwarded = new WeakMap<StorageListener, StorageListener>()
-
-// Collections ignore storage events whose `storageArea` isn't their own
-// storage, so hand them events from localStorage as `reportingStorage` ones.
-// Without this, other tabs' writes and a restore rollback never reload.
-const storageEvents = {
-  addEventListener: (type: 'storage', listener: StorageListener) => {
-    const forward: StorageListener = (event) => {
-      if (event.storageArea !== localStorage) return
-      // A real StorageEvent only accepts a real Storage as its area.
-      listener({
-        key: event.key,
-        oldValue: event.oldValue,
-        newValue: event.newValue,
-        url: event.url,
-        storageArea: reportingStorage,
-      } as unknown as StorageEvent)
-    }
-    forwarded.set(listener, forward)
-    window.addEventListener(type, forward)
-  },
-  removeEventListener: (type: 'storage', listener: StorageListener) => {
-    const forward = forwarded.get(listener)
-    if (forward) window.removeEventListener(type, forward)
-  },
+/** Resolves once every write started so far has finished or failed. */
+export async function settleWrites() {
+  await writes
 }
 
 /**
- * A collection kept in localStorage under `xml-editor:<name>`. Storage events
- * keep every browser tab of the site in sync. `prepare` runs once, before the
- * collection first reads storage. It loads right away, so plain reads outside
- * React (`collection.values()`) see stored items before any query mounts.
+ * Runs `write` after every earlier one, and reports a refused write before
+ * passing the error on, so the change rolls back.
+ */
+async function inOrder<T>(write: () => Promise<T>) {
+  const result = writes.then(write)
+  writes = result.catch(() => undefined)
+  try {
+    const value = await result
+    failing = false
+    return value
+  } catch (error) {
+    if (!failing) {
+      failing = true
+      for (const listener of saveFailedListeners) listener(error)
+    }
+    throw error
+  }
+}
+
+type Row = Record<string, unknown>
+
+interface LocalCollectionOptions<T> {
+  /** Fixes a row an older version saved in localStorage before it moves. */
+  upgrade?: (row: Row) => Row | null
+  /** Rows an empty workspace starts with. */
+  initial?: () => Array<T>
+}
+
+function createLocalCollection<
+  TSchema extends z.ZodObject<{ id: z.ZodString }>,
+>(name: StoreName, schema: TSchema) {
+  if (!database) {
+    // Same shape as the IndexedDB one, for server renders that never use it.
+    return createCollection(
+      localOnlyCollectionOptions({
+        id: name,
+        schema,
+        getKey: (item) => item.id,
+      }),
+    ) as unknown as ReturnType<typeof createIndexedCollection<TSchema>>
+  }
+  return createIndexedCollection(name, schema)
+}
+
+function createIndexedCollection<
+  TSchema extends z.ZodObject<{ id: z.ZodString }>,
+>(name: StoreName, schema: TSchema) {
+  const options = indexedDBCollectionOptions({
+    db: database!,
+    name,
+    id: name,
+    schema,
+    getKey: (item) => item.id,
+    startSync: true,
+    // Reads outside React expect every row in memory at all times.
+    gcTime: 0,
+  })
+  const { utils } = options
+  const accept = utils.acceptMutations
+  utils.acceptMutations = (transaction) => inOrder(() => accept(transaction))
+  return createCollection({
+    ...options,
+    onInsert: (params) => inOrder(() => options.onInsert!(params)),
+    onUpdate: (params) => inOrder(() => options.onUpdate!(params)),
+    onDelete: (params) => inOrder(() => options.onDelete!(params)),
+  })
+}
+
+interface Registered {
+  name: StoreName
+  collection: ReturnType<typeof createIndexedCollection>
+  options: LocalCollectionOptions<object>
+}
+const registered: Array<Registered> = []
+
+/**
+ * A collection kept in the workspace's IndexedDB store `name`. Changes reach
+ * every browser tab of the site. Rows load asynchronously: await
+ * `workspaceReady()` before reading them outside React.
  */
 export function localCollection<
   TSchema extends z.ZodObject<{ id: z.ZodString }>,
->(name: string, schema: TSchema, prepare?: (storageKey: string) => void) {
+>(
+  name: StoreName,
+  schema: TSchema,
+  options: LocalCollectionOptions<z.output<TSchema>> = {},
+) {
   return singleton(name, () => {
-    const storageKey = STORAGE_PREFIX + name
-    prepare?.(storageKey)
-    const collection = createCollection(
-      localStorageCollectionOptions({
-        id: name,
-        storageKey,
-        ...(typeof localStorage === 'undefined'
-          ? {}
-          : { storage: reportingStorage, storageEventApi: storageEvents }),
-        getKey: (item) => item.id,
-        schema,
-        startSync: true,
-      }),
-    )
-    storageKeys.set(collection, storageKey)
+    const collection = createLocalCollection(name, schema)
+    registered.push({ name, collection, options })
     return collection
   })
+}
+
+/**
+ * Resolves once every collection holds its stored rows. The first time, it
+ * also moves what older versions kept in localStorage into IndexedDB, and
+ * fills an empty workspace with its starting rows.
+ */
+export function workspaceReady() {
+  return singleton('workspaceReady', async () => {
+    await Promise.all(registered.map(({ collection }) => collection.preload()))
+    if (!database) return
+    // Two tabs opening at once would both move the same rows.
+    await withLock(`${STORAGE_PREFIX}upgrade`, async () => {
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop
+      for (const entry of registered) await upgrade(entry)
+    })
+  })
+}
+
+async function withLock(name: string, run: () => Promise<void>) {
+  if (typeof navigator !== 'undefined' && 'locks' in navigator) {
+    await navigator.locks.request(name, run)
+  } else {
+    await run()
+  }
+}
+
+/** Rows saved under `key` by the localStorage version of the editor. */
+function legacyRows(key: string): Array<Row> | null {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    const stored = JSON.parse(raw) as Record<string, { data?: Row }>
+    return Object.values(stored).flatMap((item) =>
+      item.data ? [item.data] : [],
+    )
+  } catch {
+    return null
+  }
+}
+
+async function upgrade({ name, collection, options }: Registered) {
+  // What another tab may have written since this one loaded counts too.
+  const stored = await collection.utils.exportData()
+  if (stored.length) return
+  const key = STORAGE_PREFIX + name
+  const legacy = legacyRows(key)
+  if (legacy) {
+    const rows = options.upgrade
+      ? legacy.flatMap((row) => options.upgrade!(row) ?? [])
+      : legacy
+    try {
+      await collection.utils.importData(rows)
+      localStorage.removeItem(key)
+      return
+    } catch (error) {
+      // Leave the old rows in place for the next load to try again.
+      console.error(`Could not move ${name} to IndexedDB`, error)
+    }
+  }
+  const initial = options.initial?.()
+  if (initial?.length) {
+    await collection.utils.importData(initial)
+  }
 }
 
 /**

@@ -10,8 +10,8 @@ import type * as variables from './variables'
 import type * as session from './session'
 import type * as switching from '#/components/profiles/actions'
 
-// Modules load after storage holds data from before profiles, to test the
-// migration, so they are imported dynamically.
+// Modules load after localStorage holds data from before profiles and
+// IndexedDB, to test the migration, so they are imported dynamically.
 type Store = typeof profiles &
   typeof profileActions &
   typeof files &
@@ -73,6 +73,7 @@ beforeAll(async () => {
     await import('./session'),
     await import('#/components/profiles/actions'),
   )
+  await (await import('./workspace')).workspaceReady()
 })
 
 describe('migration', () => {
@@ -83,6 +84,9 @@ describe('migration', () => {
     expect(localStorage.getItem('xml-editor:format')).toBeNull()
     expect(s.highlightsCollection.get('h1')?.profileId).toBe('default')
     expect(s.filesCollection.get('f1')?.profileId).toBe('default')
+    // Moved out of localStorage once in IndexedDB.
+    expect(localStorage.getItem('xml-editor:files')).toBeNull()
+    expect(localStorage.getItem('xml-editor:highlights')).toBeNull()
   })
 })
 
@@ -205,6 +209,7 @@ describe('profiles', () => {
       content: '<new/>',
       profileId: other.id,
     })
-    expect(localStorage.getItem('xml-editor:files')).toContain(other.id)
+    const stored = await s.filesCollection.utils.exportData()
+    expect(stored.find((row) => row.id === file.id)?.profileId).toBe(other.id)
   })
 })

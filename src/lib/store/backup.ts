@@ -4,17 +4,14 @@ import { z } from 'zod'
 import { defaultValueSchema, defaultsCollection } from './defaults'
 import { fileSchema, filesCollection, settleContentSave } from './files'
 import { highlightSchema, highlightsCollection } from './highlights'
-import { newId, storageKeyOf } from './persist'
+import { newId, settleWrites } from './persist'
 import { pinSchema, pinsCollection } from './pins'
 import { profileSchema, profilesCollection } from './profiles'
 import { variableSchema, variablesCollection } from './variables'
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type {
-  Collection,
-  LocalStorageCollectionUtils,
-} from '@tanstack/react-db'
+import type { Collection, IndexedDBCollectionUtils } from '@tanstack/react-db'
 
-// One JSON file with everything the editor keeps in localStorage, so a
+// One JSON file with everything the editor keeps in IndexedDB, so a
 // workspace can move to another browser. Session state (active tab,
 // collapsed nodes) stays out: it belongs to a browser tab, not the workspace.
 
@@ -103,19 +100,19 @@ export function backupCounts(backup: Backup) {
   }
 }
 
+type WorkspaceCollection<
+  T extends { id: string },
+  TSchema extends StandardSchemaV1,
+  TInput extends object,
+> = Collection<T, string, IndexedDBCollectionUtils<T>, TSchema, TInput>
+
 /** Makes `collection` hold exactly `items`, in one storage write. */
 async function replaceAll<
   T extends { id: string },
   TSchema extends StandardSchemaV1,
   TInput extends object,
 >(
-  collection: Collection<
-    T,
-    string,
-    LocalStorageCollectionUtils,
-    TSchema,
-    TInput
-  >,
+  collection: WorkspaceCollection<T, TSchema, TInput>,
   items: Array<T & TInput>,
 ) {
   const keep = new Set(items.map((item) => item.id))
@@ -146,57 +143,43 @@ async function replaceAll<
   await transaction.isPersisted.promise
 }
 
-/** One collection's part of a restore: its storage key and the write. */
+/**
+ * One collection's part of a restore: the write, and a way to put back the
+ * rows it held before.
+ */
 function replacement<
   T extends { id: string },
   TSchema extends StandardSchemaV1,
   TInput extends object,
 >(
-  collection: Collection<
-    T,
-    string,
-    LocalStorageCollectionUtils,
-    TSchema,
-    TInput
-  >,
+  collection: WorkspaceCollection<T, TSchema, TInput>,
   items: Array<T & TInput>,
+  /** Prepares a row being put back. */
+  revert: (row: T & TInput) => T & TInput = (row) => row,
 ) {
+  let saved: Array<T & TInput> | null = null
   return {
-    key: storageKeyOf(collection),
-    write: () => replaceAll(collection, items),
-  }
-}
-
-/**
- * Puts back raw stored values, removing keys that were absent, then has the
- * collections reload them. Storage events only reach other tabs, so this tab
- * gets one too.
- */
-function rollBack(saved: ReadonlyMap<string, string | null>) {
-  for (const [key, value] of saved) {
-    try {
-      if (value === null) localStorage.removeItem(key)
-      else localStorage.setItem(key, value)
-    } catch {
-      // Keep putting back the other keys.
-    }
-  }
-  for (const key of saved.keys()) {
-    window.dispatchEvent(
-      new StorageEvent('storage', { key, storageArea: localStorage }),
-    )
+    write: async () => {
+      saved = (await collection.utils.exportData()) as Array<T & TInput>
+      await replaceAll(collection, items)
+    },
+    rollBack: async () => {
+      if (saved) await replaceAll(collection, saved.map(revert))
+    },
   }
 }
 
 /**
  * Replaces the whole workspace with `backup`. Ids are kept, so a restore in
  * the browser that made the backup updates the same tabs in place. All or
- * nothing: if any write fails, every key it touches gets its old value back
- * and the error is rethrown.
+ * nothing: if any write fails, every collection it touched gets its old rows
+ * back and the error is rethrown.
  */
 export async function restoreBackup(backup: Backup) {
   // A paced save still in flight would write old content back afterwards.
   await settleContentSave()
+  // The rows to put back on failure have to include every earlier change.
+  await settleWrites()
   // A new writer makes open editors take the restored text as a remote edit.
   const writer = newId()
   // Only variables of restored profiles, so none points at a missing one.
@@ -213,18 +196,24 @@ export async function restoreBackup(backup: Backup) {
     replacement(
       filesCollection,
       backup.files.map((file) => ({ ...file, writer })),
+      // Again a new writer, so open editors take the old text back too.
+      (file) => ({ ...file, writer: newId() }),
     ),
   ]
-  // localStorage has no transactions, so keep the raw values to put back.
-  const saved = new Map(
-    writes.map(({ key }) => [key, localStorage.getItem(key)] as const),
-  )
+  const done: typeof writes = []
   try {
     // One at a time, so the first failure stops the writes after it.
-    // react-doctor-disable-next-line react-doctor/async-await-in-loop
-    for (const { write } of writes) await write()
+    for (const entry of writes) {
+      done.push(entry)
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop
+      await entry.write()
+    }
   } catch (error) {
-    rollBack(saved)
+    // Newest first, and on through failures to put back what can be.
+    for (const entry of done.reverse()) {
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop
+      await entry.rollBack().catch(() => undefined)
+    }
     throw error
   }
 }

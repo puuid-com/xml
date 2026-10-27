@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 
 import {
   BACKUP_VERSION,
@@ -10,9 +18,13 @@ import {
 import { defaultsCollection, setDefault } from './defaults'
 import { closeFile, createFile, filesCollection } from './files'
 import { highlightsCollection, setHighlight } from './highlights'
+import { settleWrites } from './persist'
 import { pinTag, pinsCollection } from './pins'
 import { createProfile, profilesCollection } from './profiles'
 import { setVariable, variablesCollection } from './variables'
+import { workspaceReady } from './workspace'
+
+beforeAll(() => workspaceReady())
 
 function clearAll() {
   for (const collection of [
@@ -34,12 +46,25 @@ function clearAll() {
 const sorted = <T extends { id: string }>(items: Iterable<T>) =>
   [...items].sort((a, b) => a.id.localeCompare(b.id))
 
-const stored = () =>
-  Object.fromEntries(
-    Object.keys(localStorage)
-      .filter((key) => key.startsWith('xml-editor:'))
-      .map((key) => [key, localStorage.getItem(key)]),
+/** Every row IndexedDB holds, once pending writes are done, by store. */
+async function stored() {
+  await settleWrites()
+  const collections = {
+    files: filesCollection,
+    profiles: profilesCollection,
+    highlights: highlightsCollection,
+    pins: pinsCollection,
+    defaults: defaultsCollection,
+    variables: variablesCollection,
+  }
+  const entries = await Promise.all(
+    Object.entries(collections).map(async ([name, collection]) => [
+      name,
+      sorted<{ id: string }>(await collection.utils.exportData()),
+    ]),
   )
+  return Object.fromEntries(entries) as Record<string, Array<{ id: string }>>
+}
 
 // Every row without the virtual `$` props, which tell local and synced apart.
 const workspace = () =>
@@ -110,7 +135,7 @@ describe('workspace backup', () => {
     expect([...defaultsCollection.values()].map((r) => r.value)).toEqual([
       'Jane',
     ])
-    expect(localStorage.getItem('xml-editor:files')).not.toContain('other.xml')
+    expect(JSON.stringify((await stored()).files)).not.toContain('other.xml')
   })
 
   it('restores variables under their profiles', async () => {
@@ -178,28 +203,29 @@ describe('workspace backup', () => {
     const backup = createBackup()
 
     clearAll()
-    localStorage.removeItem('xml-editor:pins')
     const file = createFile('kept.xml', '<kept/>')
     setHighlight('item', 'green')
-    const before = stored()
-    expect(before['xml-editor:pins']).toBeUndefined()
+    const before = await stored()
+    expect(before.pins).toEqual([])
     const rowsBefore = workspace()
 
-    const setItem = Storage.prototype.setItem
-    let writes = 0
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (
-      this: Storage,
-      key,
-      value,
+    // Profiles, highlights and pins are written; defaults, the fourth, fail.
+    const put = IDBObjectStore.prototype.put
+    let refused = 0
+    vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(function (
+      this: IDBObjectStore,
+      ...args
     ) {
-      if (++writes === 4) throw new DOMException('full', 'QuotaExceededError')
-      setItem.call(this, key, value)
+      if (this.name === 'defaults' && refused++ === 0) {
+        throw new DOMException('full', 'QuotaExceededError')
+      }
+      return put.apply(this, args)
     })
     await expect(restoreBackup(backup)).rejects.toThrow('full')
     vi.restoreAllMocks()
 
-    expect(writes).toBeGreaterThanOrEqual(4)
-    expect(stored()).toEqual(before)
+    expect(refused).toBeGreaterThan(0)
+    expect(await stored()).toEqual(before)
     expect(filesCollection.get(file.id)?.content).toBe('<kept/>')
     expect(workspace()).toEqual(rowsBefore)
   })

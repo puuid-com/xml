@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { unusedPreset } from './colors'
-import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
+import { localCollection, newId, withDefaultProfile } from './persist'
 import { activeProfileId } from './profiles'
 import { localName, sameName } from '#/lib/names'
 import type { HighlightPreset } from './colors'
@@ -26,7 +26,9 @@ export type Highlight = z.infer<typeof highlightSchema>
 export const highlightsCollection = localCollection(
   'highlights',
   highlightSchema,
-  (key) => backfill(key, { profileId: DEFAULT_PROFILE_ID }),
+  {
+    upgrade: withDefaultProfile,
+  },
 )
 
 /** A profile's rules; the active file's profile by default. */

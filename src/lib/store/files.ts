@@ -5,7 +5,12 @@ import {
 } from '@tanstack/react-db'
 import { z } from 'zod'
 
-import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
+import {
+  DEFAULT_PROFILE_ID,
+  localCollection,
+  newId,
+  withDefaultProfile,
+} from './persist'
 import { writerId } from './session'
 
 export const fileSchema = z.object({
@@ -25,37 +30,9 @@ export const fileSchema = z.object({
 export type XmlFile = z.infer<typeof fileSchema>
 export const ARCHIVE_LIMIT = 10
 
-// Migrate existing tabs, preserving the previous cleanup of legacy closed files.
-function pruneClosed(storageKey: string) {
-  try {
-    const raw = localStorage.getItem(storageKey)
-    if (!raw) return
-    const stored = JSON.parse(raw) as Record<
-      string,
-      { data?: { open?: boolean; deletedAt?: number | null } }
-    >
-    const kept = Object.fromEntries(
-      Object.entries(stored)
-        .filter(([, item]) => item.data?.open !== false)
-        .map(([key, item]) => [
-          key,
-          item.data
-            ? {
-                ...item,
-                data: { ...item.data, deletedAt: item.data.deletedAt ?? null },
-              }
-            : item,
-        ]),
-    )
-    localStorage.setItem(storageKey, JSON.stringify(kept))
-  } catch {
-    // No storage (SSR, private mode).
-  }
-}
-
-export const filesCollection = localCollection('files', fileSchema, (key) => {
-  pruneClosed(key)
-  backfill(key, { profileId: DEFAULT_PROFILE_ID })
+export const filesCollection = localCollection('files', fileSchema, {
+  // Closed tabs of the oldest versions were dropped rather than archived.
+  upgrade: (row) => (row.open === false ? null : withDefaultProfile(row)),
 })
 
 export function archivedFiles() {
@@ -199,7 +176,7 @@ export function reorderFile(id: string, beforeId: string | null) {
 
 /**
  * Debounced content save: the collection updates optimistically right away
- * and the write to localStorage happens once typing pauses.
+ * and the write to IndexedDB happens once typing pauses.
  */
 const pacedSaveContent = createPacedMutations<{
   id: string
@@ -225,7 +202,7 @@ export async function settleContentSave() {
   await pendingContentSave?.catch(() => undefined)
 }
 
-/** Whether a failed write hit the storage quota (about 5 MB per site). */
+/** Whether a failed write hit the browser's storage quota. */
 export function isStorageFull(error: unknown): boolean {
   if (!(error instanceof Error) && !(error instanceof DOMException)) {
     return false

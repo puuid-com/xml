@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { defaultsCollection, profileDefaults, setDefault } from './defaults'
 import { createFile, filesCollection } from './files'
@@ -20,6 +20,9 @@ import {
 import { profileVariables, setVariable, variablesCollection } from './variables'
 import { decodeShare, encodeShare } from '#/lib/share'
 import type { SharedProfile } from '#/lib/share'
+import { workspaceReady } from './workspace'
+
+beforeAll(() => workspaceReady())
 
 function clearAll() {
   for (const collection of [

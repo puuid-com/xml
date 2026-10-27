@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { DEFAULT_PROFILE_ID, backfill, localCollection, newId } from './persist'
+import { localCollection, newId, withDefaultProfile } from './persist'
 import { activeProfileId } from './profiles'
 import { localName, sameName } from '#/lib/names'
 
@@ -20,7 +20,9 @@ export type DefaultValue = z.infer<typeof defaultValueSchema>
 export const defaultsCollection = localCollection(
   'defaults',
   defaultValueSchema,
-  (storageKey) => backfill(storageKey, { profileId: DEFAULT_PROFILE_ID }),
+  {
+    upgrade: withDefaultProfile,
+  },
 )
 
 /** A profile's rules; the active file's profile by default. */

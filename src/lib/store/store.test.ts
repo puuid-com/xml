@@ -1,4 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  createCollection,
+  createIndexedDB,
+  indexedDBCollectionOptions,
+} from '@tanstack/react-db'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   closeFile,
@@ -32,9 +37,27 @@ import {
   findVariable,
   removeVariable,
   setVariable,
+  variableSchema,
   variableValues,
   variablesCollection,
 } from './variables'
+import { workspaceReady } from './workspace'
+
+beforeAll(() => workspaceReady())
+
+/** What IndexedDB holds for a collection, as JSON to search. */
+async function stored(collection: {
+  utils: { exportData: () => Promise<Array<unknown>> }
+}) {
+  return JSON.stringify(await collection.utils.exportData())
+}
+
+/** Makes every IndexedDB write fail as on a full disk, until restored. */
+function refuseWrites() {
+  return vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(() => {
+    throw new DOMException('Full', 'QuotaExceededError')
+  })
+}
 
 function openOrder() {
   return [...filesCollection.values()]
@@ -65,7 +88,7 @@ describe('files', () => {
     expect(archivedFiles()).toEqual([
       expect.objectContaining({ id: a.id, name: 'a.xml', content: '<a/>' }),
     ])
-    expect(localStorage.getItem('xml-editor:files')).toContain('a.xml')
+    expect(await stored(filesCollection)).toContain('a.xml')
   })
 
   it('retains only the last ten deleted files, even with equal clock times', async () => {
@@ -80,9 +103,7 @@ describe('files', () => {
         Array.from({ length: 10 }, (_, i) => `file-${11 - i}.xml`),
       )
       expect(filesCollection.size).toBe(10)
-      expect(localStorage.getItem('xml-editor:files')).not.toContain(
-        'file-0.xml',
-      )
+      expect(await stored(filesCollection)).not.toContain('file-0.xml')
     } finally {
       now.mockRestore()
     }
@@ -109,18 +130,14 @@ describe('files', () => {
     await pending.isPersisted.promise
     expect(openOrder()).toEqual([])
     expect(archivedFiles()[0].content).toBe('<latest/>')
-    expect(localStorage.getItem('xml-editor:files')).toContain('<latest/>')
+    expect(await stored(filesCollection)).toContain('<latest/>')
   })
 
   it('reports a content save the browser refuses, once', async () => {
     const file = createFile('full.xml', '<old/>')
     const failed = vi.fn()
     const stop = onSaveFailed(failed)
-    const write = vi
-      .spyOn(Storage.prototype, 'setItem')
-      .mockImplementation(() => {
-        throw new DOMException('Full', 'QuotaExceededError')
-      })
+    const write = refuseWrites()
     try {
       saveContent({ id: file.id, content: '<a/>' })
       const pending = saveContent({ id: file.id, content: '<ab/>' })
@@ -137,28 +154,23 @@ describe('files', () => {
   it('reports refused writes from any collection, once until one succeeds', async () => {
     const failed = vi.fn()
     const stop = onSaveFailed(failed)
-    const refuse = () =>
-      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-        throw new DOMException('Full', 'QuotaExceededError')
-      })
-    const attempt = (write: () => void) => {
-      try {
-        write()
-      } catch {
-        // Some writes throw synchronously; the report is what matters.
-      }
-    }
+    const written = (tag: string) =>
+      vi.waitFor(async () =>
+        expect(await stored(highlightsCollection)).toContain(`"${tag}"`),
+      )
     try {
-      attempt(() => setHighlight('ok'))
-      let write = refuse()
-      attempt(() => setHighlight('a'))
-      attempt(() => togglePin('b'))
+      setHighlight('ok')
+      await written('ok')
+      let write = refuseWrites()
+      setHighlight('a')
+      togglePin('b')
       await vi.waitFor(() => expect(failed).toHaveBeenCalledTimes(1))
       expect(isStorageFull(failed.mock.calls[0][0])).toBe(true)
       write.mockRestore()
-      attempt(() => setHighlight('c'))
-      write = refuse()
-      attempt(() => setHighlight('d'))
+      setHighlight('c')
+      await written('c')
+      write = refuseWrites()
+      setHighlight('d')
       await vi.waitFor(() => expect(failed).toHaveBeenCalledTimes(2))
       write.mockRestore()
     } finally {
@@ -172,12 +184,11 @@ describe('files', () => {
       await closeFile(file.id)
     }
     const file = createFile('keep-open.xml', '<keep/>')
+    await vi.waitFor(async () =>
+      expect(await stored(filesCollection)).toContain('keep-open.xml'),
+    )
     const before = archivedFiles().map((entry) => entry.id)
-    const write = vi
-      .spyOn(Storage.prototype, 'setItem')
-      .mockImplementation(() => {
-        throw new DOMException('Full', 'QuotaExceededError')
-      })
+    const write = refuseWrites()
     try {
       await expect(closeFile(file.id)).rejects.toThrow()
       expect(openOrder()).toEqual(['keep-open.xml'])
@@ -198,9 +209,11 @@ describe('files', () => {
     expect(b.id).toBeTruthy()
   })
 
-  it('persists to localStorage', () => {
+  it('persists to IndexedDB', async () => {
     createFile('saved.xml', '<a/>')
-    expect(localStorage.getItem('xml-editor:files')).toContain('saved.xml')
+    await vi.waitFor(async () =>
+      expect(await stored(filesCollection)).toContain('saved.xml'),
+    )
   })
 })
 
@@ -307,12 +320,14 @@ describe('variables', () => {
     }
   })
 
-  it('keeps one value per name and updates it', () => {
+  it('keeps one value per name and updates it', async () => {
     setVariable('host', 'dev')
     setVariable('host', 'prod')
     expect([...variablesCollection.values()]).toHaveLength(1)
     expect(variableValues()).toEqual(new Map([['host', 'prod']]))
-    expect(localStorage.getItem('xml-editor:variables')).toContain('prod')
+    await vi.waitFor(async () =>
+      expect(await stored(variablesCollection)).toContain('prod'),
+    )
   })
 
   it('rejects names a variable can’t have', () => {
@@ -328,19 +343,31 @@ describe('variables', () => {
     expect(findVariable('token')).toBeUndefined()
   })
   it('loads a value another tab wrote', async () => {
-    const raw = localStorage.getItem('xml-editor:variables')
-    setVariable('host', 'dev')
-    const written = localStorage.getItem('xml-editor:variables')!
-    variablesCollection.delete(findVariable('host')!.id)
-    localStorage.setItem('xml-editor:variables', written)
-    window.dispatchEvent(
-      new StorageEvent('storage', {
-        key: 'xml-editor:variables',
-        oldValue: raw,
-        newValue: written,
-        storageArea: localStorage,
+    // Another tab: its own connection and collection on the same database.
+    const db = await createIndexedDB({
+      name: 'xml-editor',
+      version: 1,
+      stores: ['variables'],
+    })
+    const other = createCollection(
+      indexedDBCollectionOptions({
+        db,
+        name: 'variables',
+        id: 'other-tab-variables',
+        schema: variableSchema,
+        getKey: (item) => item.id,
       }),
     )
+    await other.preload()
+    await other.insert({
+      id: 'v1',
+      name: 'host',
+      value: 'dev',
+      createdAt: 1,
+      profileId: 'default',
+    }).isPersisted.promise
     await vi.waitFor(() => expect(findVariable('host')?.value).toBe('dev'))
+    await other.cleanup()
+    db.close()
   })
 })
