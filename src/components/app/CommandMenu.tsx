@@ -72,6 +72,7 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { Kbd } from '#/components/ui/kbd'
+import { useCanWriteDisk } from '#/hooks/use-can-write-disk'
 import { useOpenFiles } from '#/hooks/use-files'
 import { useHighlights } from '#/hooks/use-highlights'
 import { useActiveProfile, useProfiles } from '#/hooks/use-profiles'
@@ -79,7 +80,6 @@ import { useTagCounts } from '#/hooks/use-tag-counts'
 import { languageOf } from '#/lib/document'
 import { localName } from '#/lib/names'
 import { profileShortcuts, shortcutLabel, shortcuts } from '#/lib/shortcuts'
-import { canWriteDisk } from '#/lib/store/disk'
 import { setHighlight } from '#/lib/store/highlights'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
@@ -284,6 +284,7 @@ function RootCommands({
 }) {
   const profiles = useProfiles()
   const activeProfile = useActiveProfile()
+  const writesDisk = useCanWriteDisk()
 
   return (
     <>
@@ -323,7 +324,7 @@ function RootCommands({
               <IconDownload />
               {m.file_download()}
             </CommandItem>
-            {canWriteDisk() && (
+            {writesDisk && (
               <CommandItem onSelect={() => run(() => void saveAs(activeId))}>
                 <IconDeviceFloppy />
                 {m.file_save_disk()}
