@@ -12,6 +12,7 @@ import {
   PinMenuItem,
   SortOrderMenuItem,
   TagMenuHeader,
+  ZplMenuItems,
 } from '#/components/highlights/TagMenuItems'
 import {
   ContextMenu,
@@ -116,6 +117,7 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
               {m.defaults_save_current()}
             </ContextMenuItem>
             <PinMenuItem tag={leaf.name} />
+            <ZplMenuItems tag={leaf.name} value={leaf.value} />
           </>
         )}
       </ContextMenuContent>

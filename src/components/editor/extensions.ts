@@ -53,6 +53,7 @@ import {
 } from './dynamic-vars'
 import { docLanguage } from './language'
 import { shortenLongValues } from './long-values'
+import { zplLinks } from './zpl-links'
 import { searchNoAutofill } from './search'
 import { namesParent, treeChanged } from './syntax'
 import { tagHighlights } from './tag-highlights'
@@ -276,6 +277,7 @@ export function editorExtensions(
     defaultRulesCompartment.of(defaultRulesFacet.of(defaults)),
     defaultMarks,
     shortenLongValues(shortenAt),
+    zplLinks(),
     // The linter doubles as the parse loop: it runs after typing pauses and
     // publishes the model the tree and status bar read.
     linter(

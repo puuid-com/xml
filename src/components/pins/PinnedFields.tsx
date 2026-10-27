@@ -3,6 +3,7 @@ import {
   IconArrowUp,
   IconBraces,
   IconCopy,
+  IconExternalLink,
   IconGripVertical,
   IconPinnedOff,
 } from '@tabler/icons-react'
@@ -16,6 +17,7 @@ import { hlStyle } from '#/components/highlights/hl-style'
 import {
   MatchNavItems,
   TagMenuHeader,
+  ZplMenuItems,
 } from '#/components/highlights/TagMenuItems'
 import { useDraft } from '#/components/inspector/use-draft'
 import {
@@ -44,12 +46,14 @@ import {
 } from '#/components/ui/input-group'
 import { useHighlightMap } from '#/hooks/use-highlights'
 import { usePins } from '#/hooks/use-pins'
+import { useFormatSettings } from '#/hooks/use-profiles'
 import { setValue } from '#/lib/document'
 import { localName, sameName } from '#/lib/names'
 import { groupPins } from '#/lib/pin-groups'
 import { moveItem } from '#/lib/sort-order'
 import { reorderPins, unpinTag } from '#/lib/store/pins'
 import { cn } from '#/lib/utils'
+import { isZplTag, openZplLabel } from '#/lib/zpl'
 import { allElements } from '#/lib/xml/locate'
 import { hasName, isTextLeaf, leafValue } from '#/lib/xml/model'
 import { m } from '#/paraglide/messages'
@@ -277,6 +281,7 @@ function PinnedField({
     if (path) editAtPath(path, (fresh) => setValue(fresh, next))
   })
   const placeholder = el ? m.node_empty() : m.pin_missing()
+  const zpl = isZplTag(useFormatSettings().zplTags, tag)
 
   return (
     <>
@@ -307,6 +312,8 @@ function PinnedField({
             <IconArrowDown />
             {m.pin_move_down()}
           </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ZplMenuItems tag={tag} value={el ? draft.value : undefined} />
           <ContextMenuSeparator />
           <ContextMenuItem variant="destructive" onSelect={onUnpin}>
             <IconPinnedOff />
@@ -355,6 +362,18 @@ function PinnedField({
           >
             <IconBraces className="size-3" />
           </InputGroupButton>
+          {zpl && (
+            <InputGroupButton
+              size="icon-xs"
+              aria-label={m.zpl_open_name({ name: tag })}
+              title={m.zpl_open_name({ name: tag })}
+              disabled={!el || !draft.value.trim()}
+              className="text-muted-foreground max-md:size-11"
+              onClick={() => openZplLabel(draft.value)}
+            >
+              <IconExternalLink className="size-3" />
+            </InputGroupButton>
+          )}
         </InputGroupAddon>
       </InputGroup>
     </>

@@ -21,6 +21,7 @@ import { docLanguage, languageCompartment, languageExtension } from './language'
 import { setVarValues } from './dynamic-vars'
 import { editorExtensions, fileIdField, setDefaultRules } from './extensions'
 import { setLongValueLimit } from './long-values'
+import { setZplTags } from './zpl-links'
 import { setTagHighlights } from './tag-highlights'
 import { TagContextMenu } from './TagContextMenu'
 import { useEnabledDefaults } from '#/hooks/use-defaults'
@@ -157,6 +158,8 @@ export function CodeEditor({ fileId }: { fileId: string }) {
   const format = useFormatSettings()
   const shortenAt = format.shortenValues ? format.shortenAt : 0
   const shortenAtRef = useRef(shortenAt)
+  const zplTags = format.zplTags
+  const zplTagsRef = useRef(zplTags)
   const activeName = useRef<string | null>(null)
 
   useEffect(() => {
@@ -229,6 +232,7 @@ export function CodeEditor({ fileId }: { fileId: string }) {
         setDefaultRules(defaultsRef.current),
         setVarValues(valuesRef.current),
         setLongValueLimit(shortenAtRef.current),
+        setZplTags(zplTagsRef.current),
       ],
     })
     publishCursorFrom(view.state)
@@ -255,6 +259,11 @@ export function CodeEditor({ fileId }: { fileId: string }) {
     shortenAtRef.current = shortenAt
     viewRef.current?.dispatch({ effects: setLongValueLimit(shortenAt) })
   }, [shortenAt])
+
+  useEffect(() => {
+    zplTagsRef.current = zplTags
+    viewRef.current?.dispatch({ effects: setZplTags(zplTags) })
+  }, [zplTags])
 
   return (
     <TagContextMenu>

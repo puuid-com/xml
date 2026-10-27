@@ -9,8 +9,9 @@ import {
 } from './format-settings'
 import { DEFAULT_PROFILE_ID, localCollection, newId } from './persist'
 import { sessionStore } from './session'
-import { sameName } from '#/lib/names'
+import { localName, sameName } from '#/lib/names'
 import { appendNames } from '#/lib/sort-order'
+import { isZplTag } from '#/lib/zpl'
 import { m } from '#/paraglide/messages'
 import type { FormatSettings } from './format-settings'
 
@@ -131,6 +132,17 @@ export function addToCustomOrder(names: Iterable<string>) {
 
 export function removeFromCustomOrder(name: string) {
   setCustomOrder(activeFormat().customOrder.filter((n) => !sameName(n, name)))
+}
+
+/** Marks a tag as holding a base64 ZPL label, or unmarks it. */
+export function toggleZplTag(name: string) {
+  const tags = activeFormat().zplTags
+  setFormatSetting(
+    'zplTags',
+    isZplTag(tags, name)
+      ? tags.filter((n) => !sameName(n, name))
+      : [...tags, localName(name)],
+  )
 }
 
 /** CSS colour of a profile's tag. */

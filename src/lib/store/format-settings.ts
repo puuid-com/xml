@@ -20,6 +20,8 @@ export const formatSettingsSchema = z.object({
   /** Show only the ends of values longer than `shortenAt` characters. */
   shortenValues: z.boolean().default(true),
   shortenAt: z.number().int().min(40).default(200),
+  /** Tags whose value is a base64 ZPL label, linked to the ZPL viewer. */
+  zplTags: z.array(z.string()).default([]),
 })
 
 export type FormatSettings = z.infer<typeof formatSettingsSchema>
@@ -34,6 +36,7 @@ export const DEFAULT_FORMAT: FormatSettings = {
   highlightedFirst: false,
   shortenValues: true,
   shortenAt: 200,
+  zplTags: [],
 }
 
 /** `format` with settings added after it was stored filled in. */

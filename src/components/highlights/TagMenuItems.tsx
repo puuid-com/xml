@@ -1,6 +1,9 @@
 import {
   IconArrowDown,
   IconArrowUp,
+  IconBarcode,
+  IconBarcodeOff,
+  IconExternalLink,
   IconHighlightOff,
   IconPin,
   IconPinnedOff,
@@ -20,7 +23,12 @@ import { sameName } from '#/lib/names'
 import { formatPath, pathFormats } from '#/lib/paths'
 import { removeHighlight, setHighlight } from '#/lib/store/highlights'
 import { togglePin } from '#/lib/store/pins'
-import { addToCustomOrder, removeFromCustomOrder } from '#/lib/store/profiles'
+import {
+  addToCustomOrder,
+  removeFromCustomOrder,
+  toggleZplTag,
+} from '#/lib/store/profiles'
+import { isZplTag, openZplLabel } from '#/lib/zpl'
 import { m } from '#/paraglide/messages'
 import type { XmlElement } from '#/lib/xml/model'
 
@@ -103,6 +111,38 @@ export function SortOrderMenuItem({ tag }: { tag: string }) {
         ? m.sort_order_menu_remove({ name: tag })
         : m.sort_order_menu_add({ name: tag })}
     </ContextMenuItem>
+  )
+}
+
+/**
+ * Marks a tag as holding a base64 ZPL label, and opens the value in the ZPL
+ * viewer once it is marked.
+ */
+export function ZplMenuItems({
+  tag,
+  value,
+}: {
+  tag: string
+  /** The element's text, when the menu is on a single value. */
+  value?: string
+}) {
+  const marked = isZplTag(useFormatSettings().zplTags, tag)
+  return (
+    <>
+      {marked && value !== undefined && (
+        <ContextMenuItem
+          disabled={!value.trim()}
+          onSelect={() => openZplLabel(value)}
+        >
+          <IconExternalLink />
+          {m.zpl_open()}
+        </ContextMenuItem>
+      )}
+      <ContextMenuItem onSelect={() => toggleZplTag(tag)}>
+        {marked ? <IconBarcodeOff /> : <IconBarcode />}
+        {marked ? m.zpl_unmark({ name: tag }) : m.zpl_mark({ name: tag })}
+      </ContextMenuItem>
+    </>
   )
 }
 

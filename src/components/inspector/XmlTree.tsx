@@ -4,6 +4,7 @@ import {
   IconChevronRight,
   IconChevronsDown,
   IconChevronsUp,
+  IconExternalLink,
   IconPin,
   IconSearch,
   IconX,
@@ -33,6 +34,7 @@ import {
   PinMenuItem,
   SortOrderMenuItem,
   TagMenuHeader,
+  ZplMenuItems,
 } from '#/components/highlights/TagMenuItems'
 import {
   ContextMenu,
@@ -50,11 +52,13 @@ import {
 import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
 import { usePins } from '#/hooks/use-pins'
+import { useFormatSettings } from '#/hooks/use-profiles'
 import { useMediaQuery } from '#/hooks/use-media-query'
 import { sessionStore, setCollapsed } from '#/lib/store/session'
 import { setValue } from '#/lib/document'
 import { localName } from '#/lib/names'
 import { cn } from '#/lib/utils'
+import { isZplTag, openZplLabel } from '#/lib/zpl'
 import {
   attrDiffers,
   defaultIndex,
@@ -84,6 +88,7 @@ export function XmlTree() {
   const highlights = useHighlightMap()
   const pins = usePins()
   const pinned = new Set(pins.map((p) => p.tag))
+  const { zplTags } = useFormatSettings()
   const enabledDefaults = useEnabledDefaults()
   const defaults = useMemo(
     () => defaultIndex(enabledDefaults),
@@ -325,6 +330,11 @@ export function XmlTree() {
                       named ? highlights.get(localName(row.el.name)) : undefined
                     }
                     pinned={named && pinned.has(row.el.name)}
+                    zpl={
+                      named &&
+                      isTextLeaf(row.el) &&
+                      isZplTag(zplTags, row.el.name)
+                    }
                   />
                 )
               })}
@@ -354,6 +364,7 @@ function TreeRowView({
   selected,
   color,
   pinned,
+  zpl,
 }: {
   row: TreeRow
   index: number
@@ -368,6 +379,8 @@ function TreeRowView({
   selected: boolean
   color: string | undefined
   pinned: boolean
+  /** Whether the tag is a text leaf holding a base64 ZPL label. */
+  zpl: boolean
 }) {
   const { el, depth, hasChildren, collapsed } = row
   const textLeaf = isTextLeaf(el)
@@ -428,16 +441,55 @@ function TreeRowView({
           )}
           {isLeaf(el) && el.selfClosing && <span className="flex-1" />}
           {empty && <span className="ml-1 text-syntax-punct">{empty}</span>}
-          {pinned && (
-            <IconPin
-              aria-label={m.pins_title()}
-              className="size-3 shrink-0 text-muted-foreground"
-            />
-          )}
+          <RowMarks el={el} zpl={zpl} pinned={pinned} />
         </div>
       </ContextMenuTrigger>
       <TreeRowMenu el={el} onCollapse={onCollapse} hasChildren={hasChildren} />
     </ContextMenu>
+  )
+}
+
+/** Trailing marks of a row: the ZPL viewer link, then the pin. */
+function RowMarks({
+  el,
+  zpl,
+  pinned,
+}: {
+  el: XmlElement
+  zpl: boolean
+  pinned: boolean
+}) {
+  return (
+    <>
+      {zpl && <ZplOpenButton el={el} />}
+      {pinned && (
+        <IconPin
+          aria-label={m.pins_title()}
+          className="size-3 shrink-0 text-muted-foreground"
+        />
+      )}
+    </>
+  )
+}
+
+/** Opens a leaf's base64 ZPL label in the ZPL viewer. */
+function ZplOpenButton({ el }: { el: XmlElement }) {
+  const value = leafValue(el)
+  if (value.trim() === '') return null
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      aria-label={m.zpl_open_name({ name: el.name })}
+      title={m.zpl_open_name({ name: el.name })}
+      className="grid size-8 shrink-0 place-items-center text-muted-foreground hover:text-foreground md:size-4"
+      onClick={(e) => {
+        e.stopPropagation()
+        openZplLabel(value)
+      }}
+    >
+      <IconExternalLink className="size-3" />
+    </button>
   )
 }
 
@@ -538,6 +590,9 @@ function TreeRowMenu({
           <HighlightMenuItems tag={el.name} />
           {isTextLeaf(el) && <PinMenuItem tag={el.name} />}
           <SortOrderMenuItem tag={el.name} />
+          {isTextLeaf(el) && (
+            <ZplMenuItems tag={el.name} value={leafValue(el)} />
+          )}
           <ContextMenuSeparator />
         </>
       )}
