@@ -57,7 +57,7 @@ import { tagHighlights } from './tag-highlights'
 import { editorTheme } from './theme'
 import { parseDocument } from '#/lib/document'
 import { defaultMatches } from '#/lib/xml/defaults'
-import { varRegExp } from '#/lib/xml/vars'
+import { varName, varRegExp } from '#/lib/xml/vars'
 import { m } from '#/paraglide/messages'
 import type { Extension, Range } from '@codemirror/state'
 import type {
@@ -81,11 +81,12 @@ const varDecorator = new MatchDecorator({
   regexp: varRegExp(),
   decoration: (match, view) => {
     const values = view.state.facet(varValuesFacet)
+    const name = varName(match)
     return Decoration.mark({
-      class: varHasValue(match[1], values)
+      class: varHasValue(name, values)
         ? 'cm-var var-chip'
         : 'cm-var var-chip var-unset',
-      attributes: { title: varTooltip(match[1], values) },
+      attributes: { title: varTooltip(name, values) },
     })
   },
 })

@@ -62,6 +62,14 @@ describe('parseJson', () => {
     expect(leafValue(url)).toBe('<<base>>/x')
   })
 
+  it('allows {{var}} variables as values', () => {
+    const doc = parse('{"qty": {{qty}}, "nested": {"a": {{ b }}}}')
+    expect(doc.errors).toEqual([])
+    const [qty] = doc.nodes.filter((n) => n.kind === 'element')
+    expect(qty.json?.type).toBe('var')
+    expect(leafValue(qty)).toBe('{{qty}}')
+  })
+
   it('names the key range without quotes', () => {
     const text = '{"key": 1}'
     const el = at(text, '/key[1]')
@@ -185,6 +193,7 @@ describe('JSON edits', () => {
     expect(jsonLiteral('abc', 'number')).toBe('"abc"')
     expect(jsonLiteral('true', 'string')).toBe('"true"')
     expect(jsonLiteral('<<v>>', 'null')).toBe('<<v>>')
+    expect(jsonLiteral('{{v}}', 'null')).toBe('{{v}}')
     expect(jsonLiteral('say "hi"', 'string')).toBe('"say \\"hi\\""')
 
     const text = '{"a": "x", "n": 1}'

@@ -80,6 +80,15 @@ describe('dynamic vars', () => {
     })
   })
 
+  it('fills {{name}} variables the same way', () => {
+    const values = new Map([['host', 'example.com']])
+    expect(resolve('{{host}} {{ port }}', values)).toEqual({
+      text: 'example.com {{ port }}',
+      count: 1,
+      unresolved: 1,
+    })
+  })
+
   it('keeps values literal, without resolving variables inside them', () => {
     const values = new Map([['id', '<<$guid>> & <<host>>']])
     expect(resolve('<<id>>', values).text).toBe('<<$guid>> & <<host>>')

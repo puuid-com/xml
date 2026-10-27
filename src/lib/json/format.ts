@@ -1,7 +1,7 @@
 import { parseJsonAst } from './parse'
 import { localName } from '#/lib/names'
 import { nameOrder } from '#/lib/xml/format'
-import { varRegExp } from '#/lib/xml/vars'
+import { trimVar, varRegExp } from '#/lib/xml/vars'
 import type { JsonValue } from './parse'
 import type { FormatOptions, FormatResult } from '#/lib/xml/format'
 
@@ -70,7 +70,6 @@ export function formatJson(
   }
 
   let out = write(value, 0) + '\n'
-  if (trimVars)
-    out = out.replace(varRegExp(), (_, name: string) => `<<${name}>>`)
+  if (trimVars) out = out.replace(varRegExp(), trimVar)
   return { ok: true, text: out }
 }

@@ -1,23 +1,40 @@
-// Postman-style `<<name>>` placeholders. They are not valid XML (`<` is not
-// allowed in text), so every parser works on a masked copy where the brackets
-// are swapped for private-use characters. The masked text has the same length,
-// so positions found in it map 1:1 back to the real document.
+// Postman-style `<<name>>` and `{{name}}` placeholders. `<<name>>` is not
+// valid XML (`<` is not allowed in text), so every parser works on a masked
+// copy where the brackets are swapped for private-use characters. The masked
+// text has the same length, so positions found in it map 1:1 back to the real
+// document.
 
 const VAR_OPEN = ''
 const VAR_CLOSE = ''
 
 /** Longest variable name accepted; keeps masking windows bounded. */
 export const VAR_MAX_NAME = 64
-/** Longest possible `<<$name>>` sequence. */
+/** Longest possible `<<$name>>` or `{{$name}}` sequence. */
 export const VAR_MAX_LENGTH = VAR_MAX_NAME + 5
 
 // A leading `$` marks Postman's dynamic variables, such as `<<$randomInt>>`.
 const NAME = `\\$?[A-Za-z_][\\w.-]{0,${VAR_MAX_NAME - 1}}`
 
-export const VAR_PATTERN = `<<\\s*(${NAME})\\s*>>`
+// The name is in group 1 for `<<name>>` and group 2 for `{{name}}`.
+export const VAR_PATTERN = `<<\\s*(${NAME})\\s*>>|\\{\\{\\s*(${NAME})\\s*\\}\\}`
 
 export function varRegExp() {
   return new RegExp(VAR_PATTERN, 'g')
+}
+
+/** The variable name in a match of `varRegExp()`. */
+export function varName(match: RegExpMatchArray): string {
+  const [, angle, curly] = match as Array<string | undefined>
+  return (angle ?? curly)!
+}
+
+/** `<< name >>` as `<<name>>`, keeping the brackets it was written with. */
+export function trimVar(whole: string): string {
+  return whole.slice(0, 2) + whole.slice(2, -2).trim() + whole.slice(-2)
+}
+
+function hasVarOpen(text: string) {
+  return text.includes('<<') || text.includes('{{')
 }
 
 export interface VarMatch {
@@ -30,7 +47,7 @@ export function findVars(text: string): Array<VarMatch> {
   const found: Array<VarMatch> = []
   for (const match of text.matchAll(varRegExp())) {
     found.push({
-      name: match[1],
+      name: varName(match),
       from: match.index,
       to: match.index + match[0].length,
     })
@@ -40,18 +57,20 @@ export function findVars(text: string): Array<VarMatch> {
 
 export function maskVars(text: string): string {
   if (!text.includes('<<')) return text
-  return text.replace(
-    varRegExp(),
-    (whole) => VAR_OPEN + VAR_OPEN + whole.slice(2, -2) + VAR_CLOSE + VAR_CLOSE,
+  // `{{name}}` is already valid XML.
+  return text.replace(varRegExp(), (whole) =>
+    whole.startsWith('<')
+      ? VAR_OPEN + VAR_OPEN + whole.slice(2, -2) + VAR_CLOSE + VAR_CLOSE
+      : whole,
   )
 }
 
 /**
  * For the JSON grammar: each variable becomes a same-length number, so a bare
- * `<<qty>>` value parses and one inside a string stays part of it.
+ * `<<qty>>` or `{{qty}}` value parses and one inside a string stays part of it.
  */
 export function maskVarsAsNumbers(text: string): string {
-  if (!text.includes('<<')) return text
+  if (!hasVarOpen(text)) return text
   return text.replace(varRegExp(), (whole) => '1'.padEnd(whole.length, '0'))
 }
 

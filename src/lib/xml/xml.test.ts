@@ -52,6 +52,15 @@ describe('vars', () => {
     const doc = parseXml('<MessageType>TEST_<<$randomInt>></MessageType>')
     expect(doc.errors).toEqual([])
   })
+
+  it('accepts {{name}} variables too', () => {
+    expect(findVars('x {{a}} y {{ $b }} <<c}} {{d>>')).toEqual([
+      { name: 'a', from: 2, to: 7 },
+      { name: '$b', from: 10, to: 18 },
+    ])
+    const doc = parseXml('<a k="{{id}}">Hi {{name}}</a>')
+    expect(doc.errors).toEqual([])
+  })
 })
 
 describe('entities', () => {
@@ -164,6 +173,10 @@ describe('formatXml', () => {
     expect(formatXml(input, { trimVars: true })).toEqual({
       ok: true,
       text: '<a k="<<id>>">Hi <<name>></a>\n',
+    })
+    expect(formatXml('<a>{{ id }}</a>', { trimVars: true })).toEqual({
+      ok: true,
+      text: '<a>{{id}}</a>\n',
     })
   })
 

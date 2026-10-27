@@ -1,6 +1,6 @@
 import { parseXml } from './parse'
 import { localName } from '#/lib/names'
-import { varRegExp } from './vars'
+import { trimVar, varRegExp } from './vars'
 import type { XmlAttr, XmlElement, XmlError, XmlNode } from './model'
 
 export type FormatResult =
@@ -111,8 +111,7 @@ export function formatXml(
 
   writeAll(doc.nodes, 0)
   let out = lines.join('\n') + '\n'
-  if (trimVars)
-    out = out.replace(varRegExp(), (_, name: string) => `<<${name}>>`)
+  if (trimVars) out = out.replace(varRegExp(), trimVar)
   return { ok: true, text: out }
 }
 
