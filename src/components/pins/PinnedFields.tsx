@@ -1,19 +1,31 @@
-import { IconPin, IconX } from '@tabler/icons-react'
+import { IconCopy, IconPin, IconPinnedOff } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
+import { useState } from 'react'
 
+import { notify } from '#/components/app/notice-store'
 import { PanelHeading } from '#/components/app/PanelHeading'
 import { cycleTag } from '#/components/editor/actions'
 import { editAtPath, editorStore } from '#/components/editor/editor-store'
 import { hlStyle } from '#/components/highlights/hl-style'
 import {
   MatchNavItems,
-  PinMenuItem,
   TagMenuHeader,
 } from '#/components/highlights/TagMenuItems'
 import { useDraft } from '#/components/inspector/use-draft'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '#/components/ui/alert-dialog'
+import {
   ContextMenu,
   ContextMenuContent,
+  ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '#/components/ui/context-menu'
@@ -41,6 +53,7 @@ export function PinnedFields() {
   const doc = useSelector(editorStore, (s) => s.doc)
   const selectedPath = useSelector(editorStore, (s) => s.selectedPath)
   const highlights = useHighlightMap()
+  const [unpinning, setUnpinning] = useState<string | null>(null)
 
   if (pins.length === 0) return null
 
@@ -70,10 +83,39 @@ export function PinnedFields() {
               el={el}
               count={matches.length}
               color={highlights.get(localName(pin.tag))}
+              onUnpin={() => setUnpinning(pin.tag)}
             />
           )
         })}
       </div>
+      <AlertDialog
+        open={!!unpinning}
+        onOpenChange={(open) => {
+          if (!open) setUnpinning(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {m.pin_remove({ name: unpinning ?? '' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {m.pin_remove_description()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (unpinning) unpinTag(unpinning)
+              }}
+            >
+              {m.pin_remove_confirm()}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   )
 }
@@ -83,11 +125,13 @@ function PinnedField({
   el,
   count,
   color,
+  onUnpin,
 }: {
   tag: string
   el: XmlElement | undefined
   count: number
   color: string | undefined
+  onUnpin: () => void
 }) {
   const value = el ? leafValue(el) : ''
   const path = el?.path
@@ -117,7 +161,10 @@ function PinnedField({
           <TagMenuHeader tag={tag} />
           <MatchNavItems tag={tag} count={count} />
           <ContextMenuSeparator />
-          <PinMenuItem tag={tag} />
+          <ContextMenuItem variant="destructive" onSelect={onUnpin}>
+            <IconPinnedOff />
+            {m.pin_remove({ name: tag })}
+          </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
       <InputGroup className="h-11 bg-background font-mono md:h-6">
@@ -141,12 +188,16 @@ function PinnedField({
         <InputGroupAddon align="inline-end" className="py-0">
           <InputGroupButton
             size="icon-xs"
-            aria-label={m.pin_remove({ name: tag })}
-            title={m.pin_remove({ name: tag })}
+            aria-label={m.pin_copy({ name: tag })}
+            title={m.pin_copy({ name: tag })}
+            disabled={!el}
             className="text-muted-foreground max-md:size-11"
-            onClick={() => unpinTag(tag)}
+            onClick={() => {
+              void navigator.clipboard.writeText(draft.value)
+              notify.success(m.copied(), { detail: draft.value })
+            }}
           >
-            <IconX className="size-3" />
+            <IconCopy className="size-3" />
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
