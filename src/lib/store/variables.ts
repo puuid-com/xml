@@ -52,10 +52,9 @@ export function setVariable(
   if (!isVariableName(name)) return
   const existing = findVariable(name, profileId)
   if (existing) {
-    updateVariableValue(existing.id, value)
-    return
+    return updateVariableValue(existing.id, value)
   }
-  variablesCollection.insert({
+  return variablesCollection.insert({
     id: newId(),
     name,
     value,
@@ -65,7 +64,7 @@ export function setVariable(
 }
 
 export function updateVariableValue(id: string, value: string) {
-  variablesCollection.update(id, (draft) => {
+  return variablesCollection.update(id, (draft) => {
     draft.value = value
   })
 }

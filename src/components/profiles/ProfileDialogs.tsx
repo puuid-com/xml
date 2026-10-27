@@ -94,16 +94,19 @@ function ProfileForm({
   const form = useForm({
     defaultValues: initial,
     onSubmit: ({ value }) => {
-      if (state.mode === 'edit') {
-        updateProfile(state.profileId, value)
-      } else {
-        const profile =
-          state.mode === 'clone'
-            ? cloneProfile(state.profileId, value)
-            : createProfile(value)
-        if (profile) void switchProfile(profile.id)
-      }
-      setProfileDialog(null)
+      const saved =
+        state.mode === 'edit'
+          ? updateProfile(state.profileId, value)?.isPersisted.promise
+          : (state.mode === 'clone'
+              ? cloneProfile(state.profileId, value)
+              : createProfile(value)
+            ).then((profile) => profile && switchProfile(profile.id))
+      return saved?.then(
+        () => setProfileDialog(null),
+        () => {
+          // The workspace reports the failed write; keep the draft open.
+        },
+      )
     },
   })
 
@@ -196,7 +199,9 @@ function ProfileForm({
           {m.cancel()}
         </Button>
         <form.Subscribe
-          selector={(s) => s.canSubmit && s.values.name.trim() !== ''}
+          selector={(s) =>
+            s.canSubmit && !s.isSubmitting && s.values.name.trim() !== ''
+          }
         >
           {(canSubmit) => (
             <Button type="submit" disabled={!canSubmit}>
@@ -223,14 +228,14 @@ export function DeleteProfileDialog() {
   const confirm = async () => {
     if (!profile || deleting) return
     setDeleting(true)
-    try {
-      await deleteProfile(profile.id)
-      askDeleteProfile(null)
-    } catch {
-      notify.error(m.profile_delete_failed())
-    } finally {
-      setDeleting(false)
-    }
+    await deleteProfile(profile.id)
+      .then(
+        () => askDeleteProfile(null),
+        () => notify.error(m.profile_delete_failed()),
+      )
+      .finally(() => {
+        setDeleting(false)
+      })
   }
 
   return (

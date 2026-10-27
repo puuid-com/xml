@@ -1,6 +1,7 @@
 import { notify } from './notice-store'
 import { setRestorePreview } from './ui-store'
 import { editorStore, getText } from '#/components/editor/editor-store'
+import { formatDateTime } from '#/lib/dates'
 import { createBackup, parseBackup, restoreBackup } from '#/lib/store/backup'
 import { isStorageFull } from '#/lib/store/files'
 import { markBackedUp, workspaceInUse } from '#/lib/store/safekeeping'
@@ -68,10 +69,7 @@ export async function readBackup(file: File) {
   }
   const result = parseBackup(text)
   if (result.ok) {
-    const date = new Date(result.backup.exportedAt).toLocaleString(
-      getLocale(),
-      { dateStyle: 'medium', timeStyle: 'short' },
-    )
+    const date = formatDateTime(result.backup.exportedAt, getLocale())
     setRestorePreview({ backup: result.backup, date })
     return
   }

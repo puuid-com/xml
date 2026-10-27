@@ -1,5 +1,14 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 
+import type * as persist from './persist'
 import type * as profiles from './profiles'
 import type * as profileActions from './profile-actions'
 import type * as files from './files'
@@ -12,7 +21,8 @@ import type * as switching from '#/components/profiles/actions'
 
 // Modules load after localStorage holds data from before profiles and
 // IndexedDB, to test the migration, so they are imported dynamically.
-type Store = typeof profiles &
+type Store = typeof persist &
+  typeof profiles &
   typeof profileActions &
   typeof files &
   typeof highlights &
@@ -65,6 +75,7 @@ beforeAll(async () => {
   ;(globalThis as Record<string, unknown>).__xmlEditorSingletons = undefined
   s = Object.assign(
     {},
+    await import('./persist'),
     await import('./profiles'),
     await import('./profile-actions'),
     await import('./files'),
@@ -95,6 +106,10 @@ describe('migration', () => {
 })
 
 describe('profiles', () => {
+  afterEach(async () => {
+    vi.restoreAllMocks()
+    await s.settleWrites()
+  })
   beforeEach(() => {
     for (const profile of s.profilesList().slice(1)) {
       s.profilesCollection.delete(profile.id)
@@ -106,7 +121,7 @@ describe('profiles', () => {
   })
 
   it('gives each file the settings of its own profile', async () => {
-    const work = s.createProfile({ name: 'Work' })
+    const work = await s.createProfile({ name: 'Work' })
     const a = s.createFile('a.xml')
     const b = s.createFile('b.xml', '', work.id)
 
@@ -148,7 +163,7 @@ describe('profiles', () => {
     s.setCustomOrder([])
   })
 
-  it('clones every setting and rule into an independent profile', () => {
+  it('clones every setting and rule into an independent profile', async () => {
     const file = s.createFile('a.xml')
     s.setActive(file.id)
     s.setHighlight('id', 'teal')
@@ -156,7 +171,7 @@ describe('profiles', () => {
     s.setVariable('host', 'dev.example.com')
     s.setFormatSetting('removeEmptyLines', false)
 
-    const copy = s.cloneProfile('default', { name: 'Copy' })!
+    const copy = (await s.cloneProfile('default', { name: 'Copy' }))!
     expect(copy.format.removeEmptyLines).toBe(false)
     expect(s.findHighlight('id', copy.id)?.color).toBe('teal')
     expect(s.findPin('name', copy.id)).toBeDefined()
@@ -170,7 +185,7 @@ describe('profiles', () => {
   })
 
   it('deletes a profile with its rules and moves its files', async () => {
-    const temp = s.createProfile({ name: 'Temp' })
+    const temp = await s.createProfile({ name: 'Temp' })
     const file = s.createFile('a.xml', '', temp.id)
     s.setActive(file.id)
     s.setHighlight('gone')
@@ -190,8 +205,8 @@ describe('profiles', () => {
     expect(s.profilesCollection.has('default')).toBe(true)
   })
 
-  it('cycles and picks profiles for the active file', () => {
-    const second = s.createProfile({ name: 'Second' })
+  it('cycles and picks profiles for the active file', async () => {
+    const second = await s.createProfile({ name: 'Second' })
     const file = s.createFile('a.xml')
     s.setActive(file.id)
 
@@ -203,8 +218,58 @@ describe('profiles', () => {
     })
   })
 
+  it('rejects profile creation when persistence fails', async () => {
+    await s.settleWrites()
+    vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(() => {
+      throw new DOMException('Full', 'QuotaExceededError')
+    })
+    await expect(s.createProfile({ name: 'Refused' })).rejects.toThrow('Full')
+    expect(s.profilesList().some((profile) => profile.name === 'Refused')).toBe(
+      false,
+    )
+  })
+
+  it('waits for cloned rules to persist', async () => {
+    await s.setVariable('clone-me', 'value', 'default')!.isPersisted.promise
+    const put = IDBObjectStore.prototype.put
+    vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(function (
+      this: IDBObjectStore,
+      ...args
+    ) {
+      if (this.name === 'variables')
+        throw new DOMException('Full', 'QuotaExceededError')
+      return put.apply(this, args)
+    })
+    await expect(
+      s.cloneProfile('default', { name: 'Incomplete' }),
+    ).rejects.toThrow('Full')
+  })
+
+  it.each(['variables', 'profiles'])(
+    'rejects a failed %s deletion instead of reporting completion',
+    async (store) => {
+      const profile = await s.createProfile({ name: 'Keep me' })
+      await s.setVariable('owned', 'value', profile.id)!.isPersisted.promise
+      await s.settleWrites()
+      const remove = IDBObjectStore.prototype.delete
+      vi.spyOn(IDBObjectStore.prototype, 'delete').mockImplementation(function (
+        this: IDBObjectStore,
+        ...args
+      ) {
+        if (this.name === store)
+          throw new DOMException('Refused', 'UnknownError')
+        return remove.apply(this, args)
+      })
+      await expect(s.deleteProfile(profile.id)).rejects.toThrow('Refused')
+      expect(s.profilesCollection.has(profile.id)).toBe(true)
+      expect(await s.profilesCollection.utils.exportData()).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: profile.id })]),
+      )
+    },
+  )
+
   it('keeps a profile switch made while a content save is pending', async () => {
-    const other = s.createProfile({ name: 'Other' })
+    const other = await s.createProfile({ name: 'Other' })
     const file = s.createFile('a.xml', '<old/>')
     const pending = s.saveContent({ id: file.id, content: '<new/>' })
     await s.setFileProfile(file.id, other.id)

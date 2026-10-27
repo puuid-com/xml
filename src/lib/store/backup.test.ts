@@ -95,7 +95,7 @@ describe('workspace backup', () => {
     const a = createFile('a.xml', '<a/>')
     const b = createFile('b.xml', '<b/>')
     await closeFile(b.id)
-    const staging = createProfile({ name: 'Staging' })
+    const staging = await createProfile({ name: 'Staging' })
     setHighlight('soap:Body', 'blue')
     pinTag('id')
     setDefault('name', 'Jane')
@@ -139,7 +139,7 @@ describe('workspace backup', () => {
   })
 
   it('restores variables under their profiles', async () => {
-    const staging = createProfile({ name: 'Staging' })
+    const staging = await createProfile({ name: 'Staging' })
     setVariable('host', 'example.com', 'default')
     setVariable('token', 'secret', staging.id)
     const parsed = parseBackup(JSON.stringify(createBackup()))
@@ -172,7 +172,7 @@ describe('workspace backup', () => {
   })
 
   it('leaves no variable pointing at a missing profile', async () => {
-    const staging = createProfile({ name: 'Staging' })
+    const staging = await createProfile({ name: 'Staging' })
     setVariable('token', 'secret', staging.id)
     const backup = createBackup()
     const parsed = parseBackup(
@@ -196,7 +196,7 @@ describe('workspace backup', () => {
   })
 
   it('leaves the workspace as it was when a write fails partway', async () => {
-    createProfile({ name: 'Staging' })
+    await createProfile({ name: 'Staging' })
     setHighlight('soap:Body', 'blue')
     pinTag('id')
     setDefault('name', 'Jane')

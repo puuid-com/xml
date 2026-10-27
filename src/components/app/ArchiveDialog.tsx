@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { useArchivedFiles } from '#/hooks/use-files'
+import { formatDateTime } from '#/lib/dates'
 import { ARCHIVE_LIMIT, restoreFile } from '#/lib/store/files'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
@@ -39,19 +40,23 @@ export function ArchiveDialog() {
 
   const restore = async (id: string) => {
     setRestoring(id)
-    try {
-      const restored = await restoreFile(id)
-      if (restored) {
-        setActive(restored)
-        setMobileView('editor')
-        setArchiveOpen(false)
-        notify.success(m.archive_restored())
-      }
-    } catch {
-      notify.error(m.archive_restore_failed())
-    } finally {
-      setRestoring(null)
-    }
+    await restoreFile(id)
+      .then(
+        (restored) => {
+          if (restored) {
+            setActive(restored)
+            setMobileView('editor')
+            setArchiveOpen(false)
+            notify.success(m.archive_restored())
+          }
+        },
+        () => {
+          notify.error(m.archive_restore_failed())
+        },
+      )
+      .finally(() => {
+        setRestoring(null)
+      })
   }
 
   return (
@@ -83,10 +88,7 @@ export function ArchiveDialog() {
                     dateTime={new Date(file.deletedAt!).toISOString()}
                     className="text-xs text-muted-foreground"
                   >
-                    {new Intl.DateTimeFormat(getLocale(), {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    }).format(file.deletedAt!)}
+                    {formatDateTime(file.deletedAt!, getLocale())}
                   </time>
                 </div>
                 <Button

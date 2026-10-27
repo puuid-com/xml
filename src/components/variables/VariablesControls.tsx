@@ -89,8 +89,12 @@ function AddVariableForm({ existing }: { existing: Array<string> }) {
     onSubmit: ({ value, formApi }) => {
       const name = value.name.trim()
       if (!isVariableName(name)) return
-      setVariable(name, value.value)
-      formApi.reset()
+      return setVariable(name, value.value)?.isPersisted.promise.then(
+        () => formApi.reset(),
+        () => {
+          // Keep the entered value when the workspace reports a save error.
+        },
+      )
     },
   })
 
@@ -134,7 +138,11 @@ function AddVariableForm({ existing }: { existing: Array<string> }) {
           />
         )}
       </form.Field>
-      <form.Subscribe selector={(s) => isVariableName(s.values.name.trim())}>
+      <form.Subscribe
+        selector={(s) =>
+          !s.isSubmitting && isVariableName(s.values.name.trim())
+        }
+      >
         {(canSubmit) => (
           <Button type="submit" size="sm" disabled={!canSubmit}>
             {m.variables_add()}

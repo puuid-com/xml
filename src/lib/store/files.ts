@@ -127,7 +127,7 @@ export async function restoreFile(id: string) {
 export function renameFile(id: string, name: string) {
   const trimmed = name.trim()
   if (!trimmed || !filesCollection.has(id)) return
-  filesCollection.update(id, (draft) => {
+  return filesCollection.update(id, (draft) => {
     draft.name = trimmed
   })
 }

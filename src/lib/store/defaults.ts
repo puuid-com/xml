@@ -45,14 +45,13 @@ export function setDefault(key: string, value: string) {
   const profileId = activeProfileId()
   const existing = findDefault(key, profileId)
   if (existing) {
-    defaultsCollection.update(existing.id, (draft) => {
+    return defaultsCollection.update(existing.id, (draft) => {
       draft.key = localName(key)
       draft.value = value
       draft.enabled = true
     })
-    return
   }
-  defaultsCollection.insert({
+  return defaultsCollection.insert({
     id: newId(),
     key: localName(key),
     value,

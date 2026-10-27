@@ -155,7 +155,7 @@ export function nextProfileColor() {
   return unusedPreset([...profilesCollection.values()].map((p) => p.color))
 }
 
-export function createProfile({
+export async function createProfile({
   name,
   color = nextProfileColor(),
   format = DEFAULT_FORMAT,
@@ -163,7 +163,7 @@ export function createProfile({
   name: string
   color?: string
   format?: FormatSettings
-}): Profile {
+}): Promise<Profile> {
   const profile: Profile = {
     id: newId(),
     name: name.trim() || m.profile_untitled(),
@@ -175,7 +175,7 @@ export function createProfile({
     ),
     format: withDefaults(format),
   }
-  profilesCollection.insert(profile)
+  await profilesCollection.insert(profile).isPersisted.promise
   return profile
 }
 
@@ -185,7 +185,7 @@ export function updateProfile(
 ) {
   if (!profilesCollection.has(id)) return
   const name = changes.name?.trim()
-  profilesCollection.update(id, (draft) => {
+  return profilesCollection.update(id, (draft) => {
     if (name) draft.name = name
     if (changes.color) draft.color = changes.color
   })

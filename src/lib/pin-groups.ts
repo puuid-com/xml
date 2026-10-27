@@ -20,3 +20,13 @@ export function groupPins<T>(
   }
   return plain.length ? [...groups.values(), plain] : [...groups.values()]
 }
+
+/** Flat display rows with the bounds that keep reordering inside a group. */
+export function pinRows<T>(groups: ReadonlyArray<ReadonlyArray<T>>) {
+  let offset = 0
+  return groups.flatMap((group, index) => {
+    const first = offset
+    offset += group.length
+    return group.map((pin) => ({ pin, group: index, first, last: offset - 1 }))
+  })
+}

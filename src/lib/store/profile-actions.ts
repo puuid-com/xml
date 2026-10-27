@@ -15,13 +15,13 @@ import type { Profile } from './profiles'
 // Operations that span the profile and every collection of its rules.
 
 /** A new profile with a copy of every setting and rule of `sourceId`. */
-export function cloneProfile(
+export async function cloneProfile(
   sourceId: string,
   details: { name: string; color?: string },
-): Profile | undefined {
+): Promise<Profile | undefined> {
   const source = profilesCollection.get(sourceId)
   if (!source) return
-  const copy = createProfile({ ...details, format: source.format })
+  const copy = await createProfile({ ...details, format: source.format })
   const owned = <T extends { profileId: string }>(rules: Iterable<T>) =>
     [...rules].filter((rule) => rule.profileId === sourceId)
   // Fields are listed so the rows' virtual `$` props aren't copied.
@@ -55,10 +55,14 @@ export function cloneProfile(
     createdAt: v.createdAt,
     profileId: copy.id,
   }))
-  if (highlights.length) highlightsCollection.insert(highlights)
-  if (pins.length) pinsCollection.insert(pins)
-  if (defaults.length) defaultsCollection.insert(defaults)
-  if (variables.length) variablesCollection.insert(variables)
+  await Promise.all([
+    highlights.length &&
+      highlightsCollection.insert(highlights).isPersisted.promise,
+    pins.length && pinsCollection.insert(pins).isPersisted.promise,
+    defaults.length && defaultsCollection.insert(defaults).isPersisted.promise,
+    variables.length &&
+      variablesCollection.insert(variables).isPersisted.promise,
+  ])
   return copy
 }
 
@@ -72,17 +76,20 @@ export async function deleteProfile(id: string) {
   const fallback = resolveProfile(rest, null)
   if (!fallback) return
   await reassignProfile(id, fallback.id)
-  for (const collection of [
+  const collections = [
     highlightsCollection,
     pinsCollection,
     defaultsCollection,
     variablesCollection,
-  ]) {
-    const ids = [...collection.values()]
-      .filter((rule) => rule.profileId === id)
-      .map((rule) => rule.id)
-    if (ids.length) collection.delete(ids)
-  }
-  profilesCollection.delete(id)
+  ]
+  await Promise.all(
+    collections.map((collection) => {
+      const ids = [...collection.values()]
+        .filter((rule) => rule.profileId === id)
+        .map((rule) => rule.id)
+      return ids.length ? collection.delete(ids).isPersisted.promise : undefined
+    }),
+  )
+  await profilesCollection.delete(id).isPersisted.promise
   return fallback
 }

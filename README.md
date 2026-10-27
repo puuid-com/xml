@@ -1,127 +1,95 @@
-# xml
+# XML Editor
 
-Starting point for websites built with TanStack Start, deployed to Cloudflare Workers.
+A browser-based XML and JSON editor with a synchronized structure tree, file tabs, formatting, comparisons, and reusable profiles. Files and settings stay in the browser; there are no accounts or server-side document storage.
 
-## Stack
+## Develop
 
-- [TanStack Start](https://tanstack.com/start) and [Router](https://tanstack.com/router), with file-based routes in `src/routes`
-- [TanStack Query](https://tanstack.com/query), Form, Table, Store and DB
-- [shadcn/ui](https://ui.shadcn.com) (radix-lyra style, Tabler icons) and Tailwind CSS v4
-- [Paraglide JS](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) for i18n (English and French, locale in the URL)
-- Cloudflare Workers through the Cloudflare Vite plugin
-- Vitest and Testing Library, ESLint, Prettier, GitHub Actions
-- React Compiler and Geist fonts
+```bash
+bun install
+bun run dev
+```
 
-## Start a new site
+Open http://localhost:3000. Installation compiles the English and French messages and generates Cloudflare binding types.
 
-1. On GitHub, click **Use this template**, or clone this repo.
-2. Install dependencies. This also compiles messages and generates Cloudflare types.
+## Features
 
-   ```bash
-   bun install
-   ```
+- Edit XML and JSON in CodeMirror, or edit values in the searchable structure tree.
+- Open multiple files, retain undo history across tabs, and compare two files.
+- Keep formatting settings, tag highlights, pinned fields, defaults, and variables in profiles.
+- Open files from disk and save back where the browser supports file handles.
+- Archive closed files, export workspace backups, and restore them later.
+- Share a document and optional profile settings through a link.
 
-3. Fill in the site's name, description and production URL:
+## State and persistence
 
-   ```bash
-   bun run init
-   ```
+TanStack DB collections keep files, profiles, and rules in IndexedDB and synchronize changes across browser tabs. The route waits for `workspaceReady()` before mounting the editor. Older localStorage workspaces are migrated on startup.
 
-4. Start the dev server on http://localhost:3000:
+TanStack Store holds UI and session state. CodeMirror owns the live document, selection, and undo history. `editor-session.ts` coordinates file switching, cached editor states, and collection updates; `editor-store.ts` exposes parsed documents and cursor state to the rest of the interface.
 
-   ```bash
-   bun run dev
-   ```
-
-## Scripts
-
-| Script                 | What it does                                                  |
-| ---------------------- | ------------------------------------------------------------- |
-| `bun run dev`          | Dev server with devtools                                      |
-| `bun run build`        | Production build                                              |
-| `bun run preview`      | Serve the production build locally                            |
-| `bun run deploy`       | Build and deploy to Cloudflare Workers                        |
-| `bun run test`         | Run tests once (`test:watch` to keep watching)                |
-| `bun run typecheck`    | TypeScript check                                              |
-| `bun run lint`         | ESLint                                                        |
-| `bun run format`       | Prettier and ESLint fixes                                     |
-| `bun run check`        | Prettier check (used by CI)                                   |
-| `bun run cf-typegen`   | Regenerate `worker-configuration.d.ts` after editing wrangler |
-| `bun run i18n:compile` | Recompile messages without running the dev server             |
-| `bun run icons`        | Render the PNG app icons from `public/favicon.svg`            |
+Content edits update optimistically and persist after a 400 ms typing pause. Collection mutators expose TanStack transactions when a caller needs to await `isPersisted.promise`; profile creation, cloning, and deletion return promises. Forms retain their drafts on failed writes and confirm saves only after persistence succeeds. Multi-collection operations are not a single atomic IndexedDB transaction; backup restore attempts to roll back completed writes on failure.
 
 ## Project layout
 
-```
+```text
 src/
-  site.ts                 Site name, description, URL, OG image, sitemap paths
-  env.server.ts           Validated server env (secrets and vars)
-  server.ts               Worker entry: runs Paraglide middleware around Start
-  router.tsx              Router, locale URL rewrites, error and 404 defaults
-  routes/
-    __root.tsx            <html> shell, head defaults, header and footer
-    index.tsx, about.tsx  Example pages
-    sitemap[.]xml.ts      Generated from site.sitemapPaths
-    robots[.]txt.ts
-    site[.]webmanifest.ts
   components/
-    layout/               SiteHeader, SiteFooter
-    ui/                   shadcn components (added by the CLI)
+    app/                  Workspace layout, dialogs, commands, notices
+    editor/               CodeMirror setup, sessions, actions, disk saves
+    inspector/            Tree search/navigation and separate row rendering
+    profiles/             Profile controls and dialogs
+    compare/              Document comparisons
+    ui/                   shadcn/ui components
+  hooks/                  TanStack live queries and shared React hooks
   lib/
-    seo.ts                seo() head helper: title, OG, canonical, hreflang
-    theme.ts              Pre-paint script that follows the system theme
-messages/                 Translations, one JSON file per locale
-public/                   Static files served as is
+    store/                Collections, persistence, migration, backups
+    xml/                  XML parsing, formatting, editing, variables
+    json/                 JSON parsing, formatting, editing
+    document.ts           Shared XML/JSON operations
+  routes/                 Editor and public routes
+  site.ts                 Site identity and SEO configuration
+  server.ts               Paraglide middleware around TanStack Start
+messages/                 English and French translations
+public/                   Icons and static assets
 ```
 
-## Common tasks
+## Checks and scripts
 
-### Add a page
+| Command                   | Purpose                                                     |
+| ------------------------- | ----------------------------------------------------------- |
+| `bun run dev`             | Development server on port 3000                             |
+| `bun run build`           | Production build                                            |
+| `bun run preview`         | Preview the production build                                |
+| `bun run test`            | Vitest tests, including IndexedDB and component coverage    |
+| `bun run test:watch`      | Watch tests                                                 |
+| `bun run typecheck`       | TypeScript validation                                       |
+| `bun run lint`            | ESLint                                                      |
+| `bun run check`           | Prettier validation                                         |
+| `bun run format`          | Apply Prettier and ESLint fixes                             |
+| `bun run doctor`          | Additional React diagnostics; inspect findings individually |
+| `bun run generate-routes` | Regenerate the TanStack route tree                          |
+| `bun run i18n:compile`    | Regenerate translated message functions                     |
+| `bun run cf-typegen`      | Regenerate Cloudflare binding types                         |
+| `bun run icons`           | Render PNG app icons from `public/favicon.svg`              |
 
-Create `src/routes/pricing.tsx`. The dev server regenerates `routeTree.gen.ts`.
+CI runs formatting, lint, type checking, tests, and the production build. Tests use `fake-indexeddb`; editor-session tests exercise independent database connections, remote edits, undo history, and restore rollback. Browser checks still need a reproducible harness; see [TASKS.md](TASKS.md).
 
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
+## Conventions
 
-import { seo } from '#/lib/seo'
-import { m } from '#/paraglide/messages'
+Use the appropriate TanStack libraries, shadcn/ui, and Tailwind CSS. Follow [Vercel's design guidelines](https://vercel.com/design.md). Check for an existing shadcn component before adding UI; install new primitives with `bunx shadcn@latest add <component>`.
 
-export const Route = createFileRoute('/pricing')({
-  head: () => seo({ title: m.pricing_title(), path: '/pricing' }),
-  component: Pricing,
-})
-```
+Import application code through `#/`. Add user-facing strings to both `messages/en.json` and `messages/fr.json`. Do not edit generated files in `src/paraglide/`, `src/routeTree.gen.ts`, or `worker-configuration.d.ts`.
 
-Then add its messages to every file in `messages/`, its link to `SiteHeader`, and its path to `site.sitemapPaths`.
-
-### Add a UI component
-
-```bash
-bunx shadcn@latest add dialog
-```
-
-### Add a locale
-
-Add it to `locales` in `project.inlang/settings.json`, create `messages/<locale>.json`, and add its name to `LocaleSwitcher`.
-
-### Add a secret or binding
-
-- Secrets and vars: declare them in the schema in `src/env.server.ts`. Put local values in `.dev.vars` (copy `.dev.vars.example`) and set production values with `wrangler secret put NAME`.
-- KV, D1, R2 and other bindings: add them to `wrangler.jsonc`, run `bun run cf-typegen`, and read them from `import { env } from 'cloudflare:workers'`.
-
-## Icons
-
-The web manifest at `/site.webmanifest` lists the app icons. After replacing `public/favicon.svg`, run `bun run icons` and commit the PNGs.
-
-`public/sw.js` replaces the offline service worker the app used to ship. Browsers that installed it pick this one up, which deletes the old caches and unregisters itself. It can be deleted once old installs have had time to update.
+Public routes set their SEO metadata through `seo()` and belong in `site.sitemapPaths`. To add a locale, update `project.inlang/settings.json`, add its messages, and update `localeNames` in `LocaleSwitcher.tsx`.
 
 ## Deploy
+
+Set the production identity and URL in `src/site.ts`, and review `wrangler.jsonc` for the target Worker. Server environment variables are validated in `src/env.server.ts`; use `.dev.vars.example` for local configuration.
 
 ```bash
 bunx wrangler login
 bun run deploy
 ```
 
-## Design
+The inherited `bun run init` script rewrites site identity when creating a separate site; it is not required for normal development.
 
-The UI follows Vercel's [design guidelines](https://vercel.com/design.md): Geist type, a monochrome palette, minimal motion and a theme that follows the system setting.
+`public/sw.js` removes the old offline service worker and its caches. Keep it until older installs have had time to update.

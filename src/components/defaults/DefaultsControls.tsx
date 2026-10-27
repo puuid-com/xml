@@ -103,8 +103,12 @@ function AddDefaultForm({ existing }: { existing: Array<string> }) {
     onSubmit: ({ value, formApi }) => {
       const key = value.key.trim()
       if (!key) return
-      setDefault(key, value.value)
-      formApi.reset()
+      return setDefault(key, value.value).isPersisted.promise.then(
+        () => formApi.reset(),
+        () => {
+          // Keep the entered value when the workspace reports a save error.
+        },
+      )
     },
   })
 
@@ -144,7 +148,9 @@ function AddDefaultForm({ existing }: { existing: Array<string> }) {
           />
         )}
       </form.Field>
-      <form.Subscribe selector={(s) => s.values.key.trim() !== ''}>
+      <form.Subscribe
+        selector={(s) => !s.isSubmitting && s.values.key.trim() !== ''}
+      >
         {(canSubmit) => (
           <Button type="submit" size="sm" disabled={!canSubmit}>
             {m.defaults_add()}

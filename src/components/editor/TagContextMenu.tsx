@@ -109,8 +109,12 @@ export function TagContextMenu({ children }: { children: React.ReactNode }) {
             <ContextMenuSeparator />
             <ContextMenuItem
               onSelect={() => {
-                setDefault(leaf.name, leaf.value)
-                notify.success(m.defaults_saved({ name: leaf.name }))
+                void setDefault(leaf.name, leaf.value).isPersisted.promise.then(
+                  () => notify.success(m.defaults_saved({ name: leaf.name })),
+                  () => {
+                    // The workspace reports the failed write.
+                  },
+                )
               }}
             >
               <IconBookmark />

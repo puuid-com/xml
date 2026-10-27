@@ -14,7 +14,7 @@ import {
   uiStore,
 } from './ui-store'
 import { commitDefaultsActive } from '#/components/editor/actions'
-import { dropEditorState } from '#/components/editor/CodeEditor'
+import { dropEditorState } from '#/components/editor/editor-session'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,8 +65,12 @@ function RenameForm({ id, name }: { id: string; name: string }) {
   const form = useForm({
     defaultValues: { name },
     onSubmit: ({ value }) => {
-      renameFile(id, value.name)
-      askRename(null)
+      return renameFile(id, value.name)?.isPersisted.promise.then(
+        () => askRename(null),
+        () => {
+          // The workspace reports the failed write; keep the draft open.
+        },
+      )
     },
   })
 
@@ -118,7 +122,7 @@ function RenameForm({ id, name }: { id: string; name: string }) {
         <Button type="button" variant="outline" onClick={() => askRename(null)}>
           {m.cancel()}
         </Button>
-        <form.Subscribe selector={(s) => s.canSubmit}>
+        <form.Subscribe selector={(s) => s.canSubmit && !s.isSubmitting}>
           {(canSubmit) => (
             <Button type="submit" disabled={!canSubmit}>
               {m.rename_submit()}
@@ -139,20 +143,24 @@ export function CloseDialog({ openIds }: { openIds: Array<string> }) {
     if (!file || closing) return
     const wasActive = sessionStore.state.activeId === file.id
     setClosing(true)
-    try {
-      if (wasActive) {
-        const index = openIds.indexOf(file.id)
-        setActive(neighbour(openIds, index) ?? null)
-      }
-      await closeFile(file.id)
-      dropEditorState(file.id)
-      askClose(null)
-    } catch {
-      if (wasActive) setActive(file.id)
-      notify.error(m.archive_delete_failed())
-    } finally {
-      setClosing(false)
+    if (wasActive) {
+      const index = openIds.indexOf(file.id)
+      setActive(neighbour(openIds, index) ?? null)
     }
+    await closeFile(file.id)
+      .then(
+        () => {
+          dropEditorState(file.id)
+          askClose(null)
+        },
+        () => {
+          if (wasActive) setActive(file.id)
+          notify.error(m.archive_delete_failed())
+        },
+      )
+      .finally(() => {
+        setClosing(false)
+      })
   }
 
   return (
@@ -343,9 +351,15 @@ function VariableValueForm({ name, value }: { name: string; value: string }) {
   const form = useForm({
     defaultValues: { value },
     onSubmit: ({ value: submitted }) => {
-      setVariable(name, submitted.value)
-      askVariableValue(null)
-      notify.success(m.variables_saved({ name }))
+      return setVariable(name, submitted.value)?.isPersisted.promise.then(
+        () => {
+          askVariableValue(null)
+          notify.success(m.variables_saved({ name }))
+        },
+        () => {
+          // The workspace reports the failed write; keep the draft open.
+        },
+      )
     },
   })
 
@@ -385,7 +399,13 @@ function VariableValueForm({ name, value }: { name: string; value: string }) {
         >
           {m.cancel()}
         </Button>
-        <Button type="submit">{m.variables_save()}</Button>
+        <form.Subscribe selector={(s) => s.canSubmit && !s.isSubmitting}>
+          {(canSubmit) => (
+            <Button type="submit" disabled={!canSubmit}>
+              {m.variables_save()}
+            </Button>
+          )}
+        </form.Subscribe>
       </DialogFooter>
     </form>
   )

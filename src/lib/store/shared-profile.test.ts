@@ -42,8 +42,8 @@ function clearAll() {
 }
 
 /** A profile with one of each rule, active through a file of its own. */
-function workProfile() {
-  const profile = createProfile({ name: 'Work', color: 'green' })
+async function workProfile() {
+  const profile = await createProfile({ name: 'Work', color: 'green' })
   setActive(createFile('a.xml', '', profile.id).id)
   setHighlight('price', 'red')
   pinTag('total')
@@ -68,7 +68,7 @@ beforeEach(clearAll)
 
 describe('shared profiles', () => {
   it('packs a profile and its rules into a link', async () => {
-    const profile = workProfile()
+    const profile = await workProfile()
     const shared = await throughLink(snapshotProfile(profile.id)!)
     expect(shared).toMatchObject({
       id: profile.id,
@@ -85,7 +85,7 @@ describe('shared profiles', () => {
   })
 
   it('recognises the profile a link came from', async () => {
-    const profile = workProfile()
+    const profile = await workProfile()
     const shared = await throughLink(snapshotProfile(profile.id)!)
     expect(matchSharedProfile(shared)).toMatchObject({ kind: 'same' })
     setHighlight('price', 'blue')
@@ -109,7 +109,7 @@ describe('shared profiles', () => {
   })
 
   it('imports a profile under its own id when free', async () => {
-    const source = workProfile()
+    const source = await workProfile()
     const shared = snapshotProfile(source.id)!
     await deleteProfile(source.id)
     const imported = importSharedProfile(shared)
@@ -126,8 +126,8 @@ describe('shared profiles', () => {
     ])
   })
 
-  it('updates a profile from a link, keeping variables it leaves out', () => {
-    const profile = workProfile()
+  it('updates a profile from a link, keeping variables it leaves out', async () => {
+    const profile = await workProfile()
     const shared: SharedProfile = {
       ...snapshotProfile(profile.id, { variables: false })!,
       name: 'Work 2',

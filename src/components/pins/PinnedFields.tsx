@@ -49,7 +49,7 @@ import { usePins } from '#/hooks/use-pins'
 import { useFormatSettings } from '#/hooks/use-profiles'
 import { setValue } from '#/lib/document'
 import { localName, sameName } from '#/lib/names'
-import { groupPins } from '#/lib/pin-groups'
+import { groupPins, pinRows } from '#/lib/pin-groups'
 import { moveItem } from '#/lib/sort-order'
 import { reorderPins, unpinTag } from '#/lib/store/pins'
 import { cn } from '#/lib/utils'
@@ -88,13 +88,7 @@ export function PinnedFields() {
   if (pins.length === 0) return null
 
   const groups = groupPins(pins, (pin) => highlights.get(localName(pin.tag)))
-  // Flat rows in display order, each knowing the bounds of its group.
-  let offset = 0
-  const rows = groups.flatMap((group, g) => {
-    const first = offset
-    offset += group.length
-    return group.map((pin) => ({ pin, group: g, first, last: offset - 1 }))
-  })
+  const rows = pinRows(groups)
 
   // Saving the grouped order keeps each group's pins together.
   const move = (from: number, to: number) => {

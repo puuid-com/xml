@@ -1,5 +1,3 @@
-import { forceLinting } from '@codemirror/lint'
-import { Annotation, EditorState, Transaction } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
 
@@ -17,9 +15,9 @@ import {
   publishParse,
   setView,
 } from './editor-store'
-import { docLanguage, languageCompartment, languageExtension } from './language'
+import { createEditorSession, remoteSync } from './editor-session'
 import { setVarValues } from './dynamic-vars'
-import { editorExtensions, fileIdField, setDefaultRules } from './extensions'
+import { editorExtensions, setDefaultRules } from './extensions'
 import { setLongValueLimit } from './long-values'
 import { setZplTags } from './zpl-links'
 import { setTagHighlights } from './tag-highlights'
@@ -28,30 +26,11 @@ import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
 import { useFormatSettings } from '#/hooks/use-profiles'
 import { useVariableValues } from '#/hooks/use-variables'
-import { languageOf } from '#/lib/document'
 import { shortcuts } from '#/lib/shortcuts'
-import { filesCollection, saveContent } from '#/lib/store/files'
-import { writerId } from '#/lib/store/session'
-import { diffChange } from '#/lib/xml/edit'
+import { saveContent } from '#/lib/store/files'
 import { m } from '#/paraglide/messages'
-import type { Extension, TransactionSpec } from '@codemirror/state'
+import type { EditorState, Extension } from '@codemirror/state'
 import type { DefaultRule } from '#/lib/xml/defaults'
-import type { TextChange } from '#/lib/xml/edit'
-
-/** Marks changes that came from another browser tab, so they are not saved back. */
-const remoteSync = Annotation.define<boolean>()
-
-/** Applies another tab's edit without saving it back or adding an undo step. */
-function remoteChange(changes: TextChange): TransactionSpec {
-  return {
-    changes,
-    annotations: [remoteSync.of(true), Transaction.addToHistory.of(false)],
-  }
-}
-
-// One editor state per file, kept across tab switches so undo history,
-// selection and scroll survive. Lives at module scope to outlive remounts.
-const states = new Map<string, EditorState>()
 
 function publishCursorFrom(state: EditorState) {
   const pos = state.selection.main.head
@@ -104,48 +83,6 @@ function sharedExtensions(
   return extensions
 }
 
-function stateFor(
-  fileId: string,
-  highlights: ReadonlyMap<string, string>,
-  defaults: ReadonlyArray<DefaultRule>,
-  values: ReadonlyMap<string, string>,
-  shortenAt: number,
-) {
-  const file = filesCollection.get(fileId)
-  const content = file?.content ?? ''
-  const cached = states.get(fileId)
-  if (cached) {
-    // Catch up with edits made elsewhere while this file was not shown.
-    const change = diffChange(cached.doc.toString(), content)
-    if (!change) return cached
-    return cached.update(remoteChange(change)).state
-  }
-  return EditorState.create({
-    doc: content,
-    extensions: [
-      fileIdField.init(() => fileId),
-      languageCompartment.of(
-        languageExtension(languageOf(file?.name ?? '', content)),
-      ),
-      sharedExtensions(highlights, defaults, values, shortenAt),
-    ],
-  })
-}
-
-/**
- * Switches the editor to the language the file's name calls for, e.g. after
- * a rename. Returns whether it changed.
- */
-function syncLanguage(view: EditorView, name: string) {
-  const language = languageOf(name, view.state.doc.toString())
-  if (view.state.facet(docLanguage) === language) return false
-  view.dispatch({
-    effects: languageCompartment.reconfigure(languageExtension(language)),
-  })
-  forceLinting(view)
-  return true
-}
-
 export function CodeEditor({ fileId }: { fileId: string }) {
   const parentRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
@@ -160,48 +97,23 @@ export function CodeEditor({ fileId }: { fileId: string }) {
   const shortenAtRef = useRef(shortenAt)
   const zplTags = format.zplTags
   const zplTagsRef = useRef(zplTags)
-  const activeName = useRef<string | null>(null)
+  const sessionRef = useRef<ReturnType<typeof createEditorSession> | null>(null)
 
   useEffect(() => {
     const view = new EditorView({ parent: parentRef.current! })
     viewRef.current = view
     setView(view)
 
-    // Apply edits from other browser tabs (they arrive via storage events).
-    const subscription = filesCollection.subscribeChanges((changes) => {
-      for (const change of changes) {
-        if (change.type === 'delete') {
-          states.delete(String(change.key))
-          continue
-        }
-        if (change.type !== 'update') continue
-        const file = change.value
-        const active = view.state.field(fileIdField, false) === file.id
-        if (active && file.name !== activeName.current) {
-          activeName.current = file.name
-          if (syncLanguage(view, file.name)) {
-            publishParse(file.id, parseActive())
-          }
-        }
-        if (file.writer === writerId) continue
-        const state = active ? view.state : states.get(file.id)
-        if (!state) continue
-        const diff = diffChange(state.doc.toString(), file.content)
-        if (!diff) continue
-        const spec = remoteChange(diff)
-        if (active) {
-          view.dispatch(spec)
-          notify.info(m.updated_elsewhere({ name: file.name }))
-        } else {
-          states.set(file.id, state.update(spec).state)
-        }
-      }
+    const session = createEditorSession(view, {
+      onRemoteChange: (file) =>
+        notify.info(m.updated_elsewhere({ name: file.name })),
+      onLanguageChange: (id) => publishParse(id, parseActive()),
     })
+    sessionRef.current = session
 
     return () => {
-      subscription.unsubscribe()
-      const id = view.state.field(fileIdField, false)
-      if (id) states.set(id, view.state)
+      session.dispose()
+      sessionRef.current = null
       view.destroy()
       viewRef.current = null
       setView(null)
@@ -211,21 +123,16 @@ export function CodeEditor({ fileId }: { fileId: string }) {
   useEffect(() => {
     const view = viewRef.current
     if (!view) return
-    const previous = view.state.field(fileIdField, false)
-    if (previous === fileId) return
-    if (previous) states.set(previous, view.state)
-
-    const state = stateFor(
+    const opened = sessionRef.current?.open(
       fileId,
-      highlightsRef.current,
-      defaultsRef.current,
-      valuesRef.current,
-      shortenAtRef.current,
+      sharedExtensions(
+        highlightsRef.current,
+        defaultsRef.current,
+        valuesRef.current,
+        shortenAtRef.current,
+      ),
     )
-    view.setState(state)
-    activeName.current = filesCollection.get(fileId)?.name ?? null
-    // A cached state keeps the language it had; the file may since be renamed.
-    if (activeName.current) syncLanguage(view, activeName.current)
+    if (!opened) return
     view.dispatch({
       effects: [
         setTagHighlights(highlightsRef.current),
@@ -270,9 +177,4 @@ export function CodeEditor({ fileId }: { fileId: string }) {
       <div ref={parentRef} className="h-full min-h-0 overflow-hidden" />
     </TagContextMenu>
   )
-}
-
-/** Forgets a file's editor state, e.g. after deleting it. */
-export function dropEditorState(fileId: string) {
-  states.delete(fileId)
 }
