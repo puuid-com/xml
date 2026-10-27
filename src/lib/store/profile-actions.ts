@@ -37,6 +37,7 @@ export function cloneProfile(
     id: newId(),
     tag: p.tag,
     createdAt: p.createdAt,
+    order: p.order,
     profileId: copy.id,
   }))
   const defaults = owned(defaultsCollection.values()).map((r) => ({

@@ -35,7 +35,14 @@ import {
   setGroupEnabled,
   setHighlight,
 } from './highlights'
-import { findPin, pinTag, pinsCollection, togglePin, unpinTag } from './pins'
+import {
+  findPin,
+  pinTag,
+  pinsCollection,
+  reorderPins,
+  togglePin,
+  unpinTag,
+} from './pins'
 import {
   findVariable,
   removeVariable,
@@ -340,6 +347,17 @@ describe('pins', () => {
     expect(findPin('currency')).toBeDefined()
     togglePin('currency')
     expect(findPin('currency')).toBeUndefined()
+  })
+
+  it('saves a new order and keeps later pins last', () => {
+    for (const tag of ['a', 'b', 'c']) pinTag(tag)
+    const id = (tag: string) => findPin(tag)!.id
+    reorderPins([id('c'), id('a'), id('b')])
+    pinTag('d')
+    const sorted = [...pinsCollection.values()].sort(
+      (x, y) => (x.order ?? x.createdAt) - (y.order ?? y.createdAt),
+    )
+    expect(sorted.map((p) => p.tag)).toEqual(['c', 'a', 'b', 'd'])
   })
 })
 

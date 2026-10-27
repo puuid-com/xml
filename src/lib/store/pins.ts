@@ -9,6 +9,8 @@ export const pinSchema = z.object({
   /** Tag or key name without its prefix (`Body` for `soap:Body`). */
   tag: z.string(),
   createdAt: z.number(),
+  /** Position once reordered; pins without one sort after, by `createdAt`. */
+  order: z.number().optional(),
   profileId: z.string(),
 })
 
@@ -42,4 +44,14 @@ export function unpinTag(tag: string) {
 export function togglePin(tag: string) {
   if (findPin(tag)) unpinTag(tag)
   else pinTag(tag)
+}
+
+/** Saves the active profile's pins in the order of `ids`. */
+export function reorderPins(ids: Array<string>) {
+  if (ids.length === 0) return
+  pinsCollection.update(ids, (drafts) => {
+    drafts.forEach((draft, i) => {
+      draft.order = i
+    })
+  })
 }
