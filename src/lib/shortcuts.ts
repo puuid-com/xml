@@ -17,6 +17,7 @@ export interface Shortcut {
 export const shortcuts = {
   format: { key: 'Shift-Alt-f', keys: ['⇧', alt, 'F'] },
   save: { key: 'Mod-s', keys: [mod, 'S'] },
+  saveAs: { key: 'Shift-Mod-s', keys: ['⇧', mod, 'S'] },
   highlight: { key: 'Alt-h', keys: [alt, 'H'] },
   applyDefaults: { key: 'Shift-Alt-d', keys: ['⇧', alt, 'D'] },
   resolveVars: { key: 'Shift-Alt-v', keys: ['⇧', alt, 'V'] },

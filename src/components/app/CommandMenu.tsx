@@ -6,6 +6,7 @@ import {
   IconCopy,
   IconDatabaseExport,
   IconDatabaseImport,
+  IconDeviceFloppy,
   IconDownload,
   IconFileCode,
   IconFilePlus,
@@ -45,6 +46,7 @@ import {
   highlightAtCursor,
   resolveVarsActive,
 } from '#/components/editor/actions'
+import { saveAs } from '#/components/editor/disk'
 import { localeNames } from '#/components/LocaleSwitcher'
 import {
   switchProfile,
@@ -77,6 +79,7 @@ import { useTagCounts } from '#/hooks/use-tag-counts'
 import { languageOf } from '#/lib/document'
 import { localName } from '#/lib/names'
 import { profileShortcuts, shortcutLabel, shortcuts } from '#/lib/shortcuts'
+import { canWriteDisk } from '#/lib/store/disk'
 import { setHighlight } from '#/lib/store/highlights'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
@@ -320,6 +323,15 @@ function RootCommands({
               <IconDownload />
               {m.file_download()}
             </CommandItem>
+            {canWriteDisk() && (
+              <CommandItem onSelect={() => run(() => void saveAs(activeId))}>
+                <IconDeviceFloppy />
+                {m.file_save_disk()}
+                <CommandShortcut>
+                  {shortcutLabel(shortcuts.saveAs)}
+                </CommandShortcut>
+              </CommandItem>
+            )}
             <CommandItem onSelect={() => run(() => void copyActive())}>
               <IconClipboard />
               {m.file_copy()}

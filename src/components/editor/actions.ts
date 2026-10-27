@@ -179,13 +179,6 @@ export function leafAt(pos: number) {
     : null
 }
 
-/** Files save as you type; this only formats when that option is on. */
-export function saveActive() {
-  if (activeFormat().formatOnSave) formatActive()
-  notify.success(m.saved_locally())
-  return true
-}
-
 export function downloadFile(id: string) {
   const file = filesCollection.get(id)
   if (!file) return

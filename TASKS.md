@@ -161,6 +161,5 @@ The headless Chrome scripts that verified the merged features live in `/tmp/sw-v
 
 - **XPath and JSONPath queries.** Useful, but tree search, highlights and pins cover most of it, and mapping results back to source positions is the hard part.
 - **XML ⇄ JSON conversion.** No standard mapping for attributes, mixed content or one-item lists, so the output is wrong for someone.
-- **Editing files on disk** (File System Access API). The read-write pickers are Chromium-only, and it adds a second source of truth next to localStorage.
 - **Schema validation** (XSD, JSON Schema). XSD needs a large WebAssembly build of libxml2. Heavy for a simple site.
 - **Minify and sample files.** Removed on purpose earlier.

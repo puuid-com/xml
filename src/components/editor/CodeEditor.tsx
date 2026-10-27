@@ -9,8 +9,8 @@ import {
   formatActive,
   highlightAtCursor,
   resolveVarsActive,
-  saveActive,
 } from './actions'
+import { saveActive, saveActiveAs } from './disk'
 import {
   parseActive,
   publishCursor,
@@ -74,6 +74,7 @@ function sharedExtensions(
       keys: [
         { key: shortcuts.format.key, run: formatActive, preventDefault: true },
         { key: shortcuts.save.key, run: saveActive, preventDefault: true },
+        { key: shortcuts.saveAs.key, run: saveActiveAs, preventDefault: true },
         {
           key: shortcuts.highlight.key,
           run: highlightAtCursor,

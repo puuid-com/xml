@@ -1,4 +1,5 @@
 import { IconFileCode, IconPlus, IconX } from '@tabler/icons-react'
+import { useSelector } from '@tanstack/react-store'
 import { useState } from 'react'
 
 import { newFile } from './files'
@@ -6,8 +7,10 @@ import { ToolbarButton } from './ToolbarButton'
 import { askClose, askRename } from './ui-store'
 import { ProfileTag } from '#/components/profiles/ProfileTag'
 import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
+import { useFileContent } from '#/hooks/use-files'
 import { useProfiles } from '#/hooks/use-profiles'
 import { shortcuts } from '#/lib/shortcuts'
+import { diskStore } from '#/lib/store/disk'
 import { reorderFile } from '#/lib/store/files'
 import { resolveProfile } from '#/lib/store/profiles'
 import { setActive } from '#/lib/store/session'
@@ -91,6 +94,7 @@ export function TabStrip({
                 >
                   <IconFileCode className="size-3.5! text-muted-foreground" />
                   <span className="truncate">{file.name}</span>
+                  <UnsavedMark fileId={file.id} />
                   {profile && (
                     <ProfileTag
                       profile={profile}
@@ -125,5 +129,26 @@ export function TabStrip({
         </TabsList>
       </Tabs>
     </div>
+  )
+}
+
+/** A dot on a tab linked to a file on disk whose changes aren't written yet. */
+function UnsavedMark({ fileId }: { fileId: string }) {
+  const saved = useSelector(diskStore, (links) => links[fileId]?.saved)
+  if (saved === undefined) return null
+  return <UnsavedDot fileId={fileId} saved={saved} />
+}
+
+// Apart from UnsavedMark so only linked tabs follow the content as it's typed.
+function UnsavedDot({ fileId, saved }: { fileId: string; saved: string }) {
+  const file = useFileContent(fileId)
+  if (!file || file.content === saved) return null
+  return (
+    <span
+      role="img"
+      aria-label={m.tab_unsaved_disk()}
+      title={m.tab_unsaved_disk()}
+      className="size-1.5 shrink-0 rounded-full bg-foreground"
+    />
   )
 }

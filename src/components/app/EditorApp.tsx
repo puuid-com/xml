@@ -19,7 +19,15 @@ import {
   RestoreDialog,
   VariableValueDialog,
 } from './Dialogs'
-import { ACCEPTED_TYPES, importFiles, newFile, newJsonFile } from './files'
+import {
+  ACCEPTED_TYPES,
+  canOpenFromDisk,
+  dropFiles,
+  importFiles,
+  newFile,
+  newJsonFile,
+  pickFromDisk,
+} from './files'
 import { OpenSharedDialog, ShareLinkDialog } from './ShareDialog'
 import { SidePanel } from './SidePanel'
 import { StatusBar } from './StatusBar'
@@ -95,7 +103,11 @@ export function EditorApp() {
     if (storedCompareId && !compareId) setCompareId(null)
   }, [storedCompareId, compareId])
 
-  const openFromDisk = () => inputRef.current?.click()
+  // Browsers that can write back to the file open it with a handle.
+  const openFromDisk = () => {
+    if (canOpenFromDisk()) void pickFromDisk()
+    else inputRef.current?.click()
+  }
 
   useAppShortcuts({
     activeId,
@@ -129,7 +141,7 @@ export function EditorApp() {
         if (!hasFiles(e)) return
         e.preventDefault()
         setDragging(false)
-        void importFiles(e.dataTransfer.files)
+        dropFiles(e.dataTransfer)
       }}
     >
       <input
