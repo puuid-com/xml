@@ -2,7 +2,7 @@ import { IconPlus, IconTrash } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 
-import { ColorSwatches } from './ColorSwatches'
+import { ColorSwatches, colorLabel } from './ColorSwatches'
 import { hlStyle } from './hl-style'
 import { SwatchMenuRow } from './SwatchMenuRow'
 import { MatchNavItems, TagMenuHeader } from './TagMenuItems'
@@ -31,9 +31,12 @@ import { useTagCounts } from '#/hooks/use-tag-counts'
 import { localName } from '#/lib/names'
 import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import {
+  groupByColor,
   highlightCss,
   nextPreset,
+  recolorGroup,
   removeHighlight,
+  setGroupEnabled,
   setHighlight,
   toggleHighlight,
 } from '#/lib/store/highlights'
@@ -41,23 +44,23 @@ import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
 import type { Highlight } from '#/lib/store/highlights'
 
-/** Legend of highlight rules in the bottom bar; each chip cycles through its matches. */
+/**
+ * Legend of highlight rules in the bottom bar. Rules sharing a colour sit in
+ * one pill; each tag in it cycles through its matches.
+ */
 export function HighlightsBar() {
   const rules = useHighlights()
   const counts = useTagCounts()
+  const countOf = (rule: Highlight) => counts.get(localName(rule.tag)) ?? 0
 
   return (
     <div
       role="toolbar"
       aria-label={m.highlights_title()}
-      className="flex h-full min-w-0 shrink items-center gap-1 overflow-x-auto [scrollbar-width:none]"
+      className="flex h-full min-w-0 shrink items-center gap-2 overflow-x-auto [scrollbar-width:none]"
     >
-      {rules.map((rule) => (
-        <RuleChip
-          key={rule.id}
-          rule={rule}
-          count={counts.get(localName(rule.tag)) ?? 0}
-        />
+      {groupByColor(rules).map((group) => (
+        <ColorGroup key={group[0].id} rules={group} countOf={countOf} />
       ))}
       <AddRulePopover
         tagNames={[...counts.keys()].sort()}
@@ -74,8 +77,56 @@ export function HighlightsBar() {
   )
 }
 
-function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
+function ColorGroup({
+  rules,
+  countOf,
+}: {
+  rules: Array<Highlight>
+  countOf: (rule: Highlight) => number
+}) {
+  const { color } = rules[0]
+  const anyOn = rules.some((r) => r.enabled)
+  const total = rules.reduce((sum, r) => sum + countOf(r), 0)
+  return (
+    <div
+      role="group"
+      aria-label={m.highlight_group({ color: colorLabel(color) })}
+      className="flex shrink-0 items-center gap-1.5"
+    >
+      <div
+        style={hlStyle(highlightCss(color))}
+        className={cn(
+          'flex items-stretch overflow-hidden',
+          anyOn ? 'hl-tag' : 'rounded-[3px] ring-1 ring-(--hl)',
+        )}
+      >
+        {rules.map((rule) => (
+          <RuleSegment
+            key={rule.id}
+            rule={rule}
+            count={countOf(rule)}
+            group={rules}
+          />
+        ))}
+      </div>
+      <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+        {total}
+      </span>
+    </div>
+  )
+}
+
+function RuleSegment({
+  rule,
+  count,
+  group,
+}: {
+  rule: Highlight
+  count: number
+  group: Array<Highlight>
+}) {
   const colors = useHighlightSwatches()
+  const allOn = group.every((r) => r.enabled)
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -83,26 +134,14 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
           variant="ghost"
           size="sm"
           onClick={() => cycleTag(rule.tag)}
-          title={m.highlight_chip_hint()}
-          className="h-11 min-w-11 shrink-0 gap-1.5 px-1.5 font-mono text-[11px] font-normal md:h-6 md:min-w-0"
+          title={`${m.highlight_matches({ count })} · ${m.highlight_chip_hint()}`}
+          aria-label={`${rule.tag}, ${m.highlight_matches({ count })}`}
+          className={cn(
+            'h-11 min-w-11 px-1.5 font-mono text-[11px] font-normal not-first:border-l not-first:border-(--hl)/35 hover:bg-(--hl)/15 data-[state=open]:bg-(--hl)/20 md:h-5 md:min-w-0 dark:hover:bg-(--hl)/20',
+            rule.enabled ? 'hl-ink' : 'text-muted-foreground line-through',
+          )}
         >
-          <span
-            style={hlStyle(highlightCss(rule.color))}
-            className={cn(
-              'px-0.5',
-              rule.enabled
-                ? 'hl-tag hl-ink'
-                : 'rounded-[2px] text-muted-foreground line-through ring-1 ring-(--hl)',
-            )}
-          >
-            {rule.tag}
-          </span>
-          <span
-            className="text-muted-foreground tabular-nums"
-            aria-label={m.highlight_matches({ count })}
-          >
-            {count}
-          </span>
+          {rule.tag}
         </Button>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-72">
@@ -122,6 +161,24 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
           value={rule.color}
           onSelect={(c) => setHighlight(rule.tag, c)}
         />
+        {group.length > 1 && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuCheckboxItem
+              checked={allOn}
+              onCheckedChange={() => setGroupEnabled(rule.color, !allOn)}
+            >
+              {m.highlight_group_show({ count: group.length })}
+            </ContextMenuCheckboxItem>
+            <SwatchMenuRow
+              colors={colors}
+              label={m.highlight_group_color({ count: group.length })}
+              value={rule.color}
+              onSelect={(c) => recolorGroup(rule.color, c)}
+            />
+          </>
+        )}
+        <ContextMenuSeparator />
         <ContextMenuItem
           variant="destructive"
           onSelect={() => removeHighlight(rule.id)}

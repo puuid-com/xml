@@ -27,9 +27,12 @@ import {
 } from './defaults'
 import {
   findHighlight,
+  groupByColor,
   highlightCss,
   highlightsCollection,
   nextPreset,
+  recolorGroup,
+  setGroupEnabled,
   setHighlight,
 } from './highlights'
 import { findPin, pinTag, pinsCollection, togglePin, unpinTag } from './pins'
@@ -241,6 +244,33 @@ describe('highlights', () => {
       { tag: 'Body', color: 'red' },
     ])
     expect(findHighlight('Body')).toBeDefined()
+  })
+
+  it('groups rules by colour in order of first appearance', () => {
+    const rules = [
+      { tag: 'a', color: 'red' },
+      { tag: 'b', color: '#ABCDEF' },
+      { tag: 'c', color: 'red' },
+      { tag: 'd', color: '#abcdef' },
+    ]
+    expect(groupByColor(rules).map((g) => g.map((r) => r.tag))).toEqual([
+      ['a', 'c'],
+      ['b', 'd'],
+    ])
+  })
+
+  it('recolours and toggles a whole colour group', () => {
+    setHighlight('a', 'red')
+    setHighlight('b', 'red')
+    setHighlight('c', 'teal')
+    setGroupEnabled('red', false)
+    expect(findHighlight('a')?.enabled).toBe(false)
+    expect(findHighlight('b')?.enabled).toBe(false)
+    expect(findHighlight('c')?.enabled).toBe(true)
+    recolorGroup('red', 'green')
+    expect(findHighlight('a')?.color).toBe('green')
+    expect(findHighlight('b')?.color).toBe('green')
+    expect(findHighlight('c')?.color).toBe('teal')
   })
 
   it('resolves preset and custom colours to CSS', () => {

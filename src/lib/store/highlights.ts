@@ -79,3 +79,43 @@ export function toggleHighlight(id: string) {
 export function removeHighlight(id: string) {
   if (highlightsCollection.has(id)) highlightsCollection.delete(id)
 }
+
+/** Rules grouped by colour (case-insensitive), in order of first appearance. */
+export function groupByColor<T extends { color: string }>(
+  rules: ReadonlyArray<T>,
+): Array<Array<T>> {
+  const groups = new Map<string, Array<T>>()
+  for (const rule of rules) {
+    const key = rule.color.toLowerCase()
+    const group = groups.get(key)
+    if (group) group.push(rule)
+    else groups.set(key, [rule])
+  }
+  return [...groups.values()]
+}
+
+function colorGroup(color: string, profileId = activeProfileId()) {
+  const key = color.toLowerCase()
+  return profileHighlights(profileId).filter(
+    (r) => r.color.toLowerCase() === key,
+  )
+}
+
+/** Recolours every rule of the active profile that uses `from`. */
+export function recolorGroup(from: string, to: string) {
+  for (const rule of colorGroup(from)) {
+    highlightsCollection.update(rule.id, (draft) => {
+      draft.color = to
+    })
+  }
+}
+
+/** Shows or hides every rule of the active profile that uses `color`. */
+export function setGroupEnabled(color: string, enabled: boolean) {
+  for (const rule of colorGroup(color)) {
+    if (rule.enabled === enabled) continue
+    highlightsCollection.update(rule.id, (draft) => {
+      draft.enabled = enabled
+    })
+  }
+}
