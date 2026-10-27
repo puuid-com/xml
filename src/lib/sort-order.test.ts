@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { appendNames, documentNames, moveItem } from './sort-order'
+import {
+  appendNames,
+  documentNames,
+  moveItem,
+  templateOrder,
+} from './sort-order'
 import { parseXml } from './xml/parse'
 
 describe('sort order', () => {
@@ -33,5 +38,28 @@ describe('sort order', () => {
   it('lists names in the order they first appear', () => {
     const doc = parseXml('<r id="1"><b k="x"/><a/><b k="y" id="2"/></r>')
     expect(documentNames(doc.nodes)).toEqual(['r', '@id', 'b', '@k', 'a'])
+  })
+
+  it('takes the order of a template file, prefixes aside', () => {
+    expect(
+      templateOrder(
+        'template.xml',
+        '<soap:Envelope xmlns:soap="u"><soap:Header/><ns:Body ns:id="1"><b/><a/></ns:Body></soap:Envelope>',
+      ),
+    ).toEqual({
+      ok: true,
+      order: ['Envelope', '@soap', 'Header', 'Body', '@id', 'b', 'a'],
+    })
+  })
+
+  it('takes the key order of a JSON template', () => {
+    expect(templateOrder('t.json', '{"b": 1, "a": {"d": 2, "c": 3}}')).toEqual({
+      ok: true,
+      order: ['b', 'a', 'd', 'c'],
+    })
+  })
+
+  it('refuses a template with errors', () => {
+    expect(templateOrder('t.xml', '<r><a></r>').ok).toBe(false)
   })
 })

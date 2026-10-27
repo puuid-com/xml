@@ -8,6 +8,7 @@ import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
 import { useEffect, useRef, useState } from 'react'
 
+import { pickTemplate } from './sort-template'
 import { editorStore } from '#/components/editor/editor-store'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -186,6 +187,14 @@ export function SortOrderEditor({ order }: { order: Array<string> }) {
               {missing.length}
             </span>
           )}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          title={m.sort_order_template_hint()}
+          onClick={pickTemplate}
+        >
+          {m.sort_order_template()}
         </Button>
         <div className="flex-1" />
         {order.length > 0 && (
