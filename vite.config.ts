@@ -8,10 +8,13 @@ import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from '@cloudflare/vite-plugin'
+import { redact } from '@tanstack/redact/vite'
 
 import { serviceWorker } from './plugins/service-worker.ts'
 
 const config = defineConfig({
+  // Redact has to redirect React imports inside server dependencies too.
+  ssr: { noExternal: true },
   resolve: { tsconfigPaths: true },
   // The Cloudflare plugin turns on sourcemaps for the worker build, but
   // vite:css-post reads the top-level flag and skips its map when that is
@@ -28,8 +31,9 @@ const config = defineConfig({
             codeSplitting: {
               groups: [
                 {
+                  // Redact replaces react and react-dom at build time.
                   name: 'react',
-                  test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+                  test: /node_modules[\\/](react|react-dom|scheduler|@tanstack[\\/]redact)[\\/]/,
                 },
                 {
                   name: 'codemirror',
@@ -59,6 +63,8 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
     babel({ presets: [reactCompilerPreset()] }),
+    // Swaps react and react-dom for the TanStack Redact runtime.
+    redact(),
     // Production builds only: emits /sw.js for offline use. See README.
     serviceWorker({
       project: './project.inlang',
