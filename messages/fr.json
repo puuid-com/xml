@@ -134,6 +134,7 @@
   "pin_tag": "Épingler <{name}>",
   "pin_remove": "Désépingler <{name}>",
   "pin_copy": "Copier la valeur de <{name}>",
+  "pin_copy_var": "Copier <{name}> comme variable",
   "pin_remove_description": "Il quitte les champs épinglés. Vous pourrez l'épingler de nouveau depuis le menu de la balise.",
   "pin_remove_confirm": "Désépingler",
   "pin_move": "Déplacer <{name}>",

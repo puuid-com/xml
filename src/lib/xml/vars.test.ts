@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { convertVars, findVars, trimVar } from './vars'
+import { convertVars, findVars, trimVar, varStyleOf } from './vars'
 
 describe('vars', () => {
   it('finds ${name} variables alongside the other styles', () => {
@@ -30,5 +30,14 @@ describe('vars', () => {
       '<a>${host}</a><b>${port}</b><c>${$guid}</c>',
     )
     expect(convertVars('{{a}}', 'curly').count).toBe(0)
+  })
+})
+
+describe('varStyleOf', () => {
+  it('reads the style of the first variable', () => {
+    expect(varStyleOf('<a>${x}</a><b>{{y}}</b>')).toBe('dollar')
+    expect(varStyleOf('<a><<x>></a>')).toBe('angle')
+    expect(varStyleOf('<a>{{ x }}</a>')).toBe('curly')
+    expect(varStyleOf('<a>x</a>')).toBeUndefined()
   })
 })

@@ -33,6 +33,15 @@ export function writeVar(name: string, style: VarStyle): string {
   return open + name + close
 }
 
+/** The bracket style of the first variable in `text`, if any. */
+export function varStyleOf(text: string): VarStyle | undefined {
+  const [, angle, curly, dollar] = varRegExp().exec(text) ?? []
+  if (angle) return 'angle'
+  if (curly) return 'curly'
+  if (dollar) return 'dollar'
+  return undefined
+}
+
 export function varRegExp() {
   return new RegExp(VAR_PATTERN, 'g')
 }

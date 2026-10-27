@@ -38,7 +38,7 @@ import { resolveVars } from '#/lib/xml/dynamic-vars'
 import { diffChange } from '#/lib/xml/edit'
 import { allElements, elementAt } from '#/lib/xml/locate'
 import { hasName, isLeaf, leafValue } from '#/lib/xml/model'
-import { convertVars } from '#/lib/xml/vars'
+import { convertVars, varStyleOf, writeVar } from '#/lib/xml/vars'
 import type { VarStyle } from '#/lib/xml/vars'
 import { m } from '#/paraglide/messages'
 import type { EditorView } from '@codemirror/view'
@@ -193,6 +193,17 @@ export function convertVarsActive(style: VarStyle) {
   const change = diffChange(text, result.text)
   if (change) view.dispatch({ changes: change, userEvent: 'input.vars' })
   notify.success(m.vars_converted({ count: result.count }))
+}
+
+/**
+ * Copies `name` as a variable, in the bracket style the active file already
+ * uses, `{{name}}` when it has none.
+ */
+export function copyVar(name: string) {
+  const text = getView()?.state.doc.toString() ?? ''
+  const value = writeVar(name, varStyleOf(text) ?? 'curly')
+  void navigator.clipboard.writeText(value)
+  notify.success(m.copied(), { detail: value })
 }
 
 /** Leaf element at `pos` with its current text, if any. */

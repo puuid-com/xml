@@ -1,17 +1,16 @@
 import {
   IconArrowDown,
   IconArrowUp,
+  IconBraces,
   IconCopy,
   IconGripVertical,
-  IconPin,
   IconPinnedOff,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { Fragment, useEffect, useRef, useState } from 'react'
 
 import { notify } from '#/components/app/notice-store'
-import { PanelHeading } from '#/components/app/PanelHeading'
-import { cycleTag } from '#/components/editor/actions'
+import { copyVar, cycleTag } from '#/components/editor/actions'
 import { editAtPath, editorStore } from '#/components/editor/editor-store'
 import { hlStyle } from '#/components/highlights/hl-style'
 import {
@@ -142,11 +141,6 @@ export function PinnedFields() {
       aria-label={m.pins_title()}
       className="flex max-h-[45%] shrink-0 flex-col border-b"
     >
-      <PanelHeading>
-        <IconPin aria-hidden className="size-3.5" />
-        {m.pins_title()}
-        <span className="tabular-nums">{pins.length}</span>
-      </PanelHeading>
       <div className="grid min-h-0 grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 overflow-auto py-2 pr-3 pl-1">
         {rows.map(({ pin, group, first, last }, index) => {
           const matches = leaves.filter((el) => sameName(el.name, pin.tag))
@@ -351,6 +345,15 @@ function PinnedField({
             }}
           >
             <IconCopy className="size-3" />
+          </InputGroupButton>
+          <InputGroupButton
+            size="icon-xs"
+            aria-label={m.pin_copy_var({ name: tag })}
+            title={m.pin_copy_var({ name: tag })}
+            className="text-muted-foreground max-md:size-11"
+            onClick={() => copyVar(localName(tag))}
+          >
+            <IconBraces className="size-3" />
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
