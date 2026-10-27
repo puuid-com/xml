@@ -57,7 +57,7 @@ export function HighlightsBar() {
     <div
       role="toolbar"
       aria-label={m.highlights_title()}
-      className="flex h-full min-w-0 shrink items-center gap-2 overflow-x-auto [scrollbar-width:none]"
+      className="flex h-full min-w-0 shrink items-center gap-2 overflow-x-auto px-px [scrollbar-width:none]"
     >
       {groupByColor(rules).map((group) => (
         <ColorGroup key={group[0].id} rules={group} countOf={countOf} />
