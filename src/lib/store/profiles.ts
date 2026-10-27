@@ -56,6 +56,11 @@ function defaultProfile(): Profile {
 }
 
 export const profilesCollection = localCollection('profiles', profileSchema, {
+  // Older versions saved only the format settings that existed then.
+  upgrade: (row) => ({
+    ...row,
+    format: withDefaults(row.format as Partial<FormatSettings> | undefined),
+  }),
   initial: () => [defaultProfile()],
 })
 

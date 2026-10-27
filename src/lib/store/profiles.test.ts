@@ -44,6 +44,8 @@ beforeAll(async () => {
         enabled: true,
         createdAt: 1,
       }),
+      // Broken: no colour. It shouldn't cost the other rows.
+      's:h2': legacyItem({ id: 'h2', tag: 'x', enabled: true, createdAt: 2 }),
     }),
   )
   localStorage.setItem(
@@ -86,7 +88,9 @@ describe('migration', () => {
     expect(s.filesCollection.get('f1')?.profileId).toBe('default')
     // Moved out of localStorage once in IndexedDB.
     expect(localStorage.getItem('xml-editor:files')).toBeNull()
-    expect(localStorage.getItem('xml-editor:highlights')).toBeNull()
+    // Kept where it was, since IndexedDB refused the broken row.
+    expect(s.highlightsCollection.has('h2')).toBe(false)
+    expect(localStorage.getItem('xml-editor:highlights')).toContain('h2')
   })
 })
 

@@ -139,6 +139,7 @@ function createIndexedCollection<
 
 interface Registered {
   name: StoreName
+  schema: z.ZodType
   collection: ReturnType<typeof createIndexedCollection>
   options: LocalCollectionOptions<object>
 }
@@ -158,7 +159,7 @@ export function localCollection<
 ) {
   return singleton(name, () => {
     const collection = createLocalCollection(name, schema)
-    registered.push({ name, collection, options })
+    registered.push({ name, schema, collection, options })
     return collection
   })
 }
@@ -202,20 +203,24 @@ function legacyRows(key: string): Array<Row> | null {
   }
 }
 
-async function upgrade({ name, collection, options }: Registered) {
+async function upgrade({ name, schema, collection, options }: Registered) {
   // What another tab may have written since this one loaded counts too.
   const stored = await collection.utils.exportData()
   if (stored.length) return
   const key = STORAGE_PREFIX + name
   const legacy = legacyRows(key)
   if (legacy) {
-    const rows = options.upgrade
+    const upgraded = options.upgrade
       ? legacy.flatMap((row) => options.upgrade!(row) ?? [])
       : legacy
+    // One broken row shouldn't cost the others.
+    const rows = upgraded.filter((row) => schema.safeParse(row).success)
     try {
-      await collection.utils.importData(rows)
-      localStorage.removeItem(key)
-      return
+      if (rows.length) await collection.utils.importData(rows)
+      // Rows left behind stay in localStorage, so they aren't lost.
+      if (rows.length === upgraded.length) localStorage.removeItem(key)
+      else console.error(`Kept ${name} rows IndexedDB refused in ${key}`)
+      if (rows.length) return
     } catch (error) {
       // Leave the old rows in place for the next load to try again.
       console.error(`Could not move ${name} to IndexedDB`, error)
