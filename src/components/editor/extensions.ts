@@ -52,6 +52,7 @@ import {
   varValuesFacet,
 } from './dynamic-vars'
 import { docLanguage } from './language'
+import { searchNoAutofill } from './search'
 import { namesParent, treeChanged } from './syntax'
 import { tagHighlights } from './tag-highlights'
 import { editorTheme } from './theme'
@@ -308,6 +309,7 @@ export function editorExtensions(
       }
       if (update.docChanged || update.selectionSet) callbacks.onCursor(update)
     }),
+    searchNoAutofill,
     keymap.of([
       ...callbacks.keys,
       ...closeBracketsKeymap,

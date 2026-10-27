@@ -16,6 +16,7 @@ import {
 } from '@codemirror/view'
 
 import { languageExtension } from '#/components/editor/language'
+import { searchNoAutofill } from '#/components/editor/search'
 import { editorTheme } from '#/components/editor/theme'
 import { DIFF_CONFIG } from '#/lib/compare'
 import { diffChange } from '#/lib/xml/edit'
@@ -72,6 +73,7 @@ function sideExtensions(language: DocLanguage, editable: boolean): Extension {
       '$ unchanged lines': m.compare_unchanged_lines({ count: '$' }),
     }),
     keymap.of(searchKeymap),
+    searchNoAutofill,
     languageExtension(language),
     editorTheme,
     compareTheme,
