@@ -7,7 +7,7 @@ import {
   IconPinnedOff,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 
 import { notify } from '#/components/app/notice-store'
 import { PanelHeading } from '#/components/app/PanelHeading'
@@ -47,6 +47,7 @@ import { useHighlightMap } from '#/hooks/use-highlights'
 import { usePins } from '#/hooks/use-pins'
 import { setValue } from '#/lib/document'
 import { localName, sameName } from '#/lib/names'
+import { groupPins } from '#/lib/pin-groups'
 import { moveItem } from '#/lib/sort-order'
 import { reorderPins, unpinTag } from '#/lib/store/pins'
 import { cn } from '#/lib/utils'
@@ -56,8 +57,9 @@ import { m } from '#/paraglide/messages'
 import type { XmlElement } from '#/lib/xml/model'
 
 /**
- * Pinned tags at the top of the side panel, each editable in place. Rows
- * reorder by dragging their handle, or with the arrow keys on it.
+ * Pinned tags at the top of the side panel, each editable in place, grouped
+ * by highlight colour. Rows reorder within their group by dragging their
+ * handle, or with the arrow keys on it.
  */
 export function PinnedFields() {
   const pins = usePins()
@@ -69,7 +71,7 @@ export function PinnedFields() {
   const handles = useRef(new Map<string, HTMLButtonElement>())
   const refocus = useRef<string | null>(null)
   const [announcement, setAnnouncement] = useState('')
-  // `to` is an insertion point between rows, 0 to `pins.length`.
+  // Indexes into `rows`; `to` is an insertion point between rows.
   const [drag, setDrag] = useState<{ from: number; to: number | null } | null>(
     null,
   )
@@ -82,13 +84,23 @@ export function PinnedFields() {
 
   if (pins.length === 0) return null
 
+  const groups = groupPins(pins, (pin) => highlights.get(localName(pin.tag)))
+  // Flat rows in display order, each knowing the bounds of its group.
+  let offset = 0
+  const rows = groups.flatMap((group, g) => {
+    const first = offset
+    offset += group.length
+    return group.map((pin) => ({ pin, group: g, first, last: offset - 1 }))
+  })
+
+  // Saving the grouped order keeps each group's pins together.
   const move = (from: number, to: number) => {
-    const target = Math.max(0, Math.min(to, pins.length - 1))
+    const { pin, first, last } = rows[from]
+    const target = Math.max(first, Math.min(to, last))
     if (target === from) return
-    const pin = pins[from]
     reorderPins(
       moveItem(
-        pins.map((p) => p.id),
+        rows.map((r) => r.pin.id),
         from,
         target,
       ),
@@ -97,18 +109,19 @@ export function PinnedFields() {
     setAnnouncement(
       m.pin_moved({
         name: pin.tag,
-        position: target + 1,
-        count: pins.length,
+        position: target - first + 1,
+        count: last - first + 1,
       }),
     )
   }
 
   const onHandleKey = (e: React.KeyboardEvent, index: number) => {
+    const { first, last } = rows[index]
     const to = {
       ArrowUp: index - 1,
       ArrowDown: index + 1,
-      Home: 0,
-      End: pins.length - 1,
+      Home: first,
+      End: last,
     }[e.key]
     if (to === undefined) return
     e.preventDefault()
@@ -135,69 +148,79 @@ export function PinnedFields() {
         <span className="tabular-nums">{pins.length}</span>
       </PanelHeading>
       <div className="grid min-h-0 grid-cols-[auto_auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 overflow-auto py-2 pr-3 pl-1">
-        {pins.map((pin, index) => {
+        {rows.map(({ pin, group, first, last }, index) => {
           const matches = leaves.filter((el) => sameName(el.name, pin.tag))
           // Follow the cursor when it sits on one of several matches.
           const el = matches.find((e) => e.path === selectedPath) ?? matches[0]
-          const last = index === pins.length - 1
           return (
-            <div
-              key={pin.id}
-              onDragOver={(e) => {
-                if (!drag) return
-                e.preventDefault()
-                const box = e.currentTarget.getBoundingClientRect()
-                const after = e.clientY > box.top + box.height / 2
-                const to = index + Number(after)
-                if (to !== drag.to) setDrag({ ...drag, to })
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                drop()
-                setDrag(null)
-              }}
-              className={cn(
-                'col-span-3 grid grid-cols-subgrid items-center',
-                drag?.from === index && 'opacity-50',
-                drag?.to === index && 'shadow-[0_-2px_0_var(--ring)]',
-                drag?.to === index + 1 &&
-                  last &&
-                  'shadow-[0_2px_0_var(--ring)]',
+            <Fragment key={pin.id}>
+              {index === first && group > 0 && (
+                <div
+                  aria-hidden
+                  className="col-span-2 col-start-2 my-1 h-px bg-border"
+                />
               )}
-            >
-              <button
-                type="button"
-                draggable
-                ref={(node) => {
-                  if (node) handles.current.set(pin.id, node)
-                  else handles.current.delete(pin.id)
+              <div
+                onDragOver={(e) => {
+                  if (!drag || rows[drag.from].group !== group) return
+                  e.preventDefault()
+                  const box = e.currentTarget.getBoundingClientRect()
+                  const after = e.clientY > box.top + box.height / 2
+                  const to = index + Number(after)
+                  if (to !== drag.to) setDrag({ ...drag, to })
                 }}
-                aria-label={m.pin_move({ name: pin.tag })}
-                title={m.pin_move_hint()}
-                onKeyDown={(e) => onHandleKey(e, index)}
-                onDragStart={(e) => {
-                  setDrag({ from: index, to: null })
-                  e.dataTransfer.effectAllowed = 'move'
-                  e.dataTransfer.setData('text/plain', pin.tag)
-                  // Drag the whole row, not just the handle.
-                  const row = e.currentTarget.parentElement
-                  if (row) e.dataTransfer.setDragImage(row, 8, 8)
+                onDrop={(e) => {
+                  e.preventDefault()
+                  drop()
+                  setDrag(null)
                 }}
-                onDragEnd={() => setDrag(null)}
-                className="grid min-h-11 w-5 cursor-grab place-items-center text-muted-foreground hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:cursor-grabbing md:min-h-6"
+                className={cn(
+                  'col-span-3 grid grid-cols-subgrid items-center',
+                  drag?.from === index && 'opacity-50',
+                  drag?.to === index && 'shadow-[0_-2px_0_var(--ring)]',
+                  drag?.to === index + 1 &&
+                    index === last &&
+                    'shadow-[0_2px_0_var(--ring)]',
+                )}
               >
-                <IconGripVertical aria-hidden className="size-3.5" />
-              </button>
-              <PinnedField
-                tag={pin.tag}
-                el={el}
-                count={matches.length}
-                color={highlights.get(localName(pin.tag))}
-                onMoveUp={index > 0 ? () => move(index, index - 1) : undefined}
-                onMoveDown={last ? undefined : () => move(index, index + 1)}
-                onUnpin={() => setUnpinning(pin.tag)}
-              />
-            </div>
+                <button
+                  type="button"
+                  draggable
+                  ref={(node) => {
+                    if (node) handles.current.set(pin.id, node)
+                    else handles.current.delete(pin.id)
+                  }}
+                  aria-label={m.pin_move({ name: pin.tag })}
+                  title={m.pin_move_hint()}
+                  onKeyDown={(e) => onHandleKey(e, index)}
+                  onDragStart={(e) => {
+                    setDrag({ from: index, to: null })
+                    e.dataTransfer.effectAllowed = 'move'
+                    e.dataTransfer.setData('text/plain', pin.tag)
+                    // Drag the whole row, not just the handle.
+                    const row = e.currentTarget.parentElement
+                    if (row) e.dataTransfer.setDragImage(row, 8, 8)
+                  }}
+                  onDragEnd={() => setDrag(null)}
+                  className="grid min-h-11 w-5 cursor-grab place-items-center text-muted-foreground hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:cursor-grabbing md:min-h-6"
+                >
+                  <IconGripVertical aria-hidden className="size-3.5" />
+                </button>
+                <PinnedField
+                  tag={pin.tag}
+                  el={el}
+                  count={matches.length}
+                  color={highlights.get(localName(pin.tag))}
+                  onMoveUp={
+                    index > first ? () => move(index, index - 1) : undefined
+                  }
+                  onMoveDown={
+                    index < last ? () => move(index, index + 1) : undefined
+                  }
+                  onUnpin={() => setUnpinning(pin.tag)}
+                />
+              </div>
+            </Fragment>
           )
         })}
       </div>
