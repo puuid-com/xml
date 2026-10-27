@@ -16,5 +16,7 @@ export const searchNoAutofill = ViewPlugin.define((view) => {
     }
   }
   view.dom.addEventListener('focusin', onFocus, true)
-  return { destroy: () => view.dom.removeEventListener('focusin', onFocus, true) }
+  return {
+    destroy: () => view.dom.removeEventListener('focusin', onFocus, true),
+  }
 })
