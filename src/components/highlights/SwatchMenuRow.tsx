@@ -1,9 +1,9 @@
 import { IconCheck, IconPlus } from '@tabler/icons-react'
 import { useRef } from 'react'
 
-import { presetLabels } from './ColorSwatches'
+import { colorLabel } from './ColorSwatches'
 import { ContextMenuItem } from '#/components/ui/context-menu'
-import { HIGHLIGHT_PRESETS, highlightCss, isPreset } from '#/lib/store/colors'
+import { highlightCss } from '#/lib/store/colors'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
 
@@ -15,16 +15,18 @@ const SWATCH =
  * arrow keys reach it and picking one closes the menu.
  */
 export function SwatchMenuRow({
+  colors,
   label,
   value,
   onSelect,
 }: {
+  colors: ReadonlyArray<string>
   label: string
   value?: string
   onSelect: (color: string) => void
 }) {
   const input = useRef<HTMLInputElement>(null)
-  const custom = value && !isPreset(value) ? value : undefined
+  const custom = value && !colors.includes(value) ? value : undefined
 
   return (
     <div className="flex items-center justify-between gap-3 px-2 py-1.5">
@@ -34,17 +36,17 @@ export function SwatchMenuRow({
         aria-label={label}
         className="relative flex items-center gap-1.5"
       >
-        {HIGHLIGHT_PRESETS.map((preset) => (
+        {colors.map((color) => (
           <ContextMenuItem
-            key={preset}
-            aria-label={presetLabels[preset]()}
-            title={presetLabels[preset]()}
-            data-selected={value === preset || undefined}
-            onSelect={() => onSelect(preset)}
+            key={color}
+            aria-label={colorLabel(color)}
+            title={colorLabel(color)}
+            data-selected={value === color || undefined}
+            onSelect={() => onSelect(color)}
             className={SWATCH}
-            style={{ backgroundColor: highlightCss(preset) }}
+            style={{ backgroundColor: highlightCss(color) }}
           >
-            {value === preset && <IconCheck className="size-3! text-white!" />}
+            {value === color && <IconCheck className="size-3! text-white!" />}
           </ContextMenuItem>
         ))}
         <ContextMenuItem

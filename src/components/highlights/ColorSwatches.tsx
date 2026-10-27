@@ -5,7 +5,7 @@ import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
 import type { HighlightPreset } from '#/lib/store/colors'
 
-export const presetLabels: Record<HighlightPreset, () => string> = {
+const presetLabels: Record<HighlightPreset, () => string> = {
   blue: m.color_blue,
   purple: m.color_purple,
   pink: m.color_pink,
@@ -16,38 +16,45 @@ export const presetLabels: Record<HighlightPreset, () => string> = {
   gray: m.color_gray,
 }
 
-/** Preset colour dots plus a custom colour picker. */
+/** Accessible name for a swatch: the preset's name or the hex value. */
+export function colorLabel(color: string) {
+  return isPreset(color) ? presetLabels[color]() : color
+}
+
+/** Colour dots (the presets by default) plus a custom colour picker. */
 export function ColorSwatches({
+  colors = HIGHLIGHT_PRESETS,
   value,
   onSelect,
   label = m.highlight_color(),
   className,
 }: {
+  colors?: ReadonlyArray<string>
   value?: string
   onSelect: (color: string) => void
   label?: string
   className?: string
 }) {
-  const custom = value && !isPreset(value) ? value : undefined
+  const custom = value && !colors.includes(value) ? value : undefined
   return (
     <div
       role="radiogroup"
       aria-label={label}
       className={cn('flex flex-wrap items-center gap-1.5', className)}
     >
-      {HIGHLIGHT_PRESETS.map((preset) => (
+      {colors.map((color) => (
         <button
-          key={preset}
+          key={color}
           type="button"
           role="radio"
-          aria-checked={value === preset}
-          aria-label={presetLabels[preset]()}
-          title={presetLabels[preset]()}
-          onClick={() => onSelect(preset)}
+          aria-checked={value === color}
+          aria-label={colorLabel(color)}
+          title={colorLabel(color)}
+          onClick={() => onSelect(color)}
           className="grid size-5 place-items-center rounded-full ring-offset-2 ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring aria-checked:ring-2 aria-checked:ring-foreground/60"
-          style={{ backgroundColor: highlightCss(preset) }}
+          style={{ backgroundColor: highlightCss(color) }}
         >
-          {value === preset && <IconCheck className="size-3 text-white" />}
+          {value === color && <IconCheck className="size-3 text-white" />}
         </button>
       ))}
       <label

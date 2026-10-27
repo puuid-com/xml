@@ -13,7 +13,7 @@ import { notify } from '#/components/app/notice-store'
 import { revealTag } from '#/components/editor/actions'
 import { editorStore } from '#/components/editor/editor-store'
 import { ContextMenuItem, ContextMenuLabel } from '#/components/ui/context-menu'
-import { useHighlights } from '#/hooks/use-highlights'
+import { useHighlightSwatches, useHighlights } from '#/hooks/use-highlights'
 import { usePins } from '#/hooks/use-pins'
 import { useFormatSettings } from '#/hooks/use-profiles'
 import { sameName } from '#/lib/names'
@@ -51,9 +51,11 @@ export function TagMenuHeader({
 /** Inline colour dots for a tag, plus Remove once it has a highlight. */
 export function HighlightMenuItems({ tag }: { tag: string }) {
   const rule = useHighlights().find((r) => sameName(r.tag, tag))
+  const colors = useHighlightSwatches()
   return (
     <>
       <SwatchMenuRow
+        colors={colors}
         label={m.highlight_label()}
         value={rule?.color}
         onSelect={(color) => setHighlight(tag, color)}

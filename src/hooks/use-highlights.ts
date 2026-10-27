@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 
 import { useActiveProfileId } from './use-profiles'
 import { localName } from '#/lib/names'
+import { swatchColors } from '#/lib/store/colors'
 import { highlightCss, highlightsCollection } from '#/lib/store/highlights'
 
 /** Highlight rules of the active profile, oldest first. */
@@ -30,4 +31,10 @@ export function useHighlightMap(): ReadonlyMap<string, string> {
       ),
     [rules],
   )
+}
+
+/** Swatches for picking a highlight: the profile's colours, then presets. */
+export function useHighlightSwatches(): Array<string> {
+  const rules = useHighlights()
+  return useMemo(() => swatchColors(rules.map((r) => r.color)), [rules])
 }

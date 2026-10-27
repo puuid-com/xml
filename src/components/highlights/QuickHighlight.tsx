@@ -8,11 +8,10 @@ import { setQuickHighlight, uiStore } from '#/components/app/ui-store'
 import { getView } from '#/components/editor/editor-store'
 import { Button } from '#/components/ui/button'
 import { Popover, PopoverAnchor, PopoverContent } from '#/components/ui/popover'
-import { useHighlights } from '#/hooks/use-highlights'
+import { useHighlightSwatches, useHighlights } from '#/hooks/use-highlights'
 import { sameName } from '#/lib/names'
 import {
   highlightCss,
-  isPreset,
   removeHighlight,
   setHighlight,
 } from '#/lib/store/highlights'
@@ -22,6 +21,7 @@ import { m } from '#/paraglide/messages'
 export function QuickHighlight() {
   const target = useSelector(uiStore, (s) => s.quickHighlight)
   const rules = useHighlights()
+  const colors = useHighlightSwatches()
   const rule = target && rules.find((r) => sameName(r.tag, target.tag))
   const contentRef = useRef<HTMLDivElement>(null)
 
@@ -87,11 +87,12 @@ export function QuickHighlight() {
               )}
             </div>
             <ColorSwatches
+              colors={colors}
               value={rule?.color}
               onSelect={(color) => {
                 setHighlight(target.tag, color)
                 // The native picker fires on every drag; keep it open for that.
-                if (isPreset(color)) close()
+                if (colors.includes(color)) close()
               }}
             />
           </>

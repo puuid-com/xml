@@ -26,7 +26,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '#/components/ui/popover'
-import { useHighlights } from '#/hooks/use-highlights'
+import { useHighlightSwatches, useHighlights } from '#/hooks/use-highlights'
 import { useTagCounts } from '#/hooks/use-tag-counts'
 import { localName } from '#/lib/names'
 import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
@@ -75,6 +75,7 @@ export function HighlightsBar() {
 }
 
 function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
+  const colors = useHighlightSwatches()
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -116,6 +117,7 @@ function RuleChip({ rule, count }: { rule: Highlight; count: number }) {
         <MatchNavItems tag={rule.tag} count={count} />
         <ContextMenuSeparator />
         <SwatchMenuRow
+          colors={colors}
           label={m.highlight_label()}
           value={rule.color}
           onSelect={(c) => setHighlight(rule.tag, c)}
@@ -178,6 +180,7 @@ function AddRuleForm({
   onDone: () => void
 }) {
   const [color, setColor] = useState<string | null>(null)
+  const colors = useHighlightSwatches()
   const form = useForm({
     defaultValues: { tag: '' },
     onSubmit: ({ value }) => {
@@ -224,7 +227,11 @@ function AddRuleForm({
           )}
         </form.Subscribe>
       </div>
-      <ColorSwatches value={color ?? undefined} onSelect={setColor} />
+      <ColorSwatches
+        colors={colors}
+        value={color ?? undefined}
+        onSelect={setColor}
+      />
     </form>
   )
 }
