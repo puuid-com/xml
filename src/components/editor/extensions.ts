@@ -52,6 +52,7 @@ import {
   varValuesFacet,
 } from './dynamic-vars'
 import { docLanguage } from './language'
+import { shortenLongValues } from './long-values'
 import { searchNoAutofill } from './search'
 import { namesParent, treeChanged } from './syntax'
 import { tagHighlights } from './tag-highlights'
@@ -235,6 +236,7 @@ export function editorExtensions(
   highlights: ReadonlyMap<string, string>,
   defaults: ReadonlyArray<DefaultRule>,
   values: ReadonlyMap<string, string>,
+  shortenAt: number,
 ): Extension {
   return [
     lineNumbers(),
@@ -273,6 +275,7 @@ export function editorExtensions(
     tagHighlights(highlights),
     defaultRulesCompartment.of(defaultRulesFacet.of(defaults)),
     defaultMarks,
+    shortenLongValues(shortenAt),
     // The linter doubles as the parse loop: it runs after typing pauses and
     // publishes the model the tree and status bar read.
     linter(

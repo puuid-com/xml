@@ -17,6 +17,9 @@ export const formatSettingsSchema = z.object({
   /** Names for the custom sort, in order: tags or keys, and `@attr`. */
   customOrder: z.array(z.string()).default([]),
   highlightedFirst: z.boolean(),
+  /** Show only the ends of values longer than `shortenAt` characters. */
+  shortenValues: z.boolean().default(true),
+  shortenAt: z.number().int().min(40).default(200),
 })
 
 export type FormatSettings = z.infer<typeof formatSettingsSchema>
@@ -29,6 +32,8 @@ export const DEFAULT_FORMAT: FormatSettings = {
   sort: 'none',
   customOrder: [],
   highlightedFirst: false,
+  shortenValues: true,
+  shortenAt: 200,
 }
 
 /** `format` with settings added after it was stored filled in. */

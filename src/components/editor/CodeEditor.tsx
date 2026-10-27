@@ -20,10 +20,12 @@ import {
 import { docLanguage, languageCompartment, languageExtension } from './language'
 import { setVarValues } from './dynamic-vars'
 import { editorExtensions, fileIdField, setDefaultRules } from './extensions'
+import { setLongValueLimit } from './long-values'
 import { setTagHighlights } from './tag-highlights'
 import { TagContextMenu } from './TagContextMenu'
 import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
+import { useFormatSettings } from '#/hooks/use-profiles'
 import { useVariableValues } from '#/hooks/use-variables'
 import { languageOf } from '#/lib/document'
 import { shortcuts } from '#/lib/shortcuts'
@@ -62,6 +64,7 @@ function sharedExtensions(
   highlights: ReadonlyMap<string, string>,
   defaults: ReadonlyArray<DefaultRule>,
   values: ReadonlyMap<string, string>,
+  shortenAt: number,
 ) {
   extensions ??= editorExtensions(
     {
@@ -95,6 +98,7 @@ function sharedExtensions(
     highlights,
     defaults,
     values,
+    shortenAt,
   )
   return extensions
 }
@@ -104,6 +108,7 @@ function stateFor(
   highlights: ReadonlyMap<string, string>,
   defaults: ReadonlyArray<DefaultRule>,
   values: ReadonlyMap<string, string>,
+  shortenAt: number,
 ) {
   const file = filesCollection.get(fileId)
   const content = file?.content ?? ''
@@ -121,7 +126,7 @@ function stateFor(
       languageCompartment.of(
         languageExtension(languageOf(file?.name ?? '', content)),
       ),
-      sharedExtensions(highlights, defaults, values),
+      sharedExtensions(highlights, defaults, values, shortenAt),
     ],
   })
 }
@@ -149,6 +154,9 @@ export function CodeEditor({ fileId }: { fileId: string }) {
   const defaultsRef = useRef(defaults)
   const values = useVariableValues()
   const valuesRef = useRef(values)
+  const format = useFormatSettings()
+  const shortenAt = format.shortenValues ? format.shortenAt : 0
+  const shortenAtRef = useRef(shortenAt)
   const activeName = useRef<string | null>(null)
 
   useEffect(() => {
@@ -209,6 +217,7 @@ export function CodeEditor({ fileId }: { fileId: string }) {
       highlightsRef.current,
       defaultsRef.current,
       valuesRef.current,
+      shortenAtRef.current,
     )
     view.setState(state)
     activeName.current = filesCollection.get(fileId)?.name ?? null
@@ -219,6 +228,7 @@ export function CodeEditor({ fileId }: { fileId: string }) {
         setTagHighlights(highlightsRef.current),
         setDefaultRules(defaultsRef.current),
         setVarValues(valuesRef.current),
+        setLongValueLimit(shortenAtRef.current),
       ],
     })
     publishCursorFrom(view.state)
@@ -240,6 +250,11 @@ export function CodeEditor({ fileId }: { fileId: string }) {
     valuesRef.current = values
     viewRef.current?.dispatch({ effects: setVarValues(values) })
   }, [values])
+
+  useEffect(() => {
+    shortenAtRef.current = shortenAt
+    viewRef.current?.dispatch({ effects: setLongValueLimit(shortenAt) })
+  }, [shortenAt])
 
   return (
     <TagContextMenu>

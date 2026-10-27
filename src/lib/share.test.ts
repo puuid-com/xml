@@ -34,6 +34,8 @@ describe('share links', () => {
         sort: 'custom' as const,
         customOrder: ['b', '@a'],
         highlightedFirst: false,
+        shortenValues: true,
+        shortenAt: 200,
       },
       highlights: [{ tag: 'b', color: 'red', enabled: true }],
       pins: ['c'],

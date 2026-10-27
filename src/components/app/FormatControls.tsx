@@ -80,6 +80,8 @@ export function ConvertVarsButton() {
   )
 }
 
+const SHORTEN_AT = [80, 200, 500, 1000]
+
 /** Format settings, shown in the bottom bar's settings popover. */
 export function FormatOptions() {
   const settings = useFormatSettings()
@@ -123,6 +125,39 @@ export function FormatOptions() {
         >
           {m.format_highlighted_first()}
         </SettingSwitch>
+        <SettingSwitch
+          id="format-shorten-values"
+          checked={settings.shortenValues}
+          onCheckedChange={(v) => setFormatSetting('shortenValues', v)}
+        >
+          {m.format_shorten_values()}
+        </SettingSwitch>
+        {settings.shortenValues && (
+          <div className="flex items-center justify-between gap-2 px-3 pt-1 pb-2 text-muted-foreground">
+            <span>{m.format_shorten_at()}</span>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              spacing={0}
+              value={String(settings.shortenAt)}
+              onValueChange={(v) => {
+                if (v) setFormatSetting('shortenAt', Number(v))
+              }}
+            >
+              {SHORTEN_AT.map((length) => (
+                <ToggleGroupItem
+                  key={length}
+                  value={String(length)}
+                  className="tabular-nums"
+                >
+                  {length}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            <span>{m.format_shorten_chars()}</span>
+          </div>
+        )}
       </div>
       <Separator />
       <div className="flex flex-col gap-2 px-3 py-2.5">

@@ -168,6 +168,38 @@ const theme = EditorView.theme({
     color: 'var(--foreground)',
     backgroundImage: 'none',
   },
+  // Middle of a shortened value: its size, which expands it, and a copy button.
+  '.cm-long-value': {
+    display: 'inline-flex',
+    alignItems: 'center',
+    margin: '0 4px',
+    borderRadius: '9999px',
+    backgroundColor: 'var(--muted)',
+    color: 'var(--muted-foreground)',
+    fontSize: '11px',
+    lineHeight: '17px',
+    verticalAlign: '1px',
+  },
+  '.cm-long-value button': {
+    display: 'inline-flex',
+    alignItems: 'center',
+    height: '17px',
+    padding: '0 6px',
+    border: 'none',
+    borderRadius: '9999px',
+    background: 'none',
+    color: 'inherit',
+    font: 'inherit',
+    cursor: 'pointer',
+  },
+  '.cm-long-value button:hover': { color: 'var(--foreground)' },
+  '.cm-long-value button:focus-visible': {
+    outline: '1px solid var(--ring)',
+  },
+  '.cm-long-value .cm-long-value-copy': {
+    paddingLeft: '0',
+  },
+  '.cm-long-value svg': { width: '12px', height: '12px' },
   // Ticks over the scrollbar track where highlighted tags open.
   '.cm-hl-markers': {
     position: 'absolute',
