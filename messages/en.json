@@ -326,5 +326,8 @@
   "compare_unparsed": "Shown as written: {name} has errors",
   "compare_changes": "Differences: {count}",
   "compare_no_changes": "No differences",
-  "compare_unchanged_lines": "Unchanged lines: {count}"
+  "compare_unchanged_lines": "Unchanged lines: {count}",
+  "vars_convert": "Switch variable style",
+  "vars_convert_none": "No variables to switch.",
+  "vars_converted": "Variables switched: {count}"
 }

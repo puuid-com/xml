@@ -85,8 +85,8 @@ export function resolveVars(
   let unresolved = 0
   const resolved = text.replace(
     varRegExp(),
-    (whole, angle?: string, curly?: string) => {
-      const name = (angle ?? curly)!
+    (whole, angle?: string, curly?: string, dollar?: string) => {
+      const name = (angle ?? curly ?? dollar)!
       const value = ctx.values.get(name) ?? byName.get(name)?.generate(ctx)
       if (value === undefined) {
         unresolved++

@@ -100,18 +100,23 @@ async function dynamicVarInfo(v: DynamicVar, before: string, after: string) {
 }
 
 /**
- * Offers the profile's variables and the dynamic ones after `<<`, `{{` or a
- * following `$`, and closes the `>>` or `}}`.
+ * Offers the profile's variables and the dynamic ones after `<<`, `{{`, `${`
+ * or a following `$`, and closes the `>>`, `}}` or `}`.
  */
 function varCompletions(context: CompletionContext): CompletionResult | null {
-  const before = context.matchBefore(/(?:<<|\{\{)\s*\$?[\w.-]*/)
+  const before = context.matchBefore(/(?:<<|\{\{|\$\{)\s*\$?[\w.-]*/)
   if (!before) return null
-  const closing = before.text.startsWith('{') ? '}}' : '>>'
-  const from = before.from + before.text.search(/[$\w]|$/)
+  const closing = before.text.startsWith('{')
+    ? '}}'
+    : before.text.startsWith('$')
+      ? '}'
+      : '>>'
+  // Every opener is two characters; `${` starts with a `$` of its own.
+  const from = before.from + 2 + before.text.slice(2).search(/[$\w]|$/)
   // Completing inside an existing `<<$name>>` replaces the rest of the name.
   const after = context.state.sliceDoc(context.pos, context.pos + 80)
   const tail = /^[\w.-]*/.exec(after)?.[0] ?? ''
-  const close = (closing === '}}' ? /^\s*\}\}/ : /^\s*>>/).exec(
+  const close = new RegExp(`^\\s*${closing.replace(/[{}]/g, '\\$&')}`).exec(
     after.slice(tail.length),
   )
   // The text value around the variable, for the preview.

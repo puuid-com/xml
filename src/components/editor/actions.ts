@@ -38,6 +38,8 @@ import { resolveVars } from '#/lib/xml/dynamic-vars'
 import { diffChange } from '#/lib/xml/edit'
 import { allElements, elementAt } from '#/lib/xml/locate'
 import { hasName, isLeaf, leafValue } from '#/lib/xml/model'
+import { convertVars } from '#/lib/xml/vars'
+import type { VarStyle } from '#/lib/xml/vars'
 import { m } from '#/paraglide/messages'
 import type { EditorView } from '@codemirror/view'
 
@@ -176,6 +178,21 @@ export function resolveVarsActive() {
     notify.success(message)
   })
   return true
+}
+
+/** Rewrites every variable in the active file in `style`, as one undo step. */
+export function convertVarsActive(style: VarStyle) {
+  const view = getView()
+  if (!view) return
+  const text = view.state.doc.toString()
+  const result = convertVars(text, style)
+  if (result.count === 0) {
+    notify.info(m.vars_convert_none())
+    return
+  }
+  const change = diffChange(text, result.text)
+  if (change) view.dispatch({ changes: change, userEvent: 'input.vars' })
+  notify.success(m.vars_converted({ count: result.count }))
 }
 
 /** Leaf element at `pos` with its current text, if any. */

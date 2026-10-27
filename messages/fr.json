@@ -326,5 +326,8 @@
   "compare_unparsed": "Affiché tel quel : {name} contient des erreurs",
   "compare_changes": "Différences : {count}",
   "compare_no_changes": "Aucune différence",
-  "compare_unchanged_lines": "Lignes inchangées : {count}"
+  "compare_unchanged_lines": "Lignes inchangées : {count}",
+  "vars_convert": "Changer le style des variables",
+  "vars_convert_none": "Aucune variable à changer.",
+  "vars_converted": "Variables changées : {count}"
 }

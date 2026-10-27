@@ -1,9 +1,20 @@
-import { IconVariable, IconWand } from '@tabler/icons-react'
+import { IconBraces, IconVariable, IconWand } from '@tabler/icons-react'
 
 import { ShortcutKeys } from './ShortcutKeys'
 import { SortOrderEditor } from './SortOrderEditor'
 import { ToolbarButton } from './ToolbarButton'
-import { formatActive, resolveVarsActive } from '#/components/editor/actions'
+import {
+  convertVarsActive,
+  formatActive,
+  resolveVarsActive,
+} from '#/components/editor/actions'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu'
 import { Label } from '#/components/ui/label'
 import { Separator } from '#/components/ui/separator'
 import { Switch } from '#/components/ui/switch'
@@ -12,7 +23,9 @@ import { shortcuts } from '#/lib/shortcuts'
 import { useFormatSettings } from '#/hooks/use-profiles'
 import { setFormatSetting } from '#/lib/store/profiles'
 import { m } from '#/paraglide/messages'
+import { writeVar } from '#/lib/xml/vars'
 import type { SortOrder } from '#/lib/xml/format'
+import type { VarStyle } from '#/lib/xml/vars'
 
 /** Format button in the bottom bar. */
 export function FormatButton() {
@@ -37,6 +50,33 @@ export function ResolveVarsButton() {
     >
       <IconVariable />
     </ToolbarButton>
+  )
+}
+
+const VAR_STYLES: Array<VarStyle> = ['curly', 'angle', 'dollar']
+
+/** Bottom-bar menu that rewrites every variable in one bracket style. */
+export function ConvertVarsButton() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <ToolbarButton label={m.vars_convert()}>
+          <IconBraces />
+        </ToolbarButton>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side="top" align="end">
+        <DropdownMenuLabel>{m.vars_convert()}</DropdownMenuLabel>
+        {VAR_STYLES.map((style) => (
+          <DropdownMenuItem
+            key={style}
+            className="font-mono"
+            onSelect={() => convertVarsActive(style)}
+          >
+            {writeVar('name', style)}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

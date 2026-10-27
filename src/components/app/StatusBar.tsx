@@ -3,6 +3,7 @@ import { useSelector } from '@tanstack/react-store'
 
 import { CommandMenuButton } from './CommandMenu'
 import {
+  ConvertVarsButton,
   FormatButton,
   FormatOptions,
   ResolveVarsButton,
@@ -53,6 +54,7 @@ export function StatusBar() {
             <FormatButton />
             <DefaultsButton />
             <ResolveVarsButton />
+            <ConvertVarsButton />
             <SettingsPopover />
           </div>
           <Separator
