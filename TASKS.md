@@ -136,11 +136,11 @@ A full `bunx react-doctor` scan still reports 17 issues in files the parallel ru
 
 ## 6. Make the browser checks rerunnable
 
-The headless Chrome scripts that verified offline support and the merged features live in `/tmp/sw-verify/` (`verify.mjs`, `verify-kill.mjs`, `verify-pages.mjs`, and `bc/features.mjs`, `bc/notices.mjs`, `bc/share-compare.mjs`). They are lost on reboot. They weren't moved into the repo: they hard-code paths and a Chrome location, depend on builds made by hand (`v1`–`v3`, `bc/v2`), and overwrite `dist/` while running.
+The headless Chrome scripts that verified the merged features live in `/tmp/sw-verify/` (`verify.mjs`, `verify-kill.mjs`, `verify-pages.mjs`, and `bc/features.mjs`, `bc/notices.mjs`, `bc/share-compare.mjs`). They are lost on reboot. They weren't moved into the repo: they hard-code paths and a Chrome location, depend on builds made by hand (`v1`–`v3`, `bc/v2`), and overwrite `dist/` while running.
 
 **Why do it**
 
-- The service worker update flow is the riskiest part of the app and has no automated check once these go.
+- The merged features have no automated browser check once these go.
 
 **Why not**
 

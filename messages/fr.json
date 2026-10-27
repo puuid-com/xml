@@ -304,8 +304,5 @@
   "compare_unparsed": "Affiché tel quel : {name} contient des erreurs",
   "compare_changes": "Différences : {count}",
   "compare_no_changes": "Aucune différence",
-  "compare_unchanged_lines": "Lignes inchangées : {count}",
-  "offline_ready": "Prêt à fonctionner hors ligne",
-  "update_available": "Une nouvelle version est disponible",
-  "update_reload": "Recharger"
+  "compare_unchanged_lines": "Lignes inchangées : {count}"
 }

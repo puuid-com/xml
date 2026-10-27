@@ -10,8 +10,6 @@ import tailwindcss from '@tailwindcss/vite'
 import { cloudflare } from '@cloudflare/vite-plugin'
 import { redact } from '@tanstack/redact/vite'
 
-import { serviceWorker } from './plugins/service-worker.ts'
-
 const config = defineConfig({
   // Redact has to redirect React imports inside server dependencies too.
   ssr: { noExternal: true },
@@ -65,11 +63,6 @@ const config = defineConfig({
     babel({ presets: [reactCompilerPreset()] }),
     // Swaps react and react-dom for the TanStack Redact runtime.
     redact(),
-    // Production builds only: emits /sw.js for offline use. See README.
-    serviceWorker({
-      project: './project.inlang',
-      pages: ['/site.webmanifest'],
-    }),
   ],
 })
 

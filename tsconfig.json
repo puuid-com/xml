@@ -7,8 +7,7 @@
     "vite.config.ts",
     "vitest.config.ts"
   ],
-  // Worker entry points use the WebWorker lib; src/sw/tsconfig.json checks them.
-  "exclude": ["node_modules", "src/sw/worker.ts", "src/sw/kill-switch.ts"],
+  "exclude": ["node_modules"],
 
   "compilerOptions": {
     "target": "ES2022",

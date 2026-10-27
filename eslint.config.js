@@ -21,6 +21,7 @@ export default [
       'src/paraglide/**',
       'src/routeTree.gen.ts',
       'worker-configuration.d.ts',
+      'public/**',
     ],
   },
 ]

@@ -13,7 +13,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p src/sw",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write . && eslint --fix",
