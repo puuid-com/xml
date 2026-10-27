@@ -30,6 +30,7 @@ describe('share links', () => {
         formatOnSave: false,
         removeEmptyLines: true,
         trimVars: false,
+        stripPrefixes: false,
         sort: 'custom' as const,
         customOrder: ['b', '@a'],
         highlightedFirst: false,

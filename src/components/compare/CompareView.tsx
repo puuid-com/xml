@@ -98,6 +98,7 @@ function CompareFiles({
         {
           removeEmptyLines: format.removeEmptyLines,
           trimVars: format.trimVars,
+          stripPrefixes: format.stripPrefixes,
           sort: format.sort,
           order: orderKey ? orderKey.split('\n') : [],
           first: firstKey ? firstKey.split('\n') : [],
@@ -111,6 +112,7 @@ function CompareFiles({
       ignoreFormatting,
       format.removeEmptyLines,
       format.trimVars,
+      format.stripPrefixes,
       format.sort,
       orderKey,
       firstKey,

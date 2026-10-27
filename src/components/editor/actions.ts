@@ -46,8 +46,14 @@ import type { EditorView } from '@codemirror/view'
 export function formatActive() {
   const view = getView()
   if (!view) return true
-  const { removeEmptyLines, trimVars, sort, customOrder, highlightedFirst } =
-    activeFormat()
+  const {
+    removeEmptyLines,
+    trimVars,
+    stripPrefixes,
+    sort,
+    customOrder,
+    highlightedFirst,
+  } = activeFormat()
   const first = highlightedFirst
     ? profileHighlights()
         .filter((r) => r.enabled)
@@ -57,6 +63,7 @@ export function formatActive() {
   const result = formatDocument(text, activeLanguage(), {
     removeEmptyLines,
     trimVars,
+    stripPrefixes,
     sort,
     order: customOrder,
     first,

@@ -1,3 +1,4 @@
+import { allElements } from './locate'
 import { parseXml } from './parse'
 import { localName } from '#/lib/names'
 import { trimVar, varRegExp } from './vars'
@@ -14,6 +15,8 @@ export interface FormatOptions {
   removeEmptyLines?: boolean
   /** Rewrite `<< name >>` as `<<name>>`. */
   trimVars?: boolean
+  /** Rewrite `<ns:Body>` as `<Body>`. Attributes and `xmlns:` declarations stay. */
+  stripPrefixes?: boolean
   /**
    * Order sibling elements by tag name and attributes by name, prefixes
    * aside: `soap:Body` sorts as `Body`.
@@ -40,13 +43,18 @@ export function formatXml(
     indent = '  ',
     removeEmptyLines = true,
     trimVars = false,
+    stripPrefixes = false,
     sort = 'none',
     order: custom = [],
     first = [],
   }: FormatOptions = {},
 ): FormatResult {
-  const doc = parseXml(text)
+  let doc = parseXml(text)
   if (doc.errors.length > 0) return { ok: false, errors: doc.errors }
+  if (stripPrefixes) {
+    text = withoutTagPrefixes(text, doc.nodes)
+    doc = parseXml(text)
+  }
 
   const lines: Array<string> = []
   const compare = nameOrder(sort, custom, 'element')
@@ -113,6 +121,24 @@ export function formatXml(
   let out = lines.join('\n') + '\n'
   if (trimVars) out = out.replace(varRegExp(), trimVar)
   return { ok: true, text: out }
+}
+
+/** `text` with every tag name's prefix dropped: `</s:Body>` → `</Body>`. */
+function withoutTagPrefixes(text: string, nodes: Array<XmlNode>) {
+  const edits: Array<{ from: number; to: number; insert: string }> = []
+  for (const el of allElements(nodes)) {
+    const name = localName(el.name)
+    if (name === el.name) continue
+    edits.push({ from: el.nameFrom, to: el.nameTo, insert: name })
+    if (el.closeNameFrom !== null) {
+      const from = el.closeNameFrom
+      edits.push({ from, to: from + el.name.length, insert: name })
+    }
+  }
+  edits.sort((a, b) => b.from - a.from)
+  for (const { from, to, insert } of edits)
+    text = text.slice(0, from) + insert + text.slice(to)
+  return text
 }
 
 type Compare = (a: string, b: string) => number

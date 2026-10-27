@@ -180,6 +180,15 @@ describe('formatXml', () => {
     })
   })
 
+  it('removes tag prefixes', () => {
+    const input =
+      '<s:Envelope xmlns:s="urn:s"><s:Body a:x="1">Hi <b:i>there</b:i></s:Body><s:E/></s:Envelope>'
+    expect(formatXml(input, { stripPrefixes: true })).toEqual({
+      ok: true,
+      text: '<Envelope xmlns:s="urn:s">\n  <Body a:x="1">Hi <i>there</i></Body>\n  <E />\n</Envelope>\n',
+    })
+  })
+
   it('sorts elements and attributes', () => {
     const input = '<r><c z="1" a="2"/><!--b--><b/><a/></r>'
     expect(formatXml(input, { sort: 'asc' })).toEqual({

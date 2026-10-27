@@ -70,6 +70,13 @@ export function FormatOptions() {
           {m.format_trim_vars()}
         </SettingSwitch>
         <SettingSwitch
+          id="format-strip-prefixes"
+          checked={settings.stripPrefixes}
+          onCheckedChange={(v) => setFormatSetting('stripPrefixes', v)}
+        >
+          {m.format_strip_prefixes()}
+        </SettingSwitch>
+        <SettingSwitch
           id="format-highlighted-first"
           checked={settings.highlightedFirst}
           onCheckedChange={(v) => setFormatSetting('highlightedFirst', v)}

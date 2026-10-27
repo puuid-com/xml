@@ -7,6 +7,7 @@ export const formatSettingsSchema = z.object({
   formatOnSave: z.boolean(),
   removeEmptyLines: z.boolean(),
   trimVars: z.boolean(),
+  stripPrefixes: z.boolean().default(false),
   sort: z.enum([
     'none',
     'asc',
@@ -24,6 +25,7 @@ export const DEFAULT_FORMAT: FormatSettings = {
   formatOnSave: false,
   removeEmptyLines: true,
   trimVars: false,
+  stripPrefixes: false,
   sort: 'none',
   customOrder: [],
   highlightedFirst: false,

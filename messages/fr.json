@@ -29,6 +29,7 @@
   "format_on_save": "Formater à l'enregistrement",
   "format_remove_empty_lines": "Supprimer les lignes vides",
   "format_trim_vars": "Retirer les espaces dans les variables",
+  "format_strip_prefixes": "Retirer les préfixes des balises (ns:)",
   "format_sort": "Trier les éléments et attributs",
   "format_sort_none": "Garder",
   "format_sort_asc": "A–Z",
