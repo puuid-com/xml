@@ -1,0 +1,35 @@
+diff --git a/dist/dom/dom.js b/dist/dom/dom.js
+index 9cb28fe9e06bc59b77a4e3c60fb61be0302faf39..2b023da1221edf5ff43454e8e1fe6d1cbec0d973 100644
+--- a/dist/dom/dom.js
++++ b/dist/dom/dom.js
+@@ -104,6 +104,16 @@ function setStyle(el, next, prev) {
+     }
+   }
+ }
++// SyntheticEvent methods libraries call on handler events (Radix calls
++// `isPropagationStopped`). Native events already track both states.
++function isDefaultPrevented() {
++  return this.defaultPrevented;
++}
++function isPropagationStopped() {
++  return this.cancelBubble;
++}
++function persist() {
++}
+ function setEventHandler(el, name, next) {
+   const enabled = isFunction(next);
+   const capture = name.endsWith("Capture") && !name.endsWith("PointerCapture");
+@@ -127,8 +137,12 @@ function setEventHandler(el, name, next) {
+           return;
+         inputValue = e.type === "input" ? value : void 0;
+       }
+-      if (e.nativeEvent === void 0)
++      if (e.nativeEvent === void 0) {
+         e.nativeEvent = e;
++        e.isDefaultPrevented = isDefaultPrevented;
++        e.isPropagationStopped = isPropagationStopped;
++        e.persist = persist;
++      }
+       entry.c(e);
+     });
+     entry.e = events;

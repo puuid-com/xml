@@ -99,5 +99,8 @@
     "vite": "^8.3.4",
     "vitest": "^5.0.5",
     "wrangler": "^4.151.1"
+  },
+  "patchedDependencies": {
+    "@tanstack/redact@0.2.0": "patches/@tanstack%2Fredact@0.2.0.patch"
   }
 }
