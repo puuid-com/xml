@@ -1,6 +1,5 @@
 import {
   IconArchive,
-  IconBraces,
   IconCheck,
   IconClipboard,
   IconCopy,
@@ -118,23 +117,6 @@ export function CommandMenu({
         <FileCommands activeId={activeId} onOpenFromDisk={onOpenFromDisk} />
       </DialogContent>
     </Dialog>
-  )
-}
-
-/** The logo in the top bar; opens the command menu. */
-export function LogoButton() {
-  return (
-    <Button
-      variant="ghost"
-      size="icon-sm"
-      className="mx-1 max-md:size-11"
-      aria-label={m.palette_open()}
-      onClick={() => setPaletteOpen(true)}
-    >
-      <span className="grid size-5 place-items-center bg-foreground text-background">
-        <IconBraces className="size-3" />
-      </span>
-    </Button>
   )
 }
 
