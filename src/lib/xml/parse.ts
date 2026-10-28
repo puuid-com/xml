@@ -1,7 +1,7 @@
 import { parser } from '@lezer/xml'
 
 import { decodeEntities } from './entities'
-import { maskVars } from './vars'
+import { findVars, maskVars } from './vars'
 import type { SyntaxNode } from '@lezer/common'
 import type {
   XmlAttr,
@@ -57,6 +57,23 @@ export function parseXml(text: string): XmlDocument {
       }
     },
   })
+
+  // `<tag>><<var>>` or `<<var>>>` parses, since `>` is allowed in text, but
+  // the stray `>` is almost always a typo in the variable.
+  for (const v of findVars(text)) {
+    if (!text.startsWith('<<', v.from)) continue
+    for (const at of [v.from - 1, v.to]) {
+      if (text[at] !== '>') continue
+      const node = tree.resolveInner(at, 1).name
+      if (node === 'Text' || node === 'AttributeValue') {
+        errors.push({
+          from: at,
+          to: at + 1,
+          message: `Stray > next to variable ${text.slice(v.from, v.to)}`,
+        })
+      }
+    }
+  }
 
   const build = new Builder(text, errors)
   const nodes = build.children(tree.topNode.firstChild, null, '', 0)
