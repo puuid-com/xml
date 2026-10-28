@@ -8,7 +8,7 @@ import type { Range } from '@codemirror/state'
 import type { DecorationSet, ViewUpdate } from '@codemirror/view'
 
 // User highlight rules: a wash over every matching tag, its name and brackets
-// inked in the rule's colour, and ticks over the scrollbar where they open.
+// inked in the rule's colour.
 
 /** Local tag name (no prefix) → CSS colour, for user highlight rules. */
 const tagHighlightsFacet = Facet.define<
@@ -97,83 +97,10 @@ const tagHighlighter = ViewPlugin.fromClass(
   },
 )
 
-interface Marker {
-  /** Fraction of the document height. */
-  top: number
-  color: string
-}
-
-function collectMarkers(view: EditorView): Array<Marker> {
-  const rules = view.state.facet(tagHighlightsFacet)
-  if (rules.size === 0) return []
-  if (view.contentHeight <= view.scrollDOM.clientHeight) return []
-  const doc = view.state.doc
-  const seen = new Set<string>()
-  const markers: Array<Marker> = []
-  syntaxTree(view.state).iterate({
-    enter(node) {
-      const tag = namedTag(node.node, doc)
-      const color = tag?.opens && rules.get(localName(tag.name))
-      if (!color) return
-      const top = view.lineBlockAt(node.from).top / view.contentHeight
-      // Ticks closer than about a pixel would draw on top of each other.
-      const key = `${Math.round(top * 1000)}:${color}`
-      if (seen.has(key)) return
-      seen.add(key)
-      markers.push({ top, color })
-    },
-  })
-  return markers
-}
-
-const highlightMarkers = ViewPlugin.fromClass(
-  class {
-    dom: HTMLElement
-    constructor(readonly view: EditorView) {
-      this.dom = document.createElement('div')
-      this.dom.className = 'cm-hl-markers'
-      this.dom.setAttribute('aria-hidden', 'true')
-      view.dom.appendChild(this.dom)
-      this.schedule()
-    }
-    update(update: ViewUpdate) {
-      if (
-        update.docChanged ||
-        update.geometryChanged ||
-        update.heightChanged ||
-        treeChanged(update) ||
-        rulesChanged(update)
-      ) {
-        this.schedule()
-      }
-    }
-    schedule() {
-      this.view.requestMeasure({
-        key: this,
-        read: collectMarkers,
-        write: (markers) => {
-          this.dom.replaceChildren(
-            ...markers.map(({ top, color }) => {
-              const tick = document.createElement('div')
-              tick.style.top = `${top * 100}%`
-              tick.style.backgroundColor = color
-              return tick
-            }),
-          )
-        },
-      })
-    }
-    destroy() {
-      this.dom.remove()
-    }
-  },
-)
-
 export function tagHighlights(rules: ReadonlyMap<string, string>) {
   return [
     tagHighlightsCompartment.of(tagHighlightsFacet.of(rules)),
     tagHighlighter,
-    highlightMarkers,
   ]
 }
 

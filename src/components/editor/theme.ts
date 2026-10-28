@@ -218,22 +218,6 @@ const theme = EditorView.theme({
   '.cm-zpl-link:hover': { color: 'var(--foreground)' },
   '.cm-zpl-link:focus-visible': { outline: '1px solid var(--ring)' },
   '.cm-zpl-link svg': { width: '12px', height: '12px' },
-  // Ticks over the scrollbar track where highlighted tags open.
-  '.cm-hl-markers': {
-    position: 'absolute',
-    top: '0',
-    right: '0',
-    bottom: '0',
-    width: '6px',
-    pointerEvents: 'none',
-    zIndex: '201',
-  },
-  '.cm-hl-markers > div': {
-    position: 'absolute',
-    left: '0',
-    right: '0',
-    height: '2px',
-  },
 })
 
 const highlightStyle = HighlightStyle.define([
