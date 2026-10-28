@@ -16,6 +16,7 @@ import {
   IconJson,
   IconLanguage,
   IconLink,
+  IconMoon,
   IconPencil,
   IconPlus,
   IconReplace,
@@ -74,14 +75,11 @@ import {
 import { Kbd } from '#/components/ui/kbd'
 import { useCanWriteDisk } from '#/hooks/use-can-write-disk'
 import { useOpenFiles } from '#/hooks/use-files'
-import { useHighlights } from '#/hooks/use-highlights'
 import { useActiveProfile, useProfiles } from '#/hooks/use-profiles'
-import { useTagCounts } from '#/hooks/use-tag-counts'
 import { languageOf } from '#/lib/document'
-import { localName } from '#/lib/names'
 import { profileShortcuts, shortcutLabel, shortcuts } from '#/lib/shortcuts'
-import { setHighlight } from '#/lib/store/highlights'
 import { setActive } from '#/lib/store/session'
+import { toggleTheme } from '#/lib/theme'
 import { m } from '#/paraglide/messages'
 import { getLocale, locales, setLocale } from '#/paraglide/runtime'
 
@@ -171,17 +169,11 @@ function FileCommands({
   onOpenFromDisk: () => void
 }) {
   const files = useOpenFiles()
-  const counts = useTagCounts()
-  const highlighted = new Set(useHighlights().map((r) => localName(r.tag)))
   const [search, setSearch] = useState('')
   // "Compare with…" opens a second page listing the other tabs.
   const [page, setPage] = useState<'root' | 'compare'>('root')
   const comparing = useSelector(uiStore, (s) => s.compareId !== null)
   const activeFile = files.find((f) => f.id === activeId)
-  // Tags only show once you type, so they don't bury files and actions.
-  const tags = search.trim()
-    ? [...counts.keys()].filter((t) => !highlighted.has(t)).sort()
-    : []
 
   const run = (fn: () => void) => {
     setPaletteOpen(false)
@@ -236,8 +228,6 @@ function FileCommands({
             files={files}
             activeId={activeId}
             comparing={comparing}
-            tags={tags}
-            counts={counts}
             run={run}
             onCompare={() => openPage('compare')}
             onOpenFromDisk={onOpenFromDisk}
@@ -267,8 +257,6 @@ function RootCommands({
   files,
   activeId,
   comparing,
-  tags,
-  counts,
   run,
   onCompare,
   onOpenFromDisk,
@@ -276,8 +264,6 @@ function RootCommands({
   files: ReturnType<typeof useOpenFiles>
   activeId: string | null
   comparing: boolean
-  tags: Array<string>
-  counts: ReturnType<typeof useTagCounts>
   run: (fn: () => void) => void
   onCompare: () => void
   onOpenFromDisk: () => void
@@ -494,6 +480,10 @@ function RootCommands({
           <IconDatabaseImport />
           {m.backup_restore()}
         </CommandItem>
+        <CommandItem onSelect={() => run(toggleTheme)}>
+          <IconMoon />
+          {m.theme_toggle()}
+        </CommandItem>
       </CommandGroup>
       <CommandSeparator />
       <CommandGroup heading={m.language_label()}>
@@ -512,23 +502,6 @@ function RootCommands({
           </CommandItem>
         ))}
       </CommandGroup>
-      {tags.length > 0 && (
-        <CommandGroup heading={m.highlights_title()}>
-          {tags.map((tag) => (
-            <CommandItem
-              key={tag}
-              value={`highlight ${tag}`}
-              onSelect={() => run(() => setHighlight(tag))}
-            >
-              <IconHighlight />
-              <span className="truncate">{m.highlight_tag({ name: tag })}</span>
-              <CommandShortcut className="text-[11px] tracking-normal tabular-nums">
-                {counts.get(tag)}
-              </CommandShortcut>
-            </CommandItem>
-          ))}
-        </CommandGroup>
-      )}
     </>
   )
 }
