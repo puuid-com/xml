@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { newFile } from './files'
 import { ToolbarButton } from './ToolbarButton'
 import { askClose, askRename } from './ui-store'
+import { hlStyle } from '#/components/highlights/hl-style'
 import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useFileContent } from '#/hooks/use-files'
 import { useProfiles } from '#/hooks/use-profiles'
@@ -99,17 +100,21 @@ export function TabStrip({
                   className="h-full! min-w-0 flex-1 justify-start gap-2 rounded-t-lg pr-11 pl-3 font-normal after:hidden md:pr-8"
                 >
                   <IconFileCode className="size-3.5! text-muted-foreground" />
-                  <span className="truncate">{file.name}</span>
-                  <UnsavedMark fileId={file.id} />
-                  {profile && (
+                  {profile ? (
                     <span
-                      role="img"
-                      aria-label={m.profile_label({ name: profile.name })}
                       title={m.profile_label({ name: profile.name })}
-                      style={{ backgroundColor: profileCss(profile) }}
-                      className="size-2 shrink-0 rounded-full"
-                    />
+                      style={hlStyle(profileCss(profile))}
+                      className="hl-tag hl-ink min-w-0 truncate px-1 leading-5"
+                    >
+                      {file.name}
+                      <span className="sr-only">
+                        {` (${m.profile_label({ name: profile.name })})`}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="truncate">{file.name}</span>
                   )}
+                  <UnsavedMark fileId={file.id} />
                 </TabsTrigger>
                 <button
                   type="button"
