@@ -151,7 +151,8 @@ export function PinnedFields() {
         {rows.map(({ pin, group, first, last }, index) => {
           const matches = leaves.filter((el) => sameName(el.name, pin.tag))
           // Follow the cursor when it sits on one of several matches.
-          const el = matches.find((e) => e.path === selectedPath) ?? matches.at(0)
+          const el =
+            matches.find((e) => e.path === selectedPath) ?? matches.at(0)
           return (
             <Fragment key={pin.id}>
               {index === first && group > 0 && (
