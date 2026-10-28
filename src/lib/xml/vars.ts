@@ -118,10 +118,15 @@ export function maskVarsAsNumbers(text: string): string {
 }
 
 // Bracket characters that may not touch a variable written in each style.
-const STRAY: Record<VarStyle, readonly [string, string]> = {
-  angle: ['<>', '<>'],
-  curly: ['{}', '{}'],
-  dollar: ['$', '}'],
+const ANGLE = new Set(['<', '>'])
+const CURLY = new Set(['{', '}'])
+const STRAY: Record<
+  VarStyle,
+  readonly [ReadonlySet<string>, ReadonlySet<string>]
+> = {
+  angle: [ANGLE, ANGLE],
+  curly: [CURLY, CURLY],
+  dollar: [new Set(['$']), new Set(['}'])],
 }
 
 const LEFTOVER = /<<|>>|\{\{|\}\}|\$\{/g
@@ -162,8 +167,8 @@ export function findVarProblems(
     const [before, after] = STRAY[varStyleOf(match[0])!]
     let start = from
     let end = to
-    while (start > 0 && before.includes(rest[start - 1])) start--
-    while (end < text.length && after.includes(rest[end])) end++
+    while (start > 0 && before.has(rest[start - 1])) start--
+    while (end < text.length && after.has(rest[end])) end++
     if (start < from || end > to) {
       rest = rest.slice(0, start) + '\0'.repeat(end - start) + rest.slice(end)
       report(start, end)
