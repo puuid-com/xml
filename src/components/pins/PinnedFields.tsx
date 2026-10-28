@@ -8,7 +8,7 @@ import {
   IconPinnedOff,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 
 import { notify } from '#/components/app/notice-store'
 import { copyVar, cycleTag } from '#/components/editor/actions'
@@ -19,6 +19,7 @@ import {
   TagMenuHeader,
   ZplMenuItems,
 } from '#/components/highlights/TagMenuItems'
+import { LeafText } from '#/components/inspector/LeafText'
 import { useDraft } from '#/components/inspector/use-draft'
 import {
   AlertDialog,
@@ -44,6 +45,7 @@ import {
   InputGroupInput,
   InputGroupText,
 } from '#/components/ui/input-group'
+import { useEnabledDefaults } from '#/hooks/use-defaults'
 import { useHighlightMap } from '#/hooks/use-highlights'
 import { usePins } from '#/hooks/use-pins'
 import { useFormatSettings } from '#/hooks/use-profiles'
@@ -54,6 +56,7 @@ import { moveItem } from '#/lib/sort-order'
 import { reorderPins, unpinTag } from '#/lib/store/pins'
 import { cn } from '#/lib/utils'
 import { isZplTag, openZplLabel } from '#/lib/zpl'
+import { defaultIndex, isDefaultLeaf, leafDiffers } from '#/lib/xml/defaults'
 import { allElements } from '#/lib/xml/locate'
 import { hasName, isTextLeaf, leafValue } from '#/lib/xml/model'
 import { m } from '#/paraglide/messages'
@@ -69,6 +72,11 @@ export function PinnedFields() {
   const doc = useSelector(editorStore, (s) => s.doc)
   const selectedPath = useSelector(editorStore, (s) => s.selectedPath)
   const highlights = useHighlightMap()
+  const enabledDefaults = useEnabledDefaults()
+  const defaults = useMemo(
+    () => defaultIndex(enabledDefaults),
+    [enabledDefaults],
+  )
   const [unpinning, setUnpinning] = useState<string | null>(null)
   // Moving a row re-inserts its node, which drops focus; put it back after.
   const handles = useRef(new Map<string, HTMLButtonElement>())
@@ -143,7 +151,7 @@ export function PinnedFields() {
         {rows.map(({ pin, group, first, last }, index) => {
           const matches = leaves.filter((el) => sameName(el.name, pin.tag))
           // Follow the cursor when it sits on one of several matches.
-          const el = matches.find((e) => e.path === selectedPath) ?? matches[0]
+          const el = matches.find((e) => e.path === selectedPath) ?? matches.at(0)
           return (
             <Fragment key={pin.id}>
               {index === first && group > 0 && (
@@ -202,6 +210,10 @@ export function PinnedFields() {
                   tag={pin.tag}
                   el={el}
                   count={matches.length}
+                  defaultKey={
+                    el && isDefaultLeaf(defaults, el) ? el.name : undefined
+                  }
+                  differs={!!el && leafDiffers(defaults, el)}
                   color={highlights.get(localName(pin.tag))}
                   onMoveUp={
                     index > first ? () => move(index, index - 1) : undefined
@@ -255,6 +267,8 @@ function PinnedField({
   tag,
   el,
   count,
+  defaultKey,
+  differs,
   color,
   onMoveUp,
   onMoveDown,
@@ -263,6 +277,10 @@ function PinnedField({
   tag: string
   el: XmlElement | undefined
   count: number
+  /** Set when the value equals the default for this key. */
+  defaultKey: string | undefined
+  /** Whether the value differs from the default for this key. */
+  differs: boolean
   color: string | undefined
   /** Unset when the row can't move that way. */
   onMoveUp: (() => void) | undefined
@@ -276,6 +294,9 @@ function PinnedField({
   })
   const placeholder = el ? m.node_empty() : m.pin_missing()
   const zpl = isZplTag(useFormatSettings().zplTags, tag)
+  // Show the value like the tree does until the field is being edited.
+  const [editing, setEditing] = useState(false)
+  const rendered = !!el && !editing && draft.value.trim() !== ''
 
   return (
     <>
@@ -316,13 +337,38 @@ function PinnedField({
         </ContextMenuContent>
       </ContextMenu>
       <InputGroup className="h-11 bg-background font-mono md:h-6">
-        <InputGroupInput
-          aria-label={tag}
-          disabled={!el}
-          placeholder={placeholder}
-          className="h-11 px-1.5 text-base md:h-6 md:text-xs"
-          {...draft}
-        />
+        <div className="relative flex h-full min-w-0 flex-1">
+          <InputGroupInput
+            aria-label={tag}
+            disabled={!el}
+            placeholder={placeholder}
+            className={cn(
+              'h-11 px-1.5 text-base md:h-6 md:text-xs',
+              rendered && 'text-transparent',
+            )}
+            {...draft}
+            onFocus={() => {
+              draft.onFocus()
+              setEditing(true)
+            }}
+            onBlur={() => {
+              draft.onBlur()
+              setEditing(false)
+            }}
+          />
+          {rendered && (
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 flex min-w-0 items-center overflow-hidden px-1.5 text-base md:text-xs"
+            >
+              <LeafText
+                value={draft.value}
+                defaultKey={defaultKey}
+                differs={differs}
+              />
+            </span>
+          )}
+        </div>
         {count > 1 && (
           <InputGroupAddon align="inline-end" className="py-0">
             <InputGroupText

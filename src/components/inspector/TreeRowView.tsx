@@ -9,6 +9,7 @@ import {
 import { useState } from 'react'
 
 import { CopyPathMenuItems } from './CopyPathMenuItems'
+import { DefaultChip, LeafText } from './LeafText'
 import { Highlighted } from './SearchHighlight'
 import { useDraft } from './use-draft'
 import { VarText } from './VarText'
@@ -371,40 +372,7 @@ function LeafValue({
         setEditing(true)
       }}
     >
-      {defaultKey !== undefined && value !== '' ? (
-        <DefaultChip name={defaultKey}>
-          <VarText text={value.trim()} />
-        </DefaultChip>
-      ) : value.trim() === '' ? (
-        <span className="text-muted-foreground/60 italic">
-          {m.node_empty()}
-        </span>
-      ) : (
-        <VarText
-          text={value.trim()}
-          className={cn(differs && 'default-differs leading-5')}
-        />
-      )}
+      <LeafText value={value} defaultKey={defaultKey} differs={differs} />
     </button>
-  )
-}
-
-/** Marks a value that equals its default, like the editor does. */
-function DefaultChip({
-  name,
-  className,
-  children,
-}: {
-  name: string
-  className?: string
-  children: React.ReactNode
-}) {
-  return (
-    <span
-      title={m.default_tooltip({ key: name })}
-      className={cn('default-chip flex min-w-0 items-center pr-0.5', className)}
-    >
-      {children}
-    </span>
   )
 }
