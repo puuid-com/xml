@@ -17,10 +17,8 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
   const hasActive = useSelector(sessionStore, (s) => s.activeId !== null)
 
   return (
-    <header className="flex h-12 shrink-0 items-center border-b md:h-9">
-      <div className="flex min-w-0 flex-1 self-stretch border-r">
-        {children}
-      </div>
+    <header className="flex h-12 shrink-0 items-center bg-foreground/5 shadow-[inset_0_-1px_var(--border)] md:h-10">
+      <div className="flex min-w-0 flex-1 self-stretch">{children}</div>
 
       {hasActive && <ShareButton />}
       <ArchiveButton />

@@ -5,14 +5,13 @@ import { useState } from 'react'
 import { newFile } from './files'
 import { ToolbarButton } from './ToolbarButton'
 import { askClose, askRename } from './ui-store'
-import { ProfileTag } from '#/components/profiles/ProfileTag'
 import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useFileContent } from '#/hooks/use-files'
 import { useProfiles } from '#/hooks/use-profiles'
 import { shortcuts } from '#/lib/shortcuts'
 import { diskStore } from '#/lib/store/disk'
 import { reorderFile } from '#/lib/store/files'
-import { resolveProfile } from '#/lib/store/profiles'
+import { profileCss, resolveProfile } from '#/lib/store/profiles'
 import { setActive } from '#/lib/store/session'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
@@ -44,7 +43,7 @@ export function TabStrip({
         <TabsList
           variant="line"
           aria-label={m.tabs_label()}
-          className="h-full! w-full justify-start gap-0 overflow-x-auto p-0 [scrollbar-width:none]"
+          className="h-full! w-full items-end justify-start gap-0 overflow-x-auto px-2 pt-1.5 pb-0 [scrollbar-width:none]"
         >
           {files.map((file) => {
             const profile = resolveProfile(profiles, file.profileId)
@@ -75,14 +74,21 @@ export function TabStrip({
                   setDragId(null)
                   setOverId(null)
                 }}
+                data-active={file.id === activeId || undefined}
                 className={cn(
-                  'group/tab relative flex h-full shrink-0 items-stretch border-r',
-                  file.id === activeId && 'bg-background',
+                  'chrome-tab group/tab relative flex h-full max-w-56 min-w-24 shrink basis-56 items-stretch rounded-t-lg',
+                  file.id === activeId
+                    ? 'z-10 bg-background'
+                    : 'hover:bg-foreground/5',
                   overId === file.id &&
                     dragId !== file.id &&
                     'shadow-[inset_2px_0_0_var(--ring)]',
                 )}
               >
+                <span
+                  aria-hidden
+                  className="chrome-tab-divider pointer-events-none absolute top-1/2 left-0 h-4 w-px -translate-y-1/2 bg-border"
+                />
                 <TabsTrigger
                   value={file.id}
                   title={file.name}
@@ -90,16 +96,18 @@ export function TabStrip({
                   onAuxClick={(e) => {
                     if (e.button === 1) askClose(file.id)
                   }}
-                  className="h-full! max-w-72 flex-none gap-1.5 pr-11 pl-3 font-normal after:bottom-0! md:pr-7"
+                  className="h-full! min-w-0 flex-1 justify-start gap-2 rounded-t-lg pr-11 pl-3 font-normal after:hidden md:pr-8"
                 >
                   <IconFileCode className="size-3.5! text-muted-foreground" />
                   <span className="truncate">{file.name}</span>
                   <UnsavedMark fileId={file.id} />
                   {profile && (
-                    <ProfileTag
-                      profile={profile}
+                    <span
+                      role="img"
+                      aria-label={m.profile_label({ name: profile.name })}
                       title={m.profile_label({ name: profile.name })}
-                      className="max-w-24 text-[10px]"
+                      style={{ backgroundColor: profileCss(profile) }}
+                      className="size-2 shrink-0 rounded-full"
                     />
                   )}
                 </TabsTrigger>
@@ -108,7 +116,7 @@ export function TabStrip({
                   aria-label={m.tab_close({ name: file.name })}
                   onClick={() => askClose(file.id)}
                   className={cn(
-                    'absolute top-1/2 right-0 grid size-11 -translate-y-1/2 place-items-center text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:opacity-100 md:right-1.5 md:size-4 md:opacity-0 md:group-hover/tab:opacity-100',
+                    'absolute top-1/2 right-0 grid size-11 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:opacity-100 md:right-2 md:size-5 md:opacity-0 md:group-hover/tab:opacity-100',
                     file.id === activeId && 'md:opacity-100',
                   )}
                 >
@@ -121,7 +129,7 @@ export function TabStrip({
             label={m.file_new()}
             shortcut={shortcuts.newFile}
             size="icon-sm"
-            className="mx-1 self-center"
+            className="mx-1 shrink-0 self-center rounded-full"
             onClick={newFile}
           >
             <IconPlus />

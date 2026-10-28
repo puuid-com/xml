@@ -205,6 +205,43 @@
 
 @layer components {
   /*
+   * A browser-style tab. The active one takes the editor's background and
+   * flows into it through two concave corners; a hairline divides the
+   * inactive ones and hides beside the active or hovered tab.
+   */
+  .chrome-tab[data-active]::before,
+  .chrome-tab[data-active]::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    width: 8px;
+    height: 8px;
+    pointer-events: none;
+  }
+  .chrome-tab[data-active]::before {
+    left: -8px;
+    background: radial-gradient(
+      circle at 0 0,
+      transparent 8px,
+      var(--background) 8.5px
+    );
+  }
+  .chrome-tab[data-active]::after {
+    right: -8px;
+    background: radial-gradient(
+      circle at 100% 0,
+      transparent 8px,
+      var(--background) 8.5px
+    );
+  }
+  .chrome-tab:first-child > .chrome-tab-divider,
+  .chrome-tab[data-active] > .chrome-tab-divider,
+  .chrome-tab:hover > .chrome-tab-divider,
+  .chrome-tab[data-active] + .chrome-tab > .chrome-tab-divider,
+  .chrome-tab:hover + .chrome-tab > .chrome-tab-divider {
+    opacity: 0;
+  }
+  /*
    * A highlighted tag: the whole `<name attr="…">` sits on a faint wash of its
    * highlight colour (`--hl`) with a hairline ring. The ring is a shadow so
    * monospace columns don't shift.
