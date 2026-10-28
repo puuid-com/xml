@@ -53,14 +53,24 @@ describe('vars', () => {
     expect(doc.errors).toEqual([])
   })
 
-  it('flags a stray > next to a <<var>>', () => {
+  it('flags malformed variables', () => {
     expect(parseXml('<tag>><<var>></tag>').errors).toEqual([
-      { from: 5, to: 6, message: 'Stray > next to variable <<var>>' },
+      { from: 5, to: 13, message: 'Invalid variable ><<var>>' },
     ])
     expect(parseXml('<tag><<var>>></tag>').errors).toHaveLength(1)
     expect(parseXml('<tag a="<<v>>>"/>').errors).toHaveLength(1)
+    expect(parseXml('<tag>{{{v}}}</tag>').errors).toEqual([
+      { from: 5, to: 12, message: 'Invalid variable {{{v}}}' },
+    ])
+    expect(parseXml('<tag>$${v}}</tag>').errors).toHaveLength(1)
+    expect(parseXml('<tag a="{{ bad name }}"/>').errors).toEqual([
+      { from: 8, to: 22, message: 'Invalid variable {{ bad name }}' },
+    ])
+    expect(parseXml('<tag>${v and }</tag>').errors).toHaveLength(1)
     expect(parseXml('<tag><<var>></tag>').errors).toEqual([])
-    expect(parseXml('<tag>a > <<var>></tag>').errors).toEqual([])
+    expect(parseXml('<tag>a > <<var>> $<<p>> {{a}}{{b}}</tag>').errors).toEqual(
+      [],
+    )
   })
 
   it('accepts {{name}} variables too', () => {

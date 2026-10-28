@@ -117,6 +117,76 @@ export function maskVarsAsNumbers(text: string): string {
   return text.replace(varRegExp(), (whole) => '1'.padEnd(whole.length, '0'))
 }
 
+// Bracket characters that may not touch a variable written in each style.
+const STRAY: Record<VarStyle, readonly [string, string]> = {
+  angle: ['<>', '<>'],
+  curly: ['{}', '{}'],
+  dollar: ['$', '}'],
+}
+
+const LEFTOVER = /<<|>>|\{\{|\}\}|\$\{/g
+const CLOSER: Record<string, string | undefined> = {
+  '<<': '>>',
+  '{{': '}}',
+  '${': '}',
+}
+
+/**
+ * Malformed variables in a run of text, such as `{{{name}}}`, `<<<name>>`,
+ * `{{ bad name }}` or an unclosed `${name`. Only `<<name>>`, `{{name}}` and
+ * `${name}` are accepted. Positions are offset by `offset`.
+ */
+export function findVarProblems(
+  text: string,
+  offset = 0,
+): Array<{ from: number; to: number; message: string }> {
+  if (!/[<>{}$]/.test(text)) return []
+  const problems: Array<{ from: number; to: number; message: string }> = []
+  const report = (from: number, to: number) =>
+    problems.push({
+      from: from + offset,
+      to: to + offset,
+      message: `Invalid variable ${text.slice(from, to)}`,
+    })
+  // Valid variables are blanked so leftover brackets stand out.
+  const vars = [...text.matchAll(varRegExp())]
+  let rest = text
+  for (const match of vars) {
+    const from = match.index
+    const to = from + match[0].length
+    rest = rest.slice(0, from) + '\0'.repeat(to - from) + rest.slice(to)
+  }
+  for (const match of vars) {
+    const from = match.index
+    const to = from + match[0].length
+    const [before, after] = STRAY[varStyleOf(match[0])!]
+    let start = from
+    let end = to
+    while (start > 0 && before.includes(rest[start - 1])) start--
+    while (end < text.length && after.includes(rest[end])) end++
+    if (start < from || end > to) {
+      rest = rest.slice(0, start) + '\0'.repeat(end - start) + rest.slice(end)
+      report(start, end)
+    }
+  }
+  for (const match of rest.matchAll(LEFTOVER)) {
+    const from = match.index
+    if (rest[from] === '\0') continue
+    const closer = CLOSER[match[0]]
+    let to = from + match[0].length
+    if (closer) {
+      // Takes in the rest of the variable when it is closed on the same line.
+      const window = rest.slice(to, to + VAR_MAX_LENGTH * 2)
+      const close = window.search(/\n/)
+      const at = window.indexOf(closer)
+      if (at >= 0 && (close < 0 || at < close)) to += at + closer.length
+    }
+    rest = rest.slice(0, from) + '\0'.repeat(to - from) + rest.slice(to)
+    report(from, to)
+  }
+  return problems.sort((a, b) => a.from - b.from)
+}
+
 /** Splits text into literal and variable parts, in order. */
 export function splitVars(
   text: string,

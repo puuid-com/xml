@@ -62,6 +62,14 @@ describe('parseJson', () => {
     expect(leafValue(url)).toBe('<<base>>/x')
   })
 
+  it('flags malformed variables inside strings', () => {
+    expect(parseJson('{"a": "{{{b}}}"}').errors).toEqual([
+      { from: 7, to: 14, message: 'Invalid variable {{{b}}}' },
+    ])
+    expect(parseJson('{"a": "<<<b>>", "c": "${d"}').errors).toHaveLength(2)
+    expect(parseJson('{"a": "{{b}}{{c}} ${d}"}').errors).toEqual([])
+  })
+
   it('allows {{var}} variables as values', () => {
     const doc = parse('{"qty": {{qty}}, "nested": {"a": {{ b }}}}')
     expect(doc.errors).toEqual([])

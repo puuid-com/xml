@@ -1,6 +1,6 @@
 import { dedupe } from '#/lib/xml/parse'
 import { encodeSegment } from '#/lib/xml/locate'
-import { VAR_PATTERN } from '#/lib/xml/vars'
+import { VAR_PATTERN, findVarProblems } from '#/lib/xml/vars'
 import type {
   JsonType,
   XmlDocument,
@@ -169,6 +169,7 @@ class Reader {
       this.pos = i + 1
     }
     const raw = this.text.slice(from, this.pos)
+    this.errors.push(...findVarProblems(raw, from))
     return { type: 'string', from, to: this.pos, raw, value: decodeString(raw) }
   }
 
