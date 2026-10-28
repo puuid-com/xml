@@ -2,12 +2,12 @@ import { fireEvent, render } from '@testing-library/react'
 import { useSelector } from '@tanstack/react-store'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { newFile } from './files'
+import { newFile, newJsonFile } from './files'
 import { askRename, setPaletteOpen, uiStore } from './ui-store'
 import { useAppShortcuts } from './use-app-shortcuts'
 import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 
-vi.mock('./files', () => ({ newFile: vi.fn() }))
+vi.mock('./files', () => ({ newFile: vi.fn(), newJsonFile: vi.fn() }))
 
 const onOpenFromDisk = vi.fn()
 
@@ -61,6 +61,19 @@ describe('useAppShortcuts', () => {
       altKey: true,
     })
     expect(newFile).toHaveBeenCalledOnce()
+  })
+
+  it('creates a JSON file with Mod+Alt+Shift+N', () => {
+    render(<Harness />)
+    fireEvent.keyDown(document, {
+      key: 'Ñ',
+      code: 'KeyN',
+      ctrlKey: true,
+      altKey: true,
+      shiftKey: true,
+    })
+    expect(newJsonFile).toHaveBeenCalledOnce()
+    expect(newFile).not.toHaveBeenCalled()
   })
 
   it('toggles the command menu, side panel and file picker', () => {

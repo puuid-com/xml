@@ -14,7 +14,6 @@ import {
   IconGitCompare,
   IconHighlight,
   IconJson,
-  IconLanguage,
   IconLink,
   IconMoon,
   IconPencil,
@@ -48,7 +47,6 @@ import {
   resolveVarsActive,
 } from '#/components/editor/actions'
 import { saveAs } from '#/components/editor/disk'
-import { localeNames } from '#/components/LocaleSwitcher'
 import {
   switchProfile,
   switchToNextProfile,
@@ -81,7 +79,6 @@ import { profileShortcuts, shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import { setActive } from '#/lib/store/session'
 import { toggleTheme } from '#/lib/theme'
 import { m } from '#/paraglide/messages'
-import { getLocale, locales, setLocale } from '#/paraglide/runtime'
 
 /** Centered palette of files and actions, opened with ⌘K or the logo. */
 export function CommandMenu({
@@ -351,6 +348,34 @@ function RootCommands({
           </CommandGroup>
         </>
       )}
+      {activeId && (
+        <>
+          <CommandSeparator />
+          <CommandGroup heading={m.palette_edit()}>
+            <CommandItem onSelect={() => run(() => void highlightAtCursor())}>
+              <IconHighlight />
+              {m.highlight_at_cursor()}
+              <CommandShortcut>
+                {shortcutLabel(shortcuts.highlight)}
+              </CommandShortcut>
+            </CommandItem>
+            <CommandItem onSelect={() => run(() => void applyDefaultsActive())}>
+              <IconReplace />
+              {m.defaults_apply()}
+              <CommandShortcut>
+                {shortcutLabel(shortcuts.applyDefaults)}
+              </CommandShortcut>
+            </CommandItem>
+            <CommandItem onSelect={() => run(resolveVarsActive)}>
+              <IconVariable />
+              {m.vars_resolve()}
+              <CommandShortcut>
+                {shortcutLabel(shortcuts.resolveVars)}
+              </CommandShortcut>
+            </CommandItem>
+          </CommandGroup>
+        </>
+      )}
       {activeId && activeProfile && (
         <>
           <CommandSeparator />
@@ -432,11 +457,7 @@ function RootCommands({
         </>
       )}
       <CommandSeparator />
-      <CommandGroup heading={m.palette_actions()}>
-        <CommandItem onSelect={() => run(() => setArchiveOpen(true))}>
-          <IconArchive />
-          {m.archive_title()}
-        </CommandItem>
+      <CommandGroup heading={m.palette_file()}>
         <CommandItem onSelect={() => run(newFile)}>
           <IconFilePlus />
           {m.file_new()}
@@ -445,32 +466,21 @@ function RootCommands({
         <CommandItem onSelect={() => run(newJsonFile)}>
           <IconFilePlus />
           {m.file_new_json()}
+          <CommandShortcut>
+            {shortcutLabel(shortcuts.newJsonFile)}
+          </CommandShortcut>
         </CommandItem>
         <CommandItem onSelect={() => run(onOpenFromDisk)}>
           <IconFolderOpen />
           {m.file_open_disk()}
           <CommandShortcut>{shortcutLabel(shortcuts.openFile)}</CommandShortcut>
         </CommandItem>
-        <CommandItem onSelect={() => run(() => void highlightAtCursor())}>
-          <IconHighlight />
-          {m.highlight_at_cursor()}
-          <CommandShortcut>
-            {shortcutLabel(shortcuts.highlight)}
-          </CommandShortcut>
-        </CommandItem>
-        <CommandItem onSelect={() => run(() => void applyDefaultsActive())}>
-          <IconReplace />
-          {m.defaults_apply()}
-          <CommandShortcut>
-            {shortcutLabel(shortcuts.applyDefaults)}
-          </CommandShortcut>
-        </CommandItem>
-        <CommandItem onSelect={() => run(resolveVarsActive)}>
-          <IconVariable />
-          {m.vars_resolve()}
-          <CommandShortcut>
-            {shortcutLabel(shortcuts.resolveVars)}
-          </CommandShortcut>
+      </CommandGroup>
+      <CommandSeparator />
+      <CommandGroup heading={m.palette_data()}>
+        <CommandItem onSelect={() => run(() => setArchiveOpen(true))}>
+          <IconArchive />
+          {m.archive_title()}
         </CommandItem>
         <CommandItem onSelect={() => run(downloadBackup)}>
           <IconDatabaseExport />
@@ -480,27 +490,13 @@ function RootCommands({
           <IconDatabaseImport />
           {m.backup_restore()}
         </CommandItem>
+      </CommandGroup>
+      <CommandSeparator />
+      <CommandGroup heading={m.palette_preferences()}>
         <CommandItem onSelect={() => run(toggleTheme)}>
           <IconMoon />
           {m.theme_toggle()}
         </CommandItem>
-      </CommandGroup>
-      <CommandSeparator />
-      <CommandGroup heading={m.language_label()}>
-        {locales.map((locale) => (
-          <CommandItem
-            key={locale}
-            value={`language ${localeNames[locale]}`}
-            lang={locale}
-            onSelect={() => run(() => void setLocale(locale))}
-          >
-            <IconLanguage />
-            {localeNames[locale]}
-            {locale === getLocale() && (
-              <IconCheck className="size-3 text-muted-foreground" />
-            )}
-          </CommandItem>
-        ))}
       </CommandGroup>
     </>
   )

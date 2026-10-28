@@ -1,6 +1,6 @@
 import { useHotkey, useHotkeys } from '@tanstack/react-hotkeys'
 
-import { newFile } from './files'
+import { newFile, newJsonFile } from './files'
 import { askRename, setPaletteOpen, uiStore } from './ui-store'
 import {
   switchToNextProfile,
@@ -31,6 +31,7 @@ export function useAppShortcuts({
   useHotkey(shortcuts.quickOpen.hotkey, togglePalette)
   useHotkey(shortcuts.openFile.hotkey, onOpenFromDisk)
   useHotkey(shortcuts.newFile.hotkey, newFile)
+  useHotkey(shortcuts.newJsonFile.hotkey, newJsonFile)
   useHotkey(shortcuts.togglePanel.hotkey, onTogglePanel)
   // Profiles belong to files, so these only act with a file open.
   useHotkey(shortcuts.nextProfile.hotkey, switchToNextProfile, {

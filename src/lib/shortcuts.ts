@@ -25,6 +25,7 @@ export const shortcuts = {
   quickOpen: { hotkey: 'Mod+P', keys: [mod, 'P'] },
   openFile: { hotkey: 'Mod+O', keys: [mod, 'O'] },
   newFile: { hotkey: 'Mod+Alt+N', keys: [alt, mod, 'N'] },
+  newJsonFile: { hotkey: 'Mod+Alt+Shift+N', keys: ['⇧', alt, mod, 'N'] },
   rename: { hotkey: 'F2', keys: ['F2'] },
   togglePanel: { hotkey: 'Mod+B', keys: [mod, 'B'] },
   nextProfile: { hotkey: 'Mod+Alt+P', keys: [alt, mod, 'P'] },
