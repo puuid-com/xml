@@ -179,7 +179,6 @@ function ZplOpenButton({ el }: { el: XmlElement }) {
       type="button"
       tabIndex={-1}
       aria-label={m.zpl_open_name({ name: el.name })}
-      title={m.zpl_open_name({ name: el.name })}
       className="grid size-8 shrink-0 place-items-center text-muted-foreground hover:text-foreground md:size-4"
       onClick={(e) => {
         e.stopPropagation()
@@ -238,7 +237,7 @@ function TagLabel({
           </span>
           <span className="text-syntax-punct">=</span>
           {isDefaultAttr(defaults, attr) ? (
-            <DefaultChip name={`@${attr.name}`} className="max-w-32">
+            <DefaultChip className="max-w-32">
               <VarText text={attr.value} />
             </DefaultChip>
           ) : (
@@ -364,7 +363,6 @@ function LeafValue({
       type="button"
       tabIndex={-1}
       data-edit-value
-      title={m.node_edit_text()}
       className="ml-1 flex h-10 min-w-0 flex-1 items-center truncate px-1 text-left text-foreground/80 hover:bg-background hover:ring-1 hover:ring-border md:h-5"
       onClick={(e) => {
         e.stopPropagation()

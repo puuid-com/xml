@@ -162,7 +162,6 @@ export function TabStrip({
                     />
                     <TabsTrigger
                       value={file.id}
-                      title={file.name}
                       onDoubleClick={() => askRename(file.id)}
                       onAuxClick={(e) => {
                         if (e.button === 1) askClose(file.id)
@@ -172,7 +171,6 @@ export function TabStrip({
                       <IconFileCode className="size-3.5! text-muted-foreground" />
                       {profile ? (
                         <span
-                          title={m.profile_label({ name: profile.name })}
                           style={hlStyle(profileCss(profile))}
                           className="hl-tag hl-ink min-w-0 truncate px-1 leading-5"
                         >
@@ -424,7 +422,6 @@ function UnsavedDot({ fileId, saved }: { fileId: string; saved: string }) {
     <span
       role="img"
       aria-label={m.tab_unsaved_disk()}
-      title={m.tab_unsaved_disk()}
       className="size-1.5 shrink-0 rounded-full bg-foreground"
     />
   )

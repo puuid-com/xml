@@ -133,7 +133,6 @@ export function CommandMenuButton() {
       variant="ghost"
       size="xs"
       aria-label={m.palette_open()}
-      title={m.palette_open()}
       className="gap-1.5 px-1.5 text-[11px] font-normal text-muted-foreground hover:text-foreground max-md:h-11 max-md:min-w-11"
       onClick={() => setPaletteOpen(true)}
     >

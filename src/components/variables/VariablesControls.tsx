@@ -60,7 +60,6 @@ function VariableRow({ variable }: { variable: Variable }) {
         variant="ghost"
         size="icon-xs"
         aria-label={m.variables_remove({ name })}
-        title={m.variables_remove({ name })}
         onClick={() => removeVariable(variable.id)}
       >
         <IconTrash />

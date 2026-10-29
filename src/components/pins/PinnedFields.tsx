@@ -192,7 +192,6 @@ export function PinnedFields() {
                     else handles.current.delete(pin.id)
                   }}
                   aria-label={m.pin_move({ name: pin.tag })}
-                  title={m.pin_move_hint()}
                   onKeyDown={(e) => onHandleKey(e, index)}
                   onDragStart={(e) => {
                     setDrag({ from: index, to: null })
@@ -305,7 +304,6 @@ function PinnedField({
         <ContextMenuTrigger asChild>
           <button
             type="button"
-            title={m.pin_cycle_hint()}
             className={cn(
               'min-h-11 max-w-40 cursor-pointer truncate text-left font-mono text-xs font-medium md:min-h-0',
               color ? 'hl-tag px-1' : 'text-syntax-tag',
@@ -372,19 +370,13 @@ function PinnedField({
         </div>
         {count > 1 && (
           <InputGroupAddon align="inline-end" className="py-0">
-            <InputGroupText
-              title={m.highlight_matches({ count })}
-              className="tabular-nums"
-            >
-              {count}
-            </InputGroupText>
+            <InputGroupText className="tabular-nums">{count}</InputGroupText>
           </InputGroupAddon>
         )}
         <InputGroupAddon align="inline-end" className="py-0">
           <InputGroupButton
             size="icon-xs"
             aria-label={m.pin_copy({ name: tag })}
-            title={m.pin_copy({ name: tag })}
             disabled={!el}
             className="text-muted-foreground max-md:size-11"
             onClick={() => {
@@ -397,7 +389,6 @@ function PinnedField({
           <InputGroupButton
             size="icon-xs"
             aria-label={m.pin_copy_var({ name: tag })}
-            title={m.pin_copy_var({ name: tag })}
             className="text-muted-foreground max-md:size-11"
             onClick={() => copyVar(localName(tag))}
           >
@@ -407,7 +398,6 @@ function PinnedField({
             <InputGroupButton
               size="icon-xs"
               aria-label={m.zpl_open_name({ name: tag })}
-              title={m.zpl_open_name({ name: tag })}
               disabled={!el || !draft.value.trim()}
               className="text-muted-foreground max-md:size-11"
               onClick={() => openZplLabel(draft.value)}

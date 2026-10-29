@@ -6,6 +6,13 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.155.0] - 2026-10-28
+
+### Changed
+
+- Tooltips wait a full second before appearing and no longer chain instantly from one button to the next.
+- Removed tooltips that only repeated a button's label; toolbar tooltips now appear only where they show a keyboard shortcut.
+
 ## [0.154.1] - 2026-10-28
 
 ### Fixed

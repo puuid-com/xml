@@ -49,7 +49,6 @@ export function ColorSwatches({
           role="radio"
           aria-checked={value === color}
           aria-label={colorLabel(color)}
-          title={colorLabel(color)}
           onClick={() => onSelect(color)}
           className="grid size-5 place-items-center rounded-full ring-offset-2 ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring aria-checked:ring-2 aria-checked:ring-foreground/60"
           style={{ backgroundColor: highlightCss(color) }}

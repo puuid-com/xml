@@ -69,7 +69,6 @@ function RuleRow({ rule }: { rule: DefaultValue }) {
         variant="ghost"
         size="icon-xs"
         aria-label={m.defaults_remove({ key: rule.key })}
-        title={m.defaults_remove({ key: rule.key })}
         onClick={() => removeDefault(rule.id)}
       >
         <IconTrash />

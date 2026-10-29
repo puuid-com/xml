@@ -19,7 +19,7 @@ export function LeafText({
 }) {
   if (defaultKey !== undefined && value !== '') {
     return (
-      <DefaultChip name={defaultKey}>
+      <DefaultChip>
         <VarText text={value.trim()} />
       </DefaultChip>
     )
@@ -39,17 +39,14 @@ export function LeafText({
 
 /** Marks a value that equals its default, like the editor does. */
 export function DefaultChip({
-  name,
   className,
   children,
 }: {
-  name: string
   className?: string
   children: React.ReactNode
 }) {
   return (
     <span
-      title={m.default_tooltip({ key: name })}
       className={cn('default-chip flex min-w-0 items-center pr-0.5', className)}
     >
       {children}

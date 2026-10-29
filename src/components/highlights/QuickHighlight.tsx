@@ -76,7 +76,6 @@ export function QuickHighlight() {
                   variant="ghost"
                   size="icon-xs"
                   aria-label={m.highlight_remove()}
-                  title={m.highlight_remove()}
                   onClick={() => {
                     removeHighlight(rule.id)
                     close()

@@ -8,7 +8,7 @@ import {
 import type { Shortcut } from '#/lib/shortcuts'
 import { cn } from '#/lib/utils'
 
-/** Icon button labelled by a tooltip, with its shortcut when it has one. */
+/** Icon button; only a button with a shortcut gets a tooltip to show it. */
 export function ToolbarButton({
   label,
   shortcut,
@@ -19,20 +19,22 @@ export function ToolbarButton({
   label: string
   shortcut?: Shortcut
 }) {
+  const button = (
+    <Button
+      variant="ghost"
+      size={size}
+      aria-label={label}
+      className={cn('max-md:size-11', className)}
+      {...props}
+    />
+  )
+  if (!shortcut) return button
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size={size}
-          aria-label={label}
-          className={cn('max-md:size-11', className)}
-          {...props}
-        />
-      </TooltipTrigger>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
       <TooltipContent className="flex items-center gap-2">
         {label}
-        {shortcut && <ShortcutKeys shortcut={shortcut} />}
+        <ShortcutKeys shortcut={shortcut} />
       </TooltipContent>
     </Tooltip>
   )

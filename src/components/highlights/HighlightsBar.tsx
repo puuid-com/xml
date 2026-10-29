@@ -134,7 +134,6 @@ function RuleSegment({
           variant="ghost"
           size="sm"
           onClick={() => cycleTag(rule.tag)}
-          title={`${m.highlight_matches({ count })} · ${m.highlight_chip_hint()}`}
           aria-label={`${rule.tag}, ${m.highlight_matches({ count })}`}
           className={cn(
             'h-11 min-w-11 px-1.5 font-mono text-[11px] font-normal not-first:border-l not-first:border-(--hl)/35 hover:bg-(--hl)/15 data-[state=open]:bg-(--hl)/20 md:h-5 md:min-w-0 dark:hover:bg-(--hl)/20',
@@ -207,7 +206,6 @@ function AddRulePopover({
           size="icon-xs"
           className="shrink-0 max-md:size-11"
           aria-label={m.highlight_add_tag()}
-          title={m.highlight_add_tag()}
         >
           <IconPlus />
         </Button>

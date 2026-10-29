@@ -187,20 +187,15 @@ function ProfileSwitch() {
             </Tooltip>
           ))}
         </ToggleGroup>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon-xs"
-              aria-label={m.profile_new()}
-              onClick={() => setProfileDialog({ mode: 'create' })}
-              className="size-5 border-l-0 text-muted-foreground max-md:size-8"
-            >
-              <IconPlus />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{m.profile_new()}</TooltipContent>
-        </Tooltip>
+        <Button
+          variant="outline"
+          size="icon-xs"
+          aria-label={m.profile_new()}
+          onClick={() => setProfileDialog({ mode: 'create' })}
+          className="size-5 border-l-0 text-muted-foreground max-md:size-8"
+        >
+          <IconPlus />
+        </Button>
       </div>
     </>
   )
@@ -226,7 +221,6 @@ function VarStyleSwitch({ style }: { style: VarStyle | null }) {
           key={option}
           value={option}
           aria-label={m.status_vars_switch({ style: writeVar('x', option) })}
-          title={m.status_vars_switch({ style: writeVar('x', option) })}
           className="h-5 min-w-0 px-1.5 font-mono text-[10.5px] font-normal text-muted-foreground data-[state=on]:bg-foreground data-[state=on]:text-background max-md:h-8"
         >
           {writeVar('x', option)}

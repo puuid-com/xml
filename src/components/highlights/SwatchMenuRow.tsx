@@ -40,7 +40,6 @@ export function SwatchMenuRow({
           <ContextMenuItem
             key={color}
             aria-label={colorLabel(color)}
-            title={colorLabel(color)}
             data-selected={value === color || undefined}
             onSelect={() => onSelect(color)}
             className={SWATCH}
@@ -51,7 +50,6 @@ export function SwatchMenuRow({
         ))}
         <ContextMenuItem
           aria-label={m.color_custom()}
-          title={m.color_custom()}
           data-selected={custom ? true : undefined}
           // The native picker stays open after the menu would close, so keep
           // the menu up and let it apply the colour as it changes.

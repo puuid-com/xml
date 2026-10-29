@@ -115,7 +115,6 @@ export function SortOrderEditor({ order }: { order: Array<string> }) {
                   else handles.current.delete(name)
                 }}
                 aria-label={m.sort_order_move({ name })}
-                title={m.sort_order_move({ name })}
                 onKeyDown={(e) => onHandleKey(e, index)}
                 className="grid size-6 cursor-grab place-items-center text-muted-foreground hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none active:cursor-grabbing"
               >
@@ -154,7 +153,6 @@ export function SortOrderEditor({ order }: { order: Array<string> }) {
                 variant="ghost"
                 size="icon-xs"
                 aria-label={m.sort_order_remove({ name })}
-                title={m.sort_order_remove({ name })}
                 onClick={() => setCustomOrder(order.filter((n) => n !== name))}
                 className="md:opacity-0 md:group-hover/row:opacity-100 md:focus-visible:opacity-100"
               >
@@ -178,7 +176,6 @@ export function SortOrderEditor({ order }: { order: Array<string> }) {
           variant="outline"
           size="sm"
           disabled={missing.length === 0}
-          title={m.sort_order_add_file_hint({ count: missing.length })}
           onClick={() => setCustomOrder(appendNames(order, missing))}
         >
           {m.sort_order_add_file()}
@@ -188,12 +185,7 @@ export function SortOrderEditor({ order }: { order: Array<string> }) {
             </span>
           )}
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          title={m.sort_order_template_hint()}
-          onClick={pickTemplate}
-        >
+        <Button variant="outline" size="sm" onClick={pickTemplate}>
           {m.sort_order_template()}
         </Button>
         <div className="flex-1" />
