@@ -115,7 +115,7 @@
   "close_many_overflow": "Les fichiers seront déplacés dans les archives, qui ne conservent que les {limit} derniers. Certains de ces fichiers seront supprimés définitivement.",
   "drop_files": "Déposez des fichiers XML ou JSON pour les ouvrir",
   "welcome_title": "Éditez du XML et du JSON, avec élégance",
-  "welcome_body": "Les fichiers sont enregistrés dans ce navigateur et synchronisés entre les onglets. Les 10 derniers fichiers supprimés peuvent être restaurés depuis les archives. Les <<variables>> sont mises en évidence et conservées telles quelles.",
+  "welcome_body": "Enregistré dans ce navigateur et synchronisé entre les onglets. Les <<variables>> restent telles quelles.",
   "welcome_hint_prefix": "Appuyez sur",
   "welcome_hint_suffix": "pour chercher onglets et actions.",
   "panel_structure": "Structure",

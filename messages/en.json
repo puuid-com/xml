@@ -115,7 +115,7 @@
   "close_many_overflow": "The files will move to the archive, which keeps only the last {limit}. Some of these files will be permanently deleted.",
   "drop_files": "Drop XML or JSON files to open them",
   "welcome_title": "Edit XML and JSON, beautifully",
-  "welcome_body": "Files are saved in this browser and sync across tabs. The last 10 deleted files can be restored from the archive. <<variables>> are highlighted and kept as written.",
+  "welcome_body": "Saved in this browser and synced across tabs. <<variables>> stay exactly as written.",
   "welcome_hint_prefix": "Press",
   "welcome_hint_suffix": "to search tabs and actions.",
   "panel_structure": "Structure",

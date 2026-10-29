@@ -6,6 +6,13 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.154.0] - 2026-10-28
+
+### Changed
+
+- Redesign the welcome screen around a small XML snippet on a faint dot grid. Its lines settle in on arrival and a caret blinks at the end.
+- Shorten the welcome description and keep the three actions on one row.
+
 ## [0.153.0] - 2026-10-28
 
 ### Changed
