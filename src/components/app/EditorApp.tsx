@@ -1,4 +1,9 @@
-import { IconFileUpload, IconFolderOpen } from '@tabler/icons-react'
+import {
+  IconFilePlus,
+  IconFileUpload,
+  IconFolderOpen,
+  IconJson,
+} from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
@@ -45,6 +50,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '#/components/ui/empty'
+import { Kbd } from '#/components/ui/kbd'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -53,6 +59,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useOpenFiles } from '#/hooks/use-files'
 import { useMediaQuery } from '#/hooks/use-media-query'
+import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import { onSaveFailed } from '#/lib/store/files'
 import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 import { cn } from '#/lib/utils'
@@ -318,76 +325,34 @@ export function MobileWorkspace({ fileId, compareId }: WorkspaceProps) {
 
 function Welcome({ onOpenFromDisk }: { onOpenFromDisk: () => void }) {
   return (
-    <Empty className="h-full gap-6 overflow-y-auto py-10">
-      <EmptyHeader className="gap-3">
-        <EmptyMedia className="mb-3" aria-hidden="true">
-          <svg
-            viewBox="0 0 80 88"
-            fill="none"
-            className="size-20 overflow-visible text-muted-foreground"
-          >
-            <g className="welcome-document">
-              <path
-                d="M22 8h25l13 13v49a5 5 0 0 1-5 5H22a5 5 0 0 1-5-5V13a5 5 0 0 1 5-5Z"
-                className="fill-background stroke-current"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M47 8v13h13"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinejoin="round"
-              />
-              <g className="welcome-document-eyes" fill="currentColor">
-                <circle cx="31" cy="39" r="2" />
-                <circle cx="46" cy="39" r="2" />
-              </g>
-              <path
-                d="M34 47q4.5 5 9 0"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <path
-                d="M28 60h21M28 65h13"
-                className="stroke-border"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </g>
-          </svg>
+    <Empty className="h-full">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <IconFilePlus />
         </EmptyMedia>
-        <EmptyTitle>
-          <h1 className="text-xl font-medium tracking-tight">
-            {m.welcome_title()}
-          </h1>
-        </EmptyTitle>
-        <EmptyDescription className="max-w-64 text-sm">
-          {m.welcome_body()}
-        </EmptyDescription>
+        <EmptyTitle>{m.welcome_title()}</EmptyTitle>
+        <EmptyDescription>{m.welcome_body()}</EmptyDescription>
       </EmptyHeader>
-      <EmptyContent className="gap-3">
-        <Button onClick={onOpenFromDisk} className="h-11 gap-2 px-5 text-sm">
-          <IconFolderOpen />
-          {m.file_open_disk()}
-        </Button>
-        <div className="flex flex-wrap justify-center gap-x-1">
-          <Button
-            variant="ghost"
-            onClick={newFile}
-            className="h-11 px-3 text-muted-foreground"
-          >
+      <EmptyContent>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button onClick={newFile}>
+            <IconFilePlus />
             {m.file_new()}
           </Button>
-          <Button
-            variant="ghost"
-            onClick={newJsonFile}
-            className="h-11 px-3 text-muted-foreground"
-          >
+          <Button variant="outline" onClick={newJsonFile}>
+            <IconJson />
             {m.file_new_json()}
           </Button>
+          <Button variant="outline" onClick={onOpenFromDisk}>
+            <IconFolderOpen />
+            {m.file_open_disk()}
+          </Button>
         </div>
+        <p className="text-xs text-muted-foreground">
+          {m.welcome_hint_prefix()}{' '}
+          <Kbd>{shortcutLabel(shortcuts.palette)}</Kbd>{' '}
+          {m.welcome_hint_suffix()}
+        </p>
       </EmptyContent>
     </Empty>
   )

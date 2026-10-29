@@ -6,6 +6,12 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.153.0] - 2026-10-28
+
+### Changed
+
+- Restore the previous welcome screen: no animated illustration, the original title and description, three equal actions and the command palette hint.
+
 ## [0.152.0] - 2026-10-28
 
 ### Changed
