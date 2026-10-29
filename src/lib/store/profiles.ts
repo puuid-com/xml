@@ -9,11 +9,13 @@ import {
 } from './format-settings'
 import { DEFAULT_PROFILE_ID, localCollection, newId } from './persist'
 import { sessionStore } from './session'
+import { bestProfile, fingerprint, samePrint } from '#/lib/fingerprint'
 import { localName, sameName } from '#/lib/names'
 import { appendNames } from '#/lib/sort-order'
 import { isZplTag } from '#/lib/zpl'
 import { m } from '#/paraglide/messages'
 import type { FormatSettings } from './format-settings'
+import type { Fingerprint } from '#/lib/fingerprint'
 
 // A profile is a named set of settings: format options here, plus the
 // highlight, pin and default-value rules tagged with its id. Each file
@@ -26,6 +28,11 @@ export const profileSchema = z.object({
   color: z.string(),
   createdAt: z.number(),
   format: formatSettingsSchema,
+  /**
+   * Fingerprints of files the user put in this profile, newest first, so
+   * files like them open in it. See `#/lib/fingerprint`.
+   */
+  samples: z.array(z.array(z.string())).default([]),
 })
 
 export type Profile = z.infer<typeof profileSchema>
@@ -53,6 +60,7 @@ function defaultProfile(): Profile {
     color: 'blue',
     createdAt: 0,
     format: format.success ? format.data : DEFAULT_FORMAT,
+    samples: [],
   }
 }
 
@@ -174,6 +182,7 @@ export async function createProfile({
       (profilesList().at(-1)?.createdAt ?? 0) + 1,
     ),
     format: withDefaults(format),
+    samples: [],
   }
   await profilesCollection.insert(profile).isPersisted.promise
   return profile
@@ -189,4 +198,45 @@ export function updateProfile(
     if (name) draft.name = name
     if (changes.color) draft.color = changes.color
   })
+}
+
+/** Samples kept per profile. */
+const SAMPLE_LIMIT = 10
+
+/**
+ * Remembers that files shaped like `content` belong to a profile. A shape
+ * belongs to one profile, so other profiles forget it.
+ */
+export function learnSample(profileId: string, name: string, content: string) {
+  if (!profilesCollection.has(profileId)) return
+  const print = fingerprint(name, content)
+  if (print.length === 0) return
+  for (const profile of profilesCollection.values()) {
+    const kept = profile.samples.filter((s) => !samePrint(s, print))
+    const samples =
+      profile.id === profileId ? [print, ...kept].slice(0, SAMPLE_LIMIT) : kept
+    if (profile.id === profileId || kept.length !== profile.samples.length) {
+      profilesCollection.update(profile.id, (draft) => {
+        draft.samples = samples
+      })
+    }
+  }
+}
+
+/**
+ * Picks profiles for incoming files by their structure: each profile is
+ * compared through its learned samples and the files it holds now. Built
+ * once per batch, so files opened together don't sway one another.
+ */
+export function profileGuesser() {
+  const examples = new Map<string, Array<Fingerprint>>(
+    profilesList().map((p) => [p.id, [...p.samples]]),
+  )
+  if (examples.size < 2) return () => null
+  for (const file of filesCollection.values()) {
+    examples.get(file.profileId)?.push(fingerprint(file.name, file.content))
+  }
+  const candidates = [...examples].map(([id, samples]) => ({ id, samples }))
+  return (name: string, content: string) =>
+    bestProfile(fingerprint(name, content), candidates)
 }

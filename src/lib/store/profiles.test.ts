@@ -268,6 +268,29 @@ describe('profiles', () => {
     },
   )
 
+  it('opens files in the profile whose files they are shaped like', async () => {
+    const other = await s.createProfile({ name: 'Other' })
+    const file = s.createFile('a.xml', '<b:Order><b:Id>1</b:Id></b:Order>')
+    s.setActive(file.id)
+    await s.switchProfile(other.id)
+    expect(s.profilesCollection.get(other.id)?.samples).toHaveLength(1)
+    // Remembered once the file is gone, values aside.
+    s.filesCollection.delete(file.id)
+    const guess = s.profileGuesser()
+    expect(guess('n.xml', '<b:Order><b:Id>2</b:Id></b:Order>')).toBe(other.id)
+    expect(guess('n.xml', '<a:Order><a:Id>2</a:Id></a:Order>')).toBeNull()
+  })
+
+  it('keeps a shape in the profile it last went to', async () => {
+    const other = await s.createProfile({ name: 'Other' })
+    const file = s.createFile('a.xml', '<b:Order/>')
+    s.setActive(file.id)
+    await s.switchProfile(other.id)
+    await s.switchProfile('default')
+    expect(s.profilesCollection.get(other.id)?.samples).toEqual([])
+    expect(s.profilesCollection.get('default')?.samples).toHaveLength(1)
+  })
+
   it('keeps a profile switch made while a content save is pending', async () => {
     const other = await s.createProfile({ name: 'Other' })
     const file = s.createFile('a.xml', '<old/>')

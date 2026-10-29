@@ -1,7 +1,7 @@
 import { notify } from './notice-store'
 import { setDiskLink } from '#/lib/store/disk'
 import { createFile } from '#/lib/store/files'
-import { activeProfileId } from '#/lib/store/profiles'
+import { activeProfileId, profileGuesser } from '#/lib/store/profiles'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 
@@ -68,7 +68,8 @@ export function survivor(
   return after ?? before
 }
 
-// New files take the profile of the file in the editor.
+// New files take the profile of the file in the editor. Opened files take
+// the profile whose files they are shaped like, else that one too.
 
 export function newFile() {
   const file = createFile(
@@ -115,7 +116,8 @@ export async function pickFromDisk() {
 export async function importHandles(
   handles: ReadonlyArray<FileSystemFileHandle>,
 ) {
-  const profileId = activeProfileId()
+  const fallback = activeProfileId()
+  const guess = profileGuesser()
   let last: string | null = null
   for (const handle of handles) {
     try {
@@ -124,6 +126,7 @@ export async function importHandles(
       const file = await handle.getFile()
       // react-doctor-disable-next-line react-doctor/async-await-in-loop
       const text = await file.text()
+      const profileId = guess(file.name, text) ?? fallback
       last = createFile(file.name, text, profileId).id
       void setDiskLink(last, {
         handle,
@@ -171,11 +174,13 @@ export function dropFiles(data: DataTransfer) {
 export async function importFiles(list: FileList | Array<File>) {
   const files = Array.from(list)
   const contents = await Promise.allSettled(files.map((file) => file.text()))
-  const profileId = activeProfileId()
+  const fallback = activeProfileId()
+  const guess = profileGuesser()
   let last: string | null = null
   for (const [i, result] of contents.entries()) {
     const { name } = files[i]
     if (result.status === 'fulfilled') {
+      const profileId = guess(name, result.value) ?? fallback
       last = createFile(name, result.value, profileId).id
       continue
     }

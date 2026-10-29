@@ -143,6 +143,7 @@ export function importSharedProfile(shared: SharedProfile): Profile {
       (profilesList().at(-1)?.createdAt ?? 0) + 1,
     ),
     format: withDefaults(shared.format),
+    samples: [],
   }
   profilesCollection.insert(profile)
   insertRules(shared, profile.id)

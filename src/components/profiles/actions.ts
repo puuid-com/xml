@@ -1,19 +1,25 @@
 import { notify } from '#/components/app/notice-store'
-import { setFileProfile } from '#/lib/store/files'
+import { filesCollection, setFileProfile } from '#/lib/store/files'
 import {
   activeProfileId,
+  learnSample,
   profilesCollection,
   profilesList,
 } from '#/lib/store/profiles'
 import { sessionStore } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 
-/** Switches the active file to a profile, and so to its settings. */
+/**
+ * Switches the active file to a profile, and so to its settings. Files
+ * shaped like it open in that profile from then on.
+ */
 export async function switchProfile(profileId: string, announce = false) {
   const fileId = sessionStore.state.activeId
   const profile = profilesCollection.get(profileId)
   if (!fileId || !profile) return
   await setFileProfile(fileId, profileId)
+  const file = filesCollection.get(fileId)
+  if (file) learnSample(profileId, file.name, file.content)
   // Keyboard switches have no menu to show the result.
   if (announce) notify.info(m.profile_switched({ name: profile.name }))
 }
