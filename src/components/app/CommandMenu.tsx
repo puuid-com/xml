@@ -24,10 +24,11 @@ import {
   IconVariable,
 } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { downloadBackup, pickBackup } from './backup'
 import { newFile, newJsonFile } from './files'
+import { readLastCommand, saveLastCommand } from './last-command'
 import {
   askDeleteProfile,
   askRename,
@@ -153,8 +154,24 @@ function FileCommands({
   const [page, setPage] = useState<'root' | 'compare'>('root')
   const comparing = useSelector(uiStore, (s) => s.compareId !== null)
   const activeFile = files.find((f) => f.id === activeId)
+  // Opens on the command run last, so repeating it is just ↵.
+  const [value, setValue] = useState(readLastCommand)
+  const root = useRef<HTMLDivElement>(null)
+
+  // cmdk selects nothing when the remembered command isn't listed right now
+  // (no file open, a closed tab), so fall back to the first item.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const el = root.current
+      if (!el || el.querySelector('[cmdk-item][aria-selected="true"]')) return
+      const first = el.querySelector('[cmdk-item]:not([data-disabled="true"])')
+      setValue(first?.getAttribute('data-value') ?? '')
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [])
 
   const run = (fn: () => void) => {
+    if (page === 'root') saveLastCommand(value)
     setPaletteOpen(false)
     // Let the dialog hand focus back to the editor before fn moves it.
     requestAnimationFrame(fn)
@@ -167,6 +184,9 @@ function FileCommands({
 
   return (
     <Command
+      ref={root}
+      value={value}
+      onValueChange={setValue}
       onKeyDown={(e) => {
         // Backspace in the empty search goes back, as in the cmdk docs.
         if (page !== 'root' && e.key === 'Backspace' && !search) {
@@ -208,7 +228,10 @@ function FileCommands({
             activeId={activeId}
             comparing={comparing}
             run={run}
-            onCompare={() => openPage('compare')}
+            onCompare={() => {
+              saveLastCommand(value)
+              openPage('compare')
+            }}
             onOpenFromDisk={onOpenFromDisk}
           />
         )}
