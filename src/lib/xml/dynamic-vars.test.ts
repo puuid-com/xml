@@ -73,7 +73,7 @@ describe('dynamic vars', () => {
     ])
     expect(
       resolve('<a h="<<host>>"><< host >>|<<empty>>|<<port>></a>', values),
-    ).toEqual({
+    ).toMatchObject({
       text: '<a h="example.com">example.com||<<port>></a>',
       count: 3,
       unresolved: 1,
@@ -82,11 +82,27 @@ describe('dynamic vars', () => {
 
   it('fills {{name}} variables the same way', () => {
     const values = new Map([['host', 'example.com']])
-    expect(resolve('{{host}} {{ port }}', values)).toEqual({
+    expect(resolve('{{host}} {{ port }}', values)).toMatchObject({
       text: 'example.com {{ port }}',
       count: 1,
       unresolved: 1,
     })
+  })
+
+  it('lists each variable once with its value and uses', () => {
+    const values = new Map([['host', 'example.com']])
+    const { vars } = resolve(
+      '<<host>> <<$randomInt>> <<port>> <<host>> <<$randomInt>>',
+      values,
+    )
+    expect(vars).toMatchObject([
+      { name: 'host', dynamic: false, count: 2 },
+      { name: '$randomInt', dynamic: true, count: 2 },
+      { name: 'port', dynamic: false, count: 1 },
+    ])
+    expect(vars[0]?.value).toBe('example.com')
+    expect(vars[1]?.value).toMatch(/^\d+$/)
+    expect(vars[2]?.value).toBeNull()
   })
 
   it('keeps values literal, without resolving variables inside them', () => {

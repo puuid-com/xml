@@ -18,6 +18,7 @@ import {
   RenameDialog,
   RestoreDialog,
   VariableValueDialog,
+  VarsConfirmDialog,
 } from './Dialogs'
 import {
   ACCEPTED_TYPES,
@@ -185,6 +186,7 @@ export function EditorApp() {
       <CommandMenu activeId={activeId} onOpenFromDisk={openFromDisk} />
       <CloseDialog openIds={files.map((f) => f.id)} />
       <DefaultsConfirmDialog />
+      <VarsConfirmDialog />
       <RestoreDialog />
       <VariableValueDialog />
       <ProfileDialog />

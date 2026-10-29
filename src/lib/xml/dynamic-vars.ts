@@ -72,22 +72,42 @@ export interface ResolveContext extends DynamicVarContext {
   values: ReadonlyMap<string, string>
 }
 
+/** One variable name in a file and what replacing it would write. */
+export interface ResolvedVar {
+  name: string
+  /** The value written, or the first one for a dynamic variable. Null when unset. */
+  value: string | null
+  dynamic: boolean
+  count: number
+}
+
 /**
  * Replaces variables as written, like Postman: plain ones with their value
  * and each supported dynamic one with a fresh value. Values are literal text
- * and aren't resolved again. Unknown variables stay as written.
+ * and aren't resolved again. Unknown variables stay as written. `vars` lists
+ * each name in order of first use.
  */
 export function resolveVars(
   text: string,
   ctx: ResolveContext,
-): { text: string; count: number; unresolved: number } {
+): {
+  text: string
+  count: number
+  unresolved: number
+  vars: Array<ResolvedVar>
+} {
   let count = 0
   let unresolved = 0
+  const vars = new Map<string, ResolvedVar>()
   const resolved = text.replace(
     varRegExp(),
     (whole, angle?: string, curly?: string, dollar?: string) => {
       const name = (angle ?? curly ?? dollar)!
+      const dynamic = !ctx.values.has(name) && byName.has(name)
       const value = ctx.values.get(name) ?? byName.get(name)?.generate(ctx)
+      const seen = vars.get(name)
+      if (seen) seen.count++
+      else vars.set(name, { name, value: value ?? null, dynamic, count: 1 })
       if (value === undefined) {
         unresolved++
         return whole
@@ -96,5 +116,5 @@ export function resolveVars(
       return value
     },
   )
-  return { text: resolved, count, unresolved }
+  return { text: resolved, count, unresolved, vars: [...vars.values()] }
 }

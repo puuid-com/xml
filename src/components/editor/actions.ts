@@ -12,7 +12,9 @@ import { notify } from '#/components/app/notice-store'
 import {
   setDefaultsPreview,
   setQuickHighlight,
+  setVarsPreview,
 } from '#/components/app/ui-store'
+import type { VarsPreview } from '#/components/app/ui-store'
 import { sameName } from '#/lib/names'
 import { encodeShare, ShareError } from '#/lib/share'
 import { createFile, filesCollection } from '#/lib/store/files'
@@ -121,9 +123,9 @@ export function commitDefaultsActive() {
 }
 
 /**
- * Opens a copy of the active file with its variables filled in: plain ones
- * from the file's profile, dynamic ones such as `<<$randomInt>>` with
- * generated values. The original stays as is.
+ * Fills in the active file's variables: plain ones from the file's profile,
+ * dynamic ones such as `<<$randomInt>>` with generated values. Asks to
+ * confirm before the result opens as a new file; the original stays as is.
  */
 export function resolveVarsActive() {
   if (!getView()) return true
@@ -134,50 +136,63 @@ export function resolveVarsActive() {
     if (!getView() || !file) return
     // Only errors the values brought in are worth a warning.
     const wasValid = parseActive().errors.length === 0
-    const { text, count, unresolved } = resolveVars(getText(), {
+    const result = resolveVars(getText(), {
       faker,
       now: new Date(),
       values: variableValues(file.profileId),
     })
-    if (count === 0) {
+    if (result.count === 0) {
       notify.info(
-        unresolved > 0
-          ? m.vars_resolve_none_set({ count: unresolved })
+        result.unresolved > 0
+          ? m.vars_resolve_none_set({ count: result.unresolved })
           : m.vars_resolve_none(),
       )
       return
     }
-    const dot = file.name.lastIndexOf('.')
-    const name = m.vars_file_name({
-      stem: dot > 0 ? file.name.slice(0, dot) : file.name,
-      ext: dot > 0 ? file.name.slice(dot) : '',
-    })
-    const copy = createFile(name, text, file.profileId)
-    setActive(copy.id)
-    // Values are written as is, so one with `<` or `&` can break the markup.
-    const error = wasValid
-      ? parseDocument(text, languageOf(copy.name, text)).errors.at(0)
-      : undefined
-    const message =
-      unresolved > 0
-        ? m.vars_resolved_partly({ count, name: copy.name, unresolved })
-        : m.vars_resolved({ count, name: copy.name })
-    if (error) {
-      notify.error(m.vars_resolved_invalid({ message }), {
-        detail: error.message,
-        action: {
-          label: m.notice_go_to(),
-          run: () => {
-            if (editorStore.state.fileId === copy.id)
-              revealRange(error.from, error.to)
-          },
-        },
-      })
-      return
-    }
-    notify.success(message)
+    setVarsPreview({ fileId: file.id, wasValid, ...result })
   })
   return true
+}
+
+/** Opens the confirmed copy with its variables filled in. */
+export function commitVarsPreview({
+  fileId,
+  text,
+  count,
+  unresolved,
+  wasValid,
+}: VarsPreview) {
+  const file = filesCollection.get(fileId)
+  if (!file) return
+  const dot = file.name.lastIndexOf('.')
+  const name = m.vars_file_name({
+    stem: dot > 0 ? file.name.slice(0, dot) : file.name,
+    ext: dot > 0 ? file.name.slice(dot) : '',
+  })
+  const copy = createFile(name, text, file.profileId)
+  setActive(copy.id)
+  // Values are written as is, so one with `<` or `&` can break the markup.
+  const error = wasValid
+    ? parseDocument(text, languageOf(copy.name, text)).errors.at(0)
+    : undefined
+  const message =
+    unresolved > 0
+      ? m.vars_resolved_partly({ count, name: copy.name, unresolved })
+      : m.vars_resolved({ count, name: copy.name })
+  if (error) {
+    notify.error(m.vars_resolved_invalid({ message }), {
+      detail: error.message,
+      action: {
+        label: m.notice_go_to(),
+        run: () => {
+          if (editorStore.state.fileId === copy.id)
+            revealRange(error.from, error.to)
+        },
+      },
+    })
+    return
+  }
+  notify.success(message)
 }
 
 /** Rewrites every variable in the active file in `style`, as one undo step. */

@@ -11,9 +11,13 @@ import {
   askVariableValue,
   setDefaultsPreview,
   setRestorePreview,
+  setVarsPreview,
   uiStore,
 } from './ui-store'
-import { commitDefaultsActive } from '#/components/editor/actions'
+import {
+  commitDefaultsActive,
+  commitVarsPreview,
+} from '#/components/editor/actions'
 import { dropEditorState } from '#/components/editor/editor-session'
 import {
   AlertDialog,
@@ -245,6 +249,67 @@ export function DefaultsConfirmDialog() {
           <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
           <AlertDialogAction onClick={commitDefaultsActive}>
             {m.defaults_confirm()}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+/** Lists the values each variable gets before the filled-in copy opens. */
+export function VarsConfirmDialog() {
+  const preview = useSelector(uiStore, (s) => s.varsPreview)
+
+  return (
+    <AlertDialog
+      open={!!preview}
+      onOpenChange={(open) => {
+        if (!open) setVarsPreview(null)
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{m.vars_confirm_title()}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {m.vars_confirm_description()}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <ul className="-mx-1 flex max-h-64 flex-col overflow-y-auto border-y py-1">
+          {preview?.vars.map((v) => (
+            <li
+              key={v.name}
+              className="flex items-center gap-3 px-1 py-1.5 font-mono text-xs"
+            >
+              <span className="w-32 shrink-0 truncate" title={v.name}>
+                {v.name}
+              </span>
+              <span
+                className="min-w-0 flex-1 truncate text-muted-foreground"
+                title={v.value ?? undefined}
+              >
+                {v.value === null
+                  ? m.vars_confirm_unset()
+                  : v.dynamic
+                    ? m.vars_confirm_dynamic({ value: v.value })
+                    : v.value || m.defaults_confirm_empty()}
+              </span>
+              <span
+                className="shrink-0 text-muted-foreground tabular-nums"
+                aria-label={m.vars_confirm_count_label({ count: v.count })}
+              >
+                {m.defaults_confirm_count({ count: v.count })}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{m.cancel()}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              if (preview) commitVarsPreview(preview)
+            }}
+          >
+            {m.vars_confirm()}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

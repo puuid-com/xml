@@ -2,6 +2,7 @@ import { Store } from '@tanstack/store'
 
 import type { Backup } from '#/lib/store/backup'
 import type { DefaultSummary } from '#/lib/xml/defaults'
+import type { ResolvedVar } from '#/lib/xml/dynamic-vars'
 
 // Transient dialog state for the editor screen.
 interface UiState {
@@ -16,6 +17,8 @@ interface UiState {
   quickHighlight: QuickHighlight | null
   /** Defaults waiting for confirmation before they're written to the file. */
   defaultsPreview: Array<DefaultSummary> | null
+  /** Variables waiting for confirmation before a filled-in copy is opened. */
+  varsPreview: VarsPreview | null
   profileDialog: ProfileDialog | null
   deleteProfileId: string | null
   /** A backup waiting for confirmation before it replaces the workspace. */
@@ -26,6 +29,17 @@ interface UiState {
   compareId: string | null
   /** Format both sides before comparing, so only the data differs. */
   compareIgnoreFormatting: boolean
+}
+
+/** The filled-in copy of `fileId`, computed up front so the dialog shows its values. */
+export interface VarsPreview {
+  fileId: string
+  text: string
+  count: number
+  unresolved: number
+  vars: Array<ResolvedVar>
+  /** Whether the original parsed cleanly, so new errors come from the values. */
+  wasValid: boolean
 }
 
 /** A backup read from disk, with its date formatted for the reader's locale. */
@@ -54,6 +68,7 @@ export const uiStore = new Store<UiState>({
   mobileView: 'editor',
   quickHighlight: null,
   defaultsPreview: null,
+  varsPreview: null,
   profileDialog: null,
   deleteProfileId: null,
   restorePreview: null,
@@ -94,6 +109,10 @@ export function setDefaultsPreview(
   defaultsPreview: Array<DefaultSummary> | null,
 ) {
   uiStore.setState((s) => ({ ...s, defaultsPreview }))
+}
+
+export function setVarsPreview(varsPreview: VarsPreview | null) {
+  uiStore.setState((s) => ({ ...s, varsPreview }))
 }
 
 export function setProfileDialog(profileDialog: ProfileDialog | null) {
