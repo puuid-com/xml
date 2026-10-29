@@ -8,8 +8,9 @@ import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
 
 /**
- * Latest notice, at the right of the top bar. Its slot has a fixed width
- * and stays mounted as a live region, so notices never move the bar.
+ * Latest notice, at the right of the top bar. It floats over the end of the
+ * tabs instead of holding space, and stays mounted as a live region, so
+ * notices never move the bar.
  */
 export function StatusNotice() {
   const notice = useSelector(noticeStore, (n) => n)
@@ -19,10 +20,10 @@ export function StatusNotice() {
     <div
       role="status"
       aria-live="polite"
-      className="flex w-40 shrink-0 items-center justify-end overflow-hidden text-[11px] whitespace-nowrap text-muted-foreground md:w-72"
+      className="relative w-0 shrink-0 self-stretch text-[11px] whitespace-nowrap text-muted-foreground"
     >
       {notice && (
-        <>
+        <div className="absolute inset-y-0 right-0 z-20 flex w-max max-w-40 items-center overflow-hidden bg-[color-mix(in_oklab,var(--foreground)_5%,var(--background))] shadow-[inset_0_-1px_var(--border)] md:max-w-72">
           <span
             title={[notice.message, notice.detail].filter(Boolean).join(': ')}
             className={cn(
@@ -64,7 +65,7 @@ export function StatusNotice() {
               <IconX />
             </ToolbarButton>
           )}
-        </>
+        </div>
       )}
     </div>
   )

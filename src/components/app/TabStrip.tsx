@@ -53,8 +53,8 @@ interface TabFile {
   profileId: string
 }
 
-// Tabs keep one width however many are open. When they don't fit, the strip
-// scrolls and the full list sits behind a menu at its end.
+// Tabs fit their name, within bounds, however many are open. When they don't
+// fit, the strip scrolls and the full list sits behind a menu at its end.
 
 export function TabStrip({
   files,
@@ -147,7 +147,7 @@ export function TabStrip({
                     }}
                     data-active={file.id === activeId || undefined}
                     className={cn(
-                      'chrome-tab group/tab relative flex h-full w-44 shrink-0 items-stretch rounded-t-lg',
+                      'chrome-tab group/tab relative flex h-full max-w-60 min-w-28 shrink-0 items-stretch rounded-t-lg',
                       file.id === activeId
                         ? 'z-10 bg-background'
                         : 'hover:bg-foreground/5',
