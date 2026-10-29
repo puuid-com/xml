@@ -6,6 +6,12 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.156.0] - 2026-10-28
+
+### Changed
+
+- Highlights with no match in the current file no longer show in the bottom bar; a button lists them so you can still remove them.
+
 ## [0.155.0] - 2026-10-28
 
 ### Changed

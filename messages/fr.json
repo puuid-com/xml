@@ -131,6 +131,8 @@
   "node_copy_json_pointer": "Copier le JSON Pointer",
   "highlights_title": "Surlignages",
   "highlights_description": "Colorez des balises et des clés dans l'éditeur et l'arbre. Enregistré dans ce navigateur.",
+  "highlights_absent": "{count} absents de ce fichier",
+  "highlights_absent_description": "Ces surlignages n’ont aucune occurrence dans le fichier actuel.",
   "highlight_tag": "Surligner <{name}>",
   "highlight_tag_name": "Nom de balise ou de clé",
   "highlight_add": "Ajouter",

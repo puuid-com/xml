@@ -1,4 +1,4 @@
-import { IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconEyeOff, IconPlus, IconTrash } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form'
 import { useState } from 'react'
 
@@ -46,12 +46,15 @@ import type { Highlight } from '#/lib/store/highlights'
 
 /**
  * Legend of highlight rules in the bottom bar. Rules sharing a colour sit in
- * one pill; each tag in it cycles through its matches.
+ * one pill; each tag in it cycles through its matches. Rules with no match in
+ * the file are tucked into a popover instead.
  */
 export function HighlightsBar() {
   const rules = useHighlights()
   const counts = useTagCounts()
   const countOf = (rule: Highlight) => counts.get(localName(rule.tag)) ?? 0
+  const present = rules.filter((r) => countOf(r) > 0)
+  const absent = rules.filter((r) => countOf(r) === 0)
 
   return (
     <div
@@ -59,9 +62,10 @@ export function HighlightsBar() {
       aria-label={m.highlights_title()}
       className="flex h-full min-w-0 shrink items-center gap-2 overflow-x-auto px-px [scrollbar-width:none]"
     >
-      {groupByColor(rules).map((group) => (
+      {groupByColor(present).map((group) => (
         <ColorGroup key={group[0].id} rules={group} countOf={countOf} />
       ))}
+      {absent.length > 0 && <AbsentRulesPopover rules={absent} />}
       <AddRulePopover
         tagNames={[...counts.keys()].sort()}
         existing={rules.map((r) => localName(r.tag))}
@@ -187,6 +191,67 @@ function RuleSegment({
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
+  )
+}
+
+function AbsentRulesPopover({ rules }: { rules: Array<Highlight> }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="xs"
+          className="shrink-0 gap-1 font-mono text-[11px] font-normal text-muted-foreground max-md:h-11"
+          aria-label={m.highlights_absent({ count: rules.length })}
+        >
+          <IconEyeOff />
+          {rules.length}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent side="top" align="end" className="w-72">
+        <PopoverHeader>
+          <PopoverTitle>
+            {m.highlights_absent({ count: rules.length })}
+          </PopoverTitle>
+          <PopoverDescription>
+            {m.highlights_absent_description()}
+          </PopoverDescription>
+        </PopoverHeader>
+        <ul className="-mx-1 max-h-64 overflow-y-auto">
+          {rules.map((rule) => (
+            <li
+              key={rule.id}
+              style={hlStyle(highlightCss(rule.color))}
+              className="flex items-center gap-2 rounded-sm py-0.5 pr-0.5 pl-2 hover:bg-accent"
+            >
+              <span
+                aria-hidden
+                className="size-2.5 shrink-0 rounded-full bg-(--hl)"
+              />
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate font-mono text-xs',
+                  rule.enabled
+                    ? 'hl-ink'
+                    : 'text-muted-foreground line-through',
+                )}
+              >
+                {rule.tag}
+              </span>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="max-md:size-11"
+                aria-label={`${m.highlight_remove()}: ${rule.tag}`}
+                onClick={() => removeHighlight(rule.id)}
+              >
+                <IconTrash />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
   )
 }
 

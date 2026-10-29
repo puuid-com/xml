@@ -131,6 +131,8 @@
   "node_copy_json_pointer": "Copy JSON Pointer",
   "highlights_title": "Highlights",
   "highlights_description": "Colour tags and keys in the editor and the tree. Saved in this browser.",
+  "highlights_absent": "{count} not in this file",
+  "highlights_absent_description": "These highlights have no match in the current file.",
   "highlight_tag": "Highlight <{name}>",
   "highlight_tag_name": "Tag or key name",
   "highlight_add": "Add",
