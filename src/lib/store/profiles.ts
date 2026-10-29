@@ -9,7 +9,7 @@ import {
 } from './format-settings'
 import { DEFAULT_PROFILE_ID, localCollection, newId } from './persist'
 import { sessionStore } from './session'
-import { bestProfile, fingerprint, samePrint } from '#/lib/fingerprint'
+import { fingerprint, profileMatcher, samePrint } from '#/lib/fingerprint'
 import { localName, sameName } from '#/lib/names'
 import { appendNames } from '#/lib/sort-order'
 import { isZplTag } from '#/lib/zpl'
@@ -236,7 +236,8 @@ export function profileGuesser() {
   for (const file of filesCollection.values()) {
     examples.get(file.profileId)?.push(fingerprint(file.name, file.content))
   }
-  const candidates = [...examples].map(([id, samples]) => ({ id, samples }))
-  return (name: string, content: string) =>
-    bestProfile(fingerprint(name, content), candidates)
+  const match = profileMatcher(
+    [...examples].map(([id, samples]) => ({ id, samples })),
+  )
+  return (name: string, content: string) => match(fingerprint(name, content))
 }

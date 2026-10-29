@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { bestProfile, fingerprint, similarity } from './fingerprint'
+import {
+  distinctiveness,
+  fingerprint,
+  profileMatcher,
+  similarity,
+} from './fingerprint'
 
 const order = (prefix: string, id: string, qty: string) => `
 <${prefix}:Order xmlns:${prefix}="urn:${prefix}" status="${id}">
@@ -64,7 +69,7 @@ describe('similarity', () => {
   })
 })
 
-describe('bestProfile', () => {
+describe('profileMatcher', () => {
   const profiles = [
     { id: 'a', samples: [fingerprint('a.xml', order('a', '1', '2'))] },
     { id: 'b', samples: [fingerprint('b.xml', order('b', '1', '2'))] },
@@ -75,19 +80,54 @@ describe('bestProfile', () => {
       '</b:Order>',
       '<b:Note/></b:Order>',
     )
-    expect(bestProfile(fingerprint('x.xml', extra), profiles)).toBe('b')
+    expect(profileMatcher(profiles)(fingerprint('x.xml', extra))).toBe('b')
   })
 
   it('picks none when nothing is close', () => {
     expect(
-      bestProfile(fingerprint('x.xml', '<other><y/></other>'), profiles),
+      profileMatcher(profiles)(fingerprint('x.xml', '<other><y/></other>')),
     ).toBeNull()
   })
 
   it('picks none when two profiles are as close', () => {
     const tie = [...profiles, { id: 'c', samples: profiles[0].samples }]
     expect(
-      bestProfile(fingerprint('x.xml', order('a', '3', '4')), tie),
+      profileMatcher(tie)(fingerprint('x.xml', order('a', '3', '4'))),
     ).toBeNull()
+  })
+})
+
+describe('distinctiveness', () => {
+  // Alike but for one tag, as files of one schema from two systems can be.
+  const shared = Array.from({ length: 30 }, (_, i) => `<f${i}/>`).join('')
+  const doc = (extra: string) => `<Order>${shared}${extra}</Order>`
+  const profiles = [
+    { id: 'a', samples: [fingerprint('a.xml', doc('<OnlyA/>'))] },
+    { id: 'b', samples: [fingerprint('b.xml', doc('<OnlyB/>'))] },
+  ]
+  const print = fingerprint('x.xml', doc('<OnlyA/>'))
+
+  it('weighs features one profile has over shared ones', () => {
+    const weight = distinctiveness(profiles)
+    expect(weight('tag:OnlyA')).toBeGreaterThan(3 * weight('tag:f1'))
+  })
+
+  it('tells apart files that share most of their structure', () => {
+    // Plain weights find both about as close.
+    expect(
+      similarity(print, profiles[0].samples[0]) -
+        similarity(print, profiles[1].samples[0]),
+    ).toBeLessThan(0.1)
+    expect(profileMatcher(profiles)(print)).toBe('a')
+  })
+
+  it("counts a feature by the share of a profile's files with it", () => {
+    const odd = fingerprint('b.xml', doc('<OnlyA/>'))
+    const many = [
+      profiles[0],
+      { id: 'b', samples: [...Array(9).fill(profiles[1].samples[0]), odd] },
+    ]
+    const weight = distinctiveness(many)
+    expect(weight('tag:OnlyA')).toBeGreaterThan(3 * weight('tag:f1'))
   })
 })
