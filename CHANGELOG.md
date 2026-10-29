@@ -6,6 +6,13 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.152.0] - 2026-10-28
+
+### Changed
+
+- Simplify the welcome screen to a friendly illustration, a short prompt and one main action to open a file, with new XML and JSON files as secondary options.
+- Hide the side panel toggle when no file is open.
+
 ## [0.151.1] - 2026-10-28
 
 ### Changed

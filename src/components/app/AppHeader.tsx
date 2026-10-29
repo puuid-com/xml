@@ -25,20 +25,22 @@ export function AppHeader({ children }: { children?: React.ReactNode }) {
 
       {hasActive && <ShareButton />}
       <ArchiveButton />
-      <ToolbarButton
-        label={m.action_toggle_panel()}
-        shortcut={shortcuts.togglePanel}
-        size="icon-sm"
-        className="mx-1 hidden md:inline-flex"
-        aria-pressed={panelOpen}
-        onClick={() => setPanelOpen(!panelOpen)}
-      >
-        {panelOpen ? (
-          <IconLayoutSidebarRightFilled />
-        ) : (
-          <IconLayoutSidebarRight />
-        )}
-      </ToolbarButton>
+      {hasActive && (
+        <ToolbarButton
+          label={m.action_toggle_panel()}
+          shortcut={shortcuts.togglePanel}
+          size="icon-sm"
+          className="mx-1 hidden md:inline-flex"
+          aria-pressed={panelOpen}
+          onClick={() => setPanelOpen(!panelOpen)}
+        >
+          {panelOpen ? (
+            <IconLayoutSidebarRightFilled />
+          ) : (
+            <IconLayoutSidebarRight />
+          )}
+        </ToolbarButton>
+      )}
     </header>
   )
 }
