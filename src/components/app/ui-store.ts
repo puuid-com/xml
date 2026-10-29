@@ -8,7 +8,10 @@ import type { ResolvedVar } from '#/lib/xml/dynamic-vars'
 interface UiState {
   paletteOpen: boolean
   renameId: string | null
-  closeId: string | null
+  /** Tabs waiting for confirmation before they're closed. */
+  closeIds: Array<string> | null
+  /** The searchable list of every open tab. */
+  tabListOpen: boolean
   archiveOpen: boolean
   /** Choosing what a share link of the active file carries. */
   shareOpen: boolean
@@ -62,7 +65,8 @@ export interface QuickHighlight {
 export const uiStore = new Store<UiState>({
   paletteOpen: false,
   renameId: null,
-  closeId: null,
+  closeIds: null,
+  tabListOpen: false,
   archiveOpen: false,
   shareOpen: false,
   mobileView: 'editor',
@@ -85,8 +89,14 @@ export function askRename(renameId: string | null) {
   uiStore.setState((s) => ({ ...s, renameId }))
 }
 
-export function askClose(closeId: string | null) {
-  uiStore.setState((s) => ({ ...s, closeId }))
+/** Asks before closing one tab, or several at once. */
+export function askClose(ids: string | Array<string> | null) {
+  const closeIds = typeof ids === 'string' ? [ids] : ids?.length ? ids : null
+  uiStore.setState((s) => ({ ...s, closeIds }))
+}
+
+export function setTabListOpen(tabListOpen: boolean) {
+  uiStore.setState((s) => ({ ...s, tabListOpen }))
 }
 
 export function setArchiveOpen(archiveOpen: boolean) {

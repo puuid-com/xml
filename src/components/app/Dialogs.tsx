@@ -3,7 +3,7 @@ import { useSelector } from '@tanstack/react-store'
 import { useState } from 'react'
 
 import { replaceWorkspace } from './backup'
-import { neighbour } from './files'
+import { survivor } from './files'
 import { notify } from './notice-store'
 import {
   askClose,
@@ -42,7 +42,12 @@ import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { mod } from '#/lib/platform'
 import { backupCounts } from '#/lib/store/backup'
-import { closeFile, filesCollection, renameFile } from '#/lib/store/files'
+import {
+  ARCHIVE_LIMIT,
+  closeFile,
+  filesCollection,
+  renameFile,
+} from '#/lib/store/files'
 import { sessionStore, setActive } from '#/lib/store/session'
 import { findVariable, setVariable } from '#/lib/store/variables'
 import { m } from '#/paraglide/messages'
@@ -139,37 +144,41 @@ function RenameForm({ id, name }: { id: string; name: string }) {
 }
 
 export function CloseDialog({ openIds }: { openIds: Array<string> }) {
-  const closeId = useSelector(uiStore, (s) => s.closeId)
-  const file = closeId ? filesCollection.get(closeId) : undefined
+  const closeIds = useSelector(uiStore, (s) => s.closeIds)
+  const files = (closeIds ?? []).flatMap((id) => {
+    const file = filesCollection.get(id)
+    return file?.deletedAt === null ? [file] : []
+  })
   const [closing, setClosing] = useState(false)
 
   const confirm = async () => {
-    if (!file || closing) return
-    const wasActive = sessionStore.state.activeId === file.id
+    if (!files.length || closing) return
+    const activeId = sessionStore.state.activeId
+    const ids = new Set(files.map((file) => file.id))
+    const wasActive = activeId !== null && ids.has(activeId)
     setClosing(true)
-    if (wasActive) {
-      const index = openIds.indexOf(file.id)
-      setActive(neighbour(openIds, index) ?? null)
+    if (wasActive) setActive(survivor(openIds, ids, activeId) ?? null)
+    try {
+      // One at a time, so the archive keeps them in the order they were open.
+      for (const file of files) {
+        await closeFile(file.id)
+        dropEditorState(file.id)
+      }
+      askClose(null)
+    } catch {
+      if (wasActive && filesCollection.get(activeId)?.deletedAt === null)
+        setActive(activeId)
+      notify.error(m.archive_delete_failed())
+    } finally {
+      setClosing(false)
     }
-    await closeFile(file.id)
-      .then(
-        () => {
-          dropEditorState(file.id)
-          askClose(null)
-        },
-        () => {
-          if (wasActive) setActive(file.id)
-          notify.error(m.archive_delete_failed())
-        },
-      )
-      .finally(() => {
-        setClosing(false)
-      })
   }
+
+  const many = files.length > 1
 
   return (
     <AlertDialog
-      open={!!file}
+      open={files.length > 0}
       onOpenChange={(open) => {
         if (!open && !closing) askClose(null)
       }}
@@ -177,10 +186,16 @@ export function CloseDialog({ openIds }: { openIds: Array<string> }) {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {m.close_title({ name: file?.name ?? '' })}
+            {many
+              ? m.close_many_title({ count: files.length })
+              : m.close_title({ name: files[0]?.name ?? '' })}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {m.close_description()}
+            {files.length > ARCHIVE_LIMIT
+              ? m.close_many_overflow({ limit: ARCHIVE_LIMIT })
+              : many
+                ? m.close_many_description()
+                : m.close_description()}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

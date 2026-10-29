@@ -1,7 +1,7 @@
 import { useHotkey, useHotkeys } from '@tanstack/react-hotkeys'
 
 import { newFile, newJsonFile } from './files'
-import { askRename, setPaletteOpen, uiStore } from './ui-store'
+import { askRename, setPaletteOpen, setTabListOpen, uiStore } from './ui-store'
 import {
   switchToNextProfile,
   switchToProfileAt,
@@ -58,6 +58,11 @@ export function useAppShortcuts({
   const tabOptions = { ignoreInputs: false, preventDefault: false }
   useHotkey(shortcuts.previousTab.hotkey, stepTab(-1), tabOptions)
   useHotkey(shortcuts.nextTab.hotkey, stepTab(1), tabOptions)
+  useHotkey(
+    shortcuts.tabList.hotkey,
+    () => setTabListOpen(!uiStore.state.tabListOpen),
+    { enabled: fileIds.length > 0 },
+  )
   // Works in the editor too, but not in text fields such as the rename
   // dialog, and not on a tree row, where F2 edits the value.
   useHotkey(

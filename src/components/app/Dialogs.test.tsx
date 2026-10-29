@@ -9,11 +9,13 @@ import {
   vi,
 } from 'vitest'
 
-import { VariableValueDialog } from './Dialogs'
+import { CloseDialog, VariableValueDialog } from './Dialogs'
 import { reportSaveFailed } from './backup'
 import { dismissNotice, noticeStore, notify } from './notice-store'
-import { askVariableValue, uiStore } from './ui-store'
+import { askClose, askVariableValue, uiStore } from './ui-store'
+import { createFile, filesCollection } from '#/lib/store/files'
 import { onSaveFailed, settleWrites } from '#/lib/store/persist'
+import { sessionStore, setActive } from '#/lib/store/session'
 import { setVariable, variablesCollection } from '#/lib/store/variables'
 import { workspaceReady } from '#/lib/store/workspace'
 
@@ -78,4 +80,29 @@ describe('variable value dialog', () => {
       }
     },
   )
+})
+
+describe('close dialog', () => {
+  afterEach(() => {
+    askClose(null)
+    setActive(null)
+  })
+
+  it('closes several tabs and moves to the nearest one left open', async () => {
+    const [a, b, c] = ['a.xml', 'b.xml', 'c.xml'].map((name) =>
+      createFile(name),
+    )
+    setActive(a.id)
+    askClose([a.id, b.id])
+    render(<CloseDialog openIds={[a.id, b.id, c.id]} />)
+
+    expect(screen.getByText('Close 2 tabs?')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Close and delete' }))
+
+    await waitFor(() => expect(uiStore.state.closeIds).toBeNull())
+    expect(sessionStore.state.activeId).toBe(c.id)
+    expect(filesCollection.get(a.id)?.deletedAt).not.toBeNull()
+    expect(filesCollection.get(b.id)?.deletedAt).not.toBeNull()
+    expect(filesCollection.get(c.id)?.deletedAt).toBeNull()
+  })
 })

@@ -31,6 +31,7 @@ export const shortcuts = {
   nextProfile: { hotkey: 'Mod+Alt+P', keys: [alt, mod, 'P'] },
   previousTab: { hotkey: 'Control+ArrowLeft', keys: ['⌃', '←'] },
   nextTab: { hotkey: 'Control+ArrowRight', keys: ['⌃', '→'] },
+  tabList: { hotkey: 'Mod+Shift+A', keys: ['⇧', mod, 'A'] },
 } satisfies Record<string, Shortcut>
 
 /** ⌥⌘1 to ⌥⌘9 switch the current file to the profile in that position. */

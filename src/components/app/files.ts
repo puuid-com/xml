@@ -53,9 +53,19 @@ const PICKER_TYPES: Array<FilePickerAcceptType> = [
   },
 ]
 
-/** The tab to show after closing the one at `index`: next, else previous. */
-export function neighbour<T>(list: ReadonlyArray<T>, index: number) {
-  return list.at(index + 1) ?? (index > 0 ? list.at(index - 1) : undefined)
+/** The tab to show once `closing` are gone: the nearest one to the right, else the left. */
+export function survivor(
+  openIds: ReadonlyArray<string>,
+  closing: ReadonlySet<string>,
+  activeId: string,
+) {
+  const index = openIds.indexOf(activeId)
+  const after = openIds.slice(index + 1).find((id) => !closing.has(id))
+  const before = openIds
+    .slice(0, Math.max(index, 0))
+    .reverse()
+    .find((id) => !closing.has(id))
+  return after ?? before
 }
 
 // New files take the profile of the file in the editor.

@@ -3,7 +3,7 @@ import { useSelector } from '@tanstack/react-store'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { newFile, newJsonFile } from './files'
-import { askRename, setPaletteOpen, uiStore } from './ui-store'
+import { askRename, setPaletteOpen, setTabListOpen, uiStore } from './ui-store'
 import { useAppShortcuts } from './use-app-shortcuts'
 import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 
@@ -21,6 +21,7 @@ afterEach(() => {
   vi.clearAllMocks()
   askRename(null)
   setPaletteOpen(false)
+  setTabListOpen(false)
   setPanelOpen(true)
   setActive(null)
 })
@@ -85,6 +86,21 @@ describe('useAppShortcuts', () => {
     fireEvent.keyDown(document, { key: 'o', code: 'KeyO', ctrlKey: true })
     expect(onOpenFromDisk).toHaveBeenCalledOnce()
   })
+  it('toggles the list of tabs with Mod+Shift+A', () => {
+    render(<Harness />)
+    const press = () =>
+      fireEvent.keyDown(document, {
+        key: 'A',
+        code: 'KeyA',
+        ctrlKey: true,
+        shiftKey: true,
+      })
+    press()
+    expect(uiStore.state.tabListOpen).toBe(true)
+    press()
+    expect(uiStore.state.tabListOpen).toBe(false)
+  })
+
   it('steps through the tabs with Control and the arrow keys', () => {
     render(<Harness />)
     const press = (key: string) =>
