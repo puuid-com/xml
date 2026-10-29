@@ -6,6 +6,12 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.156.1] - 2026-10-29
+
+### Fixed
+
+- Pressing Tab while a completion is shown now accepts it instead of indenting the line.
+
 ## [0.156.0] - 2026-10-28
 
 ### Changed

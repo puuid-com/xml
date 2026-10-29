@@ -1,4 +1,5 @@
 import {
+  acceptCompletion,
   autocompletion,
   closeBrackets,
   closeBracketsKeymap,
@@ -323,6 +324,8 @@ export function editorExtensions(
       ...historyKeymap,
       ...foldKeymap,
       ...completionKeymap,
+      // Tab accepts an open completion before falling back to indenting.
+      { key: 'Tab', run: acceptCompletion },
       indentWithTab,
     ]),
   ]
