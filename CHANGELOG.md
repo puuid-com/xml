@@ -6,6 +6,12 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.151.1] - 2026-10-28
+
+### Changed
+
+- Share the project instructions with all coding agents through `AGENTS.md`, including the commit, changelog and push steps.
+
 ## [0.151.0] - 2026-10-28
 
 ### Changed
