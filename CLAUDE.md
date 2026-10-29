@@ -16,3 +16,7 @@ Website template: TanStack Start on Cloudflare Workers, shadcn/ui, Tailwind v4, 
 ## Checks
 
 Before committing, run `bun run check`, `bun run lint`, `bun run typecheck` and `bun run test`. CI runs the same checks plus `bun run build`.
+
+## Git
+
+After each task, commit and push to `main` without waiting to be asked. Pushing `main` runs a local `pre-push` hook that deploys with `bun run deploy`; if the deploy fails the push is aborted, so fix the failure and push again. Don't use `--no-verify` unless told to.
