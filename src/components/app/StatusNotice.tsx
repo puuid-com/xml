@@ -7,7 +7,10 @@ import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
 
-/** Latest notice, on the left of the status bar. Stays mounted as a live region. */
+/**
+ * Latest notice, at the right end of the status bar. Its slot has a fixed
+ * width and stays mounted as a live region, so notices never move the bar.
+ */
 export function StatusNotice() {
   const notice = useSelector(noticeStore, (n) => n)
   const error = notice?.tone === 'error'
@@ -16,7 +19,7 @@ export function StatusNotice() {
     <div
       role="status"
       aria-live="polite"
-      className="flex max-w-[min(32rem,50%)] min-w-0 shrink items-center"
+      className="flex w-40 shrink-0 items-center justify-end overflow-hidden md:w-72"
     >
       {notice && (
         <>

@@ -4,7 +4,6 @@ import { useSelector } from '@tanstack/react-store'
 import { ActionBar } from './ActionBar'
 import { CommandMenuButton } from './CommandMenu'
 import { FormatOptions } from './FormatControls'
-import { noticeStore } from './notice-store'
 import { StatusNotice } from './StatusNotice'
 import { ThemeToggle } from './ThemeToggle'
 import { editorStore } from '#/components/editor/editor-store'
@@ -24,21 +23,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useActiveProfile } from '#/hooks/use-profiles'
 import { m } from '#/paraglide/messages'
 
-/** Bottom bar: highlight chips then notices on the left; the file's setup and actions, search and the theme toggle on the right. */
+/** Bottom bar: highlight chips on the left; the file's setup and actions, search, the theme toggle and a fixed notice slot on the right. */
 export function StatusBar() {
   const fileId = useSelector(editorStore, (s) => s.fileId)
-  const hasNotice = useSelector(noticeStore, (n) => n !== null)
 
   return (
     <footer className="flex h-12 shrink-0 items-center gap-1 border-t px-1.5 text-[11px] whitespace-nowrap text-muted-foreground md:h-8">
       {fileId && <HighlightsBar />}
-      {fileId && hasNotice && (
-        <Separator
-          orientation="vertical"
-          className="mx-1 data-vertical:h-4 data-vertical:self-center"
-        />
-      )}
-      <StatusNotice />
       <div className="flex-1" />
       {fileId && (
         <>
@@ -52,6 +43,11 @@ export function StatusBar() {
       )}
       <CommandMenuButton />
       <ThemeToggle />
+      <Separator
+        orientation="vertical"
+        className="mx-1 data-vertical:h-4 data-vertical:self-center"
+      />
+      <StatusNotice />
     </footer>
   )
 }
