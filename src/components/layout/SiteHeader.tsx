@@ -7,6 +7,7 @@ import { site } from '#/site'
 const navItems = [
   { to: '/', label: () => m.nav_editor() },
   { to: '/about', label: () => m.nav_about() },
+  { to: '/changelog', label: () => m.nav_changelog() },
 ] as const
 
 export function SiteHeader() {

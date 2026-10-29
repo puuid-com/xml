@@ -6,6 +6,7 @@ interface Site {
   url: string
   ogImage: string
   twitter: string
+  repository: string
   themeColor: string
   sitemapPaths: ReadonlyArray<string>
 }
@@ -20,6 +21,8 @@ export const site: Site = {
   ogImage: '',
   /** Twitter/X handle including the @, or empty. */
   twitter: '',
+  /** Public source repository URL. */
+  repository: 'https://github.com/puuid-com/xml',
   themeColor: '#0a0a0a',
   /** Unlocalized paths listed in sitemap.xml. Add new public pages here. */
   sitemapPaths: ['/', '/about', '/changelog'],

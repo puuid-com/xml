@@ -1,7 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { IconChevronDown } from '@tabler/icons-react'
 
 import changelog from '../../../CHANGELOG.md?raw'
 import { Badge } from '#/components/ui/badge'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '#/components/ui/collapsible'
 import { parseChangelog } from '#/lib/changelog'
 import { seo } from '#/lib/seo'
 import { appVersion } from '#/lib/version'
@@ -9,97 +15,150 @@ import { m } from '#/paraglide/messages'
 import { getLocale } from '#/paraglide/runtime'
 
 const entries = parseChangelog(changelog)
+const releases = entries.filter((entry) => !entry.historical)
+const history = entries.filter((entry) => entry.historical)
+
+type Entry = (typeof entries)[number]
 
 export const Route = createFileRoute('/_site/changelog')({
   head: () => seo({ title: m.changelog_title(), path: '/changelog' }),
   component: Changelog,
 })
 
-function Changelog() {
-  const dateFormat = new Intl.DateTimeFormat(getLocale(), {
+// Section headings read as small mono labels and commit links as muted
+// hashes, so the bullets carry the page.
+const bodyClass =
+  'prose prose-sm max-w-none break-words prose-neutral dark:prose-invert prose-h3:mt-6 prose-h3:mb-2 prose-h3:font-mono prose-h3:text-[0.6875rem] prose-h3:font-medium prose-h3:uppercase prose-h3:tracking-wider prose-h3:text-muted-foreground first:prose-h3:mt-0 prose-p:my-2 prose-p:text-muted-foreground prose-ul:my-2 prose-ul:pl-4 prose-li:my-1 prose-li:text-foreground prose-li:marker:text-muted-foreground prose-a:font-mono prose-a:text-xs prose-a:font-normal prose-a:text-muted-foreground prose-a:no-underline hover:prose-a:text-foreground prose-code:break-all [&_a:focus-visible]:outline-2 [&_a:focus-visible]:outline-offset-2 [&_a:focus-visible]:outline-ring [&>:first-child]:mt-0'
+
+function useDateLabel() {
+  const format = new Intl.DateTimeFormat(getLocale(), {
     dateStyle: 'medium',
     timeZone: 'UTC',
   })
-  const dateLabel = (date: string) =>
-    dateFormat.format(new Date(`${date}T00:00:00Z`))
+  return (date: string) => format.format(new Date(`${date}T00:00:00Z`))
+}
 
+function Changelog() {
   return (
-    <section className="mx-auto max-w-5xl px-4 py-12 md:py-16">
-      <header className="border-b pb-8">
+    <section className="mx-auto max-w-3xl px-4 py-12 md:py-16">
+      <header className="pb-10">
         <h1 className="text-3xl font-semibold tracking-tight">
           {m.changelog_title()}
         </h1>
         <p className="mt-3 max-w-prose text-sm leading-6 text-muted-foreground">
           {m.changelog_description()}
         </p>
-        <p className="mt-2 text-xs leading-5 text-muted-foreground">
-          {m.changelog_language()}{' '}
-          <a
-            href="https://github.com/puuid-com/xml/blob/main/CHANGELOG.md"
-            className="underline underline-offset-4 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-          >
-            {m.changelog_source()}
-          </a>
-        </p>
       </header>
-      <div className="grid items-start gap-8 md:grid-cols-[11rem_minmax(0,1fr)] md:gap-12">
-        <nav
-          aria-label={m.changelog_navigation()}
-          className="pt-6 md:sticky md:top-6"
-        >
-          <p className="mb-3 text-xs font-medium text-muted-foreground">
-            {m.changelog_navigation()}
-          </p>
-          <ul className="flex flex-wrap gap-1 md:flex-col">
-            {entries.map((entry) => (
-              <li key={entry.id}>
-                <a
-                  href={`#${entry.id}`}
-                  className="block px-2 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                >
-                  {entry.historical ? dateLabel(entry.date) : `v${entry.id}`}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <div className="min-w-0 divide-y">
-          {entries.map((entry) => (
-            <article
-              key={entry.id}
-              id={entry.id}
-              aria-labelledby={`title-${entry.id}`}
-              className="scroll-mt-8 py-8 first:pt-6"
-            >
-              <div className="flex flex-wrap items-center gap-3">
-                <h2
-                  id={`title-${entry.id}`}
-                  className="text-base font-semibold tracking-tight"
-                >
-                  {entry.historical ? (
-                    m.changelog_history()
-                  ) : (
-                    <span className="font-mono">v{entry.id}</span>
-                  )}
-                </h2>
-                {entry.id === appVersion && (
-                  <Badge variant="secondary">{m.changelog_latest()}</Badge>
-                )}
-              </div>
+      {releases.map((entry) => (
+        <Release key={entry.id} entry={entry} />
+      ))}
+      {history.length > 0 && <History />}
+    </section>
+  )
+}
+
+function Row({
+  id,
+  aside,
+  children,
+}: {
+  id: string
+  aside: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <article
+      id={id}
+      aria-labelledby={`title-${id}`}
+      className="grid scroll-mt-8 gap-4 border-t py-8 md:grid-cols-[10rem_minmax(0,1fr)] md:gap-8"
+    >
+      <div className="md:sticky md:top-6 md:self-start">{aside}</div>
+      <div className="min-w-0">{children}</div>
+    </article>
+  )
+}
+
+function Release({ entry }: { entry: Entry }) {
+  const dateLabel = useDateLabel()
+  return (
+    <Row
+      id={entry.id}
+      aside={
+        <>
+          <h2
+            id={`title-${entry.id}`}
+            className="font-mono text-sm font-semibold"
+          >
+            <a href={`#${entry.id}`} className="hover:underline">
+              v{entry.id}
+            </a>
+          </h2>
+          <time
+            dateTime={entry.date}
+            className="mt-1 block text-xs text-muted-foreground"
+          >
+            {dateLabel(entry.date)}
+          </time>
+          {entry.id === appVersion && (
+            <Badge variant="outline" className="mt-2">
+              {m.changelog_latest()}
+            </Badge>
+          )}
+        </>
+      }
+    >
+      <div
+        className={bodyClass}
+        dangerouslySetInnerHTML={{ __html: entry.html }}
+      />
+    </Row>
+  )
+}
+
+function History() {
+  const dateLabel = useDateLabel()
+  return (
+    <Row
+      id="history"
+      aside={
+        <h2 id="title-history" className="text-sm font-semibold">
+          {m.changelog_history()}
+        </h2>
+      }
+    >
+      <Collapsible className="group">
+        <p className="text-sm text-muted-foreground">
+          {m.changelog_history_description()}
+        </p>
+        <CollapsibleTrigger className="mt-3 inline-flex items-center gap-1 text-sm font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+          <span className="group-data-[state=open]:hidden">
+            {m.changelog_history_show()}
+          </span>
+          <span className="hidden group-data-[state=open]:inline">
+            {m.changelog_history_hide()}
+          </span>
+          <IconChevronDown
+            aria-hidden
+            className="size-4 transition-transform group-data-[state=open]:rotate-180"
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="divide-y">
+          {history.map((entry) => (
+            <div key={entry.id} id={entry.id} className="scroll-mt-8 py-6">
               <time
                 dateTime={entry.date}
-                className="mt-2 block text-xs text-muted-foreground"
+                className="mb-4 block text-xs font-medium"
               >
                 {dateLabel(entry.date)}
               </time>
               <div
-                className="prose prose-sm mt-5 max-w-none break-words prose-neutral dark:prose-invert prose-headings:text-foreground prose-h3:mt-6 prose-h3:mb-2 prose-h3:text-xs prose-h3:font-semibold prose-p:my-2 prose-p:text-muted-foreground prose-a:font-normal prose-a:text-muted-foreground prose-a:decoration-border prose-a:underline-offset-4 hover:prose-a:text-foreground prose-code:break-all prose-ul:my-2 prose-li:my-1.5 prose-li:text-muted-foreground [&_a:focus-visible]:outline-2 [&_a:focus-visible]:outline-offset-2 [&_a:focus-visible]:outline-ring"
+                className={bodyClass}
                 dangerouslySetInnerHTML={{ __html: entry.html }}
               />
-            </article>
+            </div>
           ))}
-        </div>
-      </div>
-    </section>
+        </CollapsibleContent>
+      </Collapsible>
+    </Row>
   )
 }

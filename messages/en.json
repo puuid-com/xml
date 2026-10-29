@@ -5,7 +5,7 @@
   "nav_about": "About",
   "language_label": "Language",
   "about_title": "About",
-  "about_body": "XML Editor runs entirely in your browser. It edits XML and JSON. Files are kept in local storage, sync across tabs, and never leave your device.",
+  "about_body": "XML Editor is an XML and JSON editor that runs entirely in your browser. Files are kept in local storage, sync across tabs and never leave your device.",
   "not_found_title": "Page not found",
   "not_found_body": "The page you are looking for does not exist or has moved.",
   "error_title": "Something went wrong",
@@ -380,10 +380,15 @@
   "status_vars_count": "Variables in this file: {count}",
   "status_defaults_count": "Values that would change: {count}",
   "status_profile_edit_hint": "Double-click to edit",
-  "changelog_description": "Features, improvements and fixes to the XML & JSON editor.",
+  "changelog_description": "New features, improvements and fixes, newest first. Entries are written in English.",
   "changelog_latest": "Latest",
   "changelog_history": "Before versioning",
-  "changelog_navigation": "Browse changes",
-  "changelog_source": "View source on GitHub",
-  "changelog_language": "Entries are maintained in English in CHANGELOG.md."
+  "nav_changelog": "Changelog",
+  "changelog_history_description": "Reconstructed from Git commits before versioning began, grouped by day.",
+  "changelog_history_show": "Show earlier history",
+  "changelog_history_hide": "Hide earlier history",
+  "about_version": "Version",
+  "about_storage": "Storage",
+  "about_storage_value": "This browser only",
+  "about_source": "Source"
 }

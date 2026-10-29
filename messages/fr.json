@@ -5,7 +5,7 @@
   "nav_about": "À propos",
   "language_label": "Langue",
   "about_title": "À propos",
-  "about_body": "XML Editor fonctionne entièrement dans votre navigateur. Il édite le XML et le JSON. Les fichiers sont conservés en stockage local, synchronisés entre les onglets et ne quittent jamais votre appareil.",
+  "about_body": "XML Editor est un éditeur XML et JSON qui fonctionne entièrement dans votre navigateur. Les fichiers sont conservés en stockage local, synchronisés entre les onglets et ne quittent jamais votre appareil.",
   "not_found_title": "Page introuvable",
   "not_found_body": "La page que vous cherchez n’existe pas ou a été déplacée.",
   "error_title": "Une erreur est survenue",
@@ -380,10 +380,15 @@
   "status_vars_count": "Variables dans ce fichier : {count}",
   "status_defaults_count": "Valeurs qui changeraient : {count}",
   "status_profile_edit_hint": "Double-cliquer pour modifier",
-  "changelog_description": "Fonctionnalités, améliorations et corrections de l’éditeur XML et JSON.",
+  "changelog_description": "Nouvelles fonctionnalités, améliorations et corrections, les plus récentes en premier. Les entrées sont rédigées en anglais.",
   "changelog_latest": "Dernière version",
   "changelog_history": "Avant le versionnage",
-  "changelog_navigation": "Parcourir les modifications",
-  "changelog_source": "Voir la source sur GitHub",
-  "changelog_language": "Les entrées sont rédigées en anglais dans CHANGELOG.md."
+  "nav_changelog": "Journal",
+  "changelog_history_description": "Reconstitué à partir des commits Git avant le versionnage, regroupé par jour.",
+  "changelog_history_show": "Afficher l’historique antérieur",
+  "changelog_history_hide": "Masquer l’historique antérieur",
+  "about_version": "Version",
+  "about_storage": "Stockage",
+  "about_storage_value": "Ce navigateur uniquement",
+  "about_source": "Code source"
 }

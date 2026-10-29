@@ -6,6 +6,14 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.150.0] - 2026-10-28
+
+### Changed
+
+- Simplify the changelog into one row per release, with earlier Git history folded away.
+- Simplify the About page to a short description with the version, storage and source.
+- Link the changelog from the site header.
+
 ## [0.149.0] - 2026-10-28
 
 ### Added
@@ -36,8 +44,6 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 
 ## [history-2026-10-28] - 2026-10-28
 
-Reconstructed from Git history before versioning began. These are commit dates, not published releases.
-
 ### Changed
 
 - Disable bottom bar actions that have nothing to do. ([9a2b2ed](https://github.com/puuid-com/xml/commit/9a2b2eddf8ca841e73087bfb85439430fabddbe2))
@@ -67,8 +73,6 @@ Reconstructed from Git history before versioning began. These are commit dates, 
 - Format PinnedFields with Prettier. ([9ffb778](https://github.com/puuid-com/xml/commit/9ffb778a0ec47ecf95117edad25500a8ccb67a88))
 
 ## [history-2026-10-27] - 2026-10-27
-
-Reconstructed from Git history before versioning began. These are commit dates, not published releases.
 
 ### Added
 
@@ -113,8 +117,6 @@ Reconstructed from Git history before versioning began. These are commit dates, 
 
 ## [history-2026-10-26] - 2026-10-26
 
-Reconstructed from Git history before versioning began. These are commit dates, not published releases.
-
 ### Added
 
 - Add a share button to the top bar. ([4235262](https://github.com/puuid-com/xml/commit/4235262a76d6e1b9a52c87125b2d7e4bd9cafdc5))
@@ -145,8 +147,6 @@ Reconstructed from Git history before versioning began. These are commit dates, 
 - Merge branch 'fix/browser-check'. ([ea1fc01](https://github.com/puuid-com/xml/commit/ea1fc01c92f8e87702eb6f6c2737ee95b1e19ac2))
 
 ## [history-2026-10-25] - 2026-10-25
-
-Reconstructed from Git history before versioning began. These are commit dates, not published releases.
 
 ### Added
 
@@ -217,8 +217,6 @@ Reconstructed from Git history before versioning began. These are commit dates, 
 - Merge branch 'feat/workspace-backup'. ([adbf9af](https://github.com/puuid-com/xml/commit/adbf9af3f58a168eec499754645feb7da8a012ce))
 
 ## [history-2026-10-24] - 2026-10-24
-
-Reconstructed from Git history before versioning began. These are commit dates, not published releases.
 
 ### Added
 
