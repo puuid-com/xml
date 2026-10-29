@@ -379,5 +379,11 @@
   "vars_resolve_short": "Replace variables",
   "status_vars_count": "Variables in this file: {count}",
   "status_defaults_count": "Values that would change: {count}",
-  "status_profile_edit_hint": "Double-click to edit"
+  "status_profile_edit_hint": "Double-click to edit",
+  "changelog_description": "Features, improvements and fixes to the XML & JSON editor.",
+  "changelog_latest": "Latest",
+  "changelog_history": "Before versioning",
+  "changelog_navigation": "Browse changes",
+  "changelog_source": "View source on GitHub",
+  "changelog_language": "Entries are maintained in English in CHANGELOG.md."
 }
