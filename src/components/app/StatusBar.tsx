@@ -1,26 +1,18 @@
-import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 
+import { ActionBar } from './ActionBar'
 import { CommandMenuButton } from './CommandMenu'
-import {
-  ConvertVarsButton,
-  FormatButton,
-  FormatOptions,
-  ResolveVarsButton,
-} from './FormatControls'
+import { FormatOptions } from './FormatControls'
 import { noticeStore } from './notice-store'
 import { StatusNotice } from './StatusNotice'
 import { ThemeToggle } from './ThemeToggle'
-import { ToolbarButton } from './ToolbarButton'
 import { editorStore } from '#/components/editor/editor-store'
-import {
-  DefaultsButton,
-  DefaultsRules,
-} from '#/components/defaults/DefaultsControls'
+import { DefaultsRules } from '#/components/defaults/DefaultsControls'
 import { HighlightsBar } from '#/components/highlights/HighlightsBar'
 import { VariablesList } from '#/components/variables/VariablesControls'
-import { ProfileMenu } from '#/components/profiles/ProfileMenu'
+import { ProfilesPanel } from '#/components/profiles/ProfilesPanel'
 import { ProfileTag } from '#/components/profiles/ProfileTag'
+import { Button } from '#/components/ui/button'
 import {
   Popover,
   PopoverContent,
@@ -31,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useActiveProfile } from '#/hooks/use-profiles'
 import { m } from '#/paraglide/messages'
 
-/** Bottom bar: highlight chips then notices on the left, editing tools, search and the theme toggle on the right. */
+/** Bottom bar: highlight chips then notices on the left; the file's setup and actions, search and the theme toggle on the right. */
 export function StatusBar() {
   const fileId = useSelector(editorStore, (s) => s.fileId)
   const hasNotice = useSelector(noticeStore, (n) => n !== null)
@@ -49,14 +41,8 @@ export function StatusBar() {
       <div className="flex-1" />
       {fileId && (
         <>
-          <div className="flex items-center text-foreground">
-            <ProfileMenu />
-            <FormatButton />
-            <DefaultsButton />
-            <ResolveVarsButton />
-            <ConvertVarsButton />
-            <SettingsPopover />
-          </div>
+          <ActionBar />
+          <SettingsPopover />
           <Separator
             orientation="vertical"
             className="mx-1 data-vertical:h-4 data-vertical:self-center"
@@ -74,9 +60,13 @@ function SettingsPopover() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <ToolbarButton label={m.editor_settings()}>
-          <IconAdjustmentsHorizontal />
-        </ToolbarButton>
+        <Button
+          variant="ghost"
+          size="xs"
+          className="px-1.5 text-[11px] font-normal text-foreground max-md:h-11"
+        >
+          {m.editor_settings()}
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         side="top"
@@ -100,6 +90,9 @@ function SettingsPopover() {
             <TabsTrigger value="variables" className="flex-none px-2">
               {m.variables_tab()}
             </TabsTrigger>
+            <TabsTrigger value="profiles" className="flex-none px-2">
+              {m.profiles_title()}
+            </TabsTrigger>
           </TabsList>
           <Separator />
           <TabsContent value="format">
@@ -110,6 +103,9 @@ function SettingsPopover() {
           </TabsContent>
           <TabsContent value="variables">
             <VariablesList />
+          </TabsContent>
+          <TabsContent value="profiles">
+            <ProfilesPanel />
           </TabsContent>
         </Tabs>
       </PopoverContent>

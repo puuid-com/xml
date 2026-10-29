@@ -351,5 +351,15 @@
   "compare_unchanged_lines": "Lignes inchangées : {count}",
   "vars_convert": "Changer le style des variables",
   "vars_convert_none": "Aucune variable à changer.",
-  "vars_converted": "Variables changées : {count}"
+  "vars_converted": "Variables changées : {count}",
+  "status_profile": "Profil",
+  "status_profile_hint": "Cliquer pour passer au profil suivant",
+  "status_vars_as": "variables en",
+  "status_vars_switch": "Écrire chaque variable en {style}",
+  "status_format_on_save": "formater à l'enregistrement",
+  "status_on": "oui",
+  "status_off": "non",
+  "vars_resolve_short": "Remplacer les variables",
+  "status_vars_count": "Variables dans ce fichier : {count}",
+  "status_defaults_count": "Valeurs qui changeraient : {count}"
 }

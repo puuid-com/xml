@@ -1,16 +1,13 @@
-import { IconReplace, IconTrash } from '@tabler/icons-react'
+import { IconTrash } from '@tabler/icons-react'
 import { useForm } from '@tanstack/react-form'
 import { useSelector } from '@tanstack/react-store'
 
-import { ToolbarButton } from '#/components/app/ToolbarButton'
-import { applyDefaultsActive } from '#/components/editor/actions'
 import { editorStore } from '#/components/editor/editor-store'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Separator } from '#/components/ui/separator'
 import { Switch } from '#/components/ui/switch'
 import { useDefaults } from '#/hooks/use-defaults'
-import { shortcuts } from '#/lib/shortcuts'
 import {
   removeDefault,
   setDefault,
@@ -21,19 +18,6 @@ import { localName } from '#/lib/names'
 import { defaultKeys } from '#/lib/xml/defaults'
 import { m } from '#/paraglide/messages'
 import type { DefaultValue } from '#/lib/store/defaults'
-
-/** Apply defaults button in the bottom bar; asks to confirm before writing. */
-export function DefaultsButton() {
-  return (
-    <ToolbarButton
-      label={m.defaults_apply()}
-      shortcut={shortcuts.applyDefaults}
-      onClick={applyDefaultsActive}
-    >
-      <IconReplace />
-    </ToolbarButton>
-  )
-}
 
 /** Default value rules, shown in the bottom bar's settings popover. */
 export function DefaultsRules() {

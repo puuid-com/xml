@@ -42,6 +42,23 @@ export function varStyleOf(text: string): VarStyle | undefined {
   return undefined
 }
 
+/**
+ * How many variables `text` has, and the bracket style they share: null when
+ * there are none or they mix styles.
+ */
+export function varStyles(text: string): {
+  count: number
+  style: VarStyle | null
+} {
+  const found = new Set<VarStyle>()
+  let count = 0
+  for (const [, angle, curly] of text.matchAll(varRegExp())) {
+    found.add(angle ? 'angle' : curly ? 'curly' : 'dollar')
+    count++
+  }
+  return { count, style: found.size === 1 ? [...found][0] : null }
+}
+
 export function varRegExp() {
   return new RegExp(VAR_PATTERN, 'g')
 }
