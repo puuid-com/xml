@@ -6,6 +6,12 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.151.0] - 2026-10-28
+
+### Changed
+
+- Show work from before versioning as regular releases (0.31.0 to 0.146.0), numbered by commit count.
+
 ## [0.150.0] - 2026-10-28
 
 ### Changed
@@ -19,7 +25,7 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 ### Added
 
 - Automatically select a matching profile when opening or dropping a file, based on its structure and learned profile choices. ([4131a4d](https://github.com/puuid-com/xml/commit/4131a4de59d71cb836df66d3b675dd169b4e4826))
-- Document the complete earlier Git history, grouped by date with links to every commit.
+- Document earlier releases with links to every commit.
 
 ### Changed
 
@@ -27,22 +33,17 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 
 ## [0.148.0] - 2026-10-28
 
-[Commit 432cfec](https://github.com/puuid-com/xml/commit/432cfec)
-
 ### Added
 
-- Add a changelog page. Click the version in the bottom bar or footer to open it.
+- Add a changelog page. Click the version in the bottom bar or footer to open it. ([432cfec](https://github.com/puuid-com/xml/commit/432cfec))
 
 ## [0.147.0] - 2026-10-28
 
-[Commit 85bf204](https://github.com/puuid-com/xml/commit/85bf204)
-
 ### Added
 
-- Show the app version in the editor's bottom bar and the site footer.
-- Start versioning. The first version comes from the commit count (147); earlier work is documented below by commit date.
+- Show the app version in the editor's bottom bar and the site footer. ([85bf204](https://github.com/puuid-com/xml/commit/85bf204))
 
-## [history-2026-10-28] - 2026-10-28
+## [0.146.0] - 2026-10-28
 
 ### Changed
 
@@ -58,6 +59,9 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - Replace bottom icon bar with a readable status sentence. ([eab35af](https://github.com/puuid-com/xml/commit/eab35afc8ad0742c96456cbf491a57924111c087))
 - Render pinned values like the file panel does. ([488dfaa](https://github.com/puuid-com/xml/commit/488dfaa609f8137c23e8f4e44975551b785de4e3))
 - Use sets for the stray bracket lookups. ([dfd3dc5](https://github.com/puuid-com/xml/commit/dfd3dc518d49c69eada99b46d2b48feb63f9ab97))
+- Fix CI typecheck and make local checks match CI. ([9f328cd](https://github.com/puuid-com/xml/commit/9f328cd904c452d7bb24698e73a30d070ac9cf05))
+- Tell agents to commit and push after each task. ([f405ab3](https://github.com/puuid-com/xml/commit/f405ab30f1e14ad3a00839e6db8fc49d1906fe80))
+- Format PinnedFields with Prettier. ([9ffb778](https://github.com/puuid-com/xml/commit/9ffb778a0ec47ecf95117edad25500a8ccb67a88))
 
 ### Fixed
 
@@ -66,13 +70,7 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - Flag every malformed variable, not just a stray >. ([391303f](https://github.com/puuid-com/xml/commit/391303f5ca7dbc7155e69c1103740fd5ec09e5de))
 - Flag a stray > next to a `<<var>>` as an error. ([7991a76](https://github.com/puuid-com/xml/commit/7991a7620b4eedcc0a43c07989987eb85bf53678))
 
-### Maintenance
-
-- Fix CI typecheck and make local checks match CI. ([9f328cd](https://github.com/puuid-com/xml/commit/9f328cd904c452d7bb24698e73a30d070ac9cf05))
-- Tell agents to commit and push after each task. ([f405ab3](https://github.com/puuid-com/xml/commit/f405ab30f1e14ad3a00839e6db8fc49d1906fe80))
-- Format PinnedFields with Prettier. ([9ffb778](https://github.com/puuid-com/xml/commit/9ffb778a0ec47ecf95117edad25500a8ccb67a88))
-
-## [history-2026-10-27] - 2026-10-27
+## [0.127.0] - 2026-10-27
 
 ### Added
 
@@ -104,6 +102,7 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - Read disk write support through a hydration-safe hook. ([a3ffad1](https://github.com/puuid-com/xml/commit/a3ffad16e1d02980e44e66ac44f2b0407bbb7168))
 - Save tabs back to the files they were opened from. ([2cb6a7a](https://github.com/puuid-com/xml/commit/2cb6a7aba9d8b9795434315a0f262b5de9b8bcf0))
 - Store the workspace in IndexedDB instead of localStorage. ([f965535](https://github.com/puuid-com/xml/commit/f96553563b1dc81eacc245da35d54702f889483d))
+- Format search.ts with Prettier. ([daa484f](https://github.com/puuid-com/xml/commit/daa484fba167acde6f024c9674a35a296ba0b18e))
 
 ### Fixed
 
@@ -111,11 +110,7 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - Stop browser autofill in the find and replace fields. ([bb98c8d](https://github.com/puuid-com/xml/commit/bb98c8df0f5403a21a72ec6e645b12b66714d3d5))
 - Keep legacy rows IndexedDB refuses instead of losing the store. ([76ac8a8](https://github.com/puuid-com/xml/commit/76ac8a80c2ef97507f34587d537dcbf0ce0d1c45))
 
-### Maintenance
-
-- Format search.ts with Prettier. ([daa484f](https://github.com/puuid-com/xml/commit/daa484fba167acde6f024c9674a35a296ba0b18e))
-
-## [history-2026-10-26] - 2026-10-26
+## [0.98.0] - 2026-10-26
 
 ### Added
 
@@ -131,22 +126,13 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - Ignore namespace prefixes in profile tag rules. ([06dc1d4](https://github.com/puuid-com/xml/commit/06dc1d48073e654705d7adecb0652c5f53f7fcb7))
 - Carry the file's profile in share links. ([536d689](https://github.com/puuid-com/xml/commit/536d689213ba3cd25d137a7cd246cbada8f35c51))
 - Record browser check results and add tasks 8 to 11. ([8089d62](https://github.com/puuid-com/xml/commit/8089d62358fbe7a9d1878d5ed4ba812414c0725c))
+- Replace finished fixes in TASKS.md with follow-ups. ([ee97c59](https://github.com/puuid-com/xml/commit/ee97c5989894eec8fbc7d9146b9c31a1598f1994))
 
 ### Fixed
 
 - Silence React Doctor on eager CodeMirror and restore writes. ([97347c4](https://github.com/puuid-com/xml/commit/97347c445d6c8927edfebb4a62bd54dfdb54f7dd))
 
-### Maintenance
-
-- Replace finished fixes in TASKS.md with follow-ups. ([ee97c59](https://github.com/puuid-com/xml/commit/ee97c5989894eec8fbc7d9146b9c31a1598f1994))
-
-### Merged
-
-- Merge branch 'feat/share-profile'. ([b48ce38](https://github.com/puuid-com/xml/commit/b48ce38f1cbdf5111f7f67d334f4915d29a31bcd))
-- Merge branch 'feat/custom-sort'. ([caeeb9a](https://github.com/puuid-com/xml/commit/caeeb9ae181d7de22b3802e1d6b18badc1e65dd7))
-- Merge branch 'fix/browser-check'. ([ea1fc01](https://github.com/puuid-com/xml/commit/ea1fc01c92f8e87702eb6f6c2737ee95b1e19ac2))
-
-## [history-2026-10-25] - 2026-10-25
+## [0.84.0] - 2026-10-25
 
 ### Added
 
@@ -185,6 +171,10 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - Underline values that differ from their default. ([f8e0775](https://github.com/puuid-com/xml/commit/f8e0775e20183b32fc149944572096761cb11bcf))
 - Accept Postman dynamic variables like `<<$randomInt>>`. ([9aea957](https://github.com/puuid-com/xml/commit/9aea957b6a98662a94214b394a6059cf46857f51))
 - Mark values that already equal their default. ([6527a55](https://github.com/puuid-com/xml/commit/6527a553d8dfa450c6a7b2c34ecda1ad31777a0f))
+- Replace shipped features in TASKS.md with follow-ups. ([02cd952](https://github.com/puuid-com/xml/commit/02cd952cbdeec5c2f5855ecf77c634531bb73976))
+- Add TASKS.md with five ranked feature ideas. ([0d8f635](https://github.com/puuid-com/xml/commit/0d8f635c0d4dade00a5295f007867fccce6ac8dc))
+- Remove dead code and unused dependencies. ([ab50c8a](https://github.com/puuid-com/xml/commit/ab50c8a27abec3f5097fc736c382bf66648d88c4))
+- Add React Doctor scanner. ([ce103d4](https://github.com/puuid-com/xml/commit/ce103d4f656265988085345b93e6b00d293f4b3b))
 
 ### Fixed
 
@@ -196,27 +186,7 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - Keep highlight chips fixed when a notice appears. ([a2dc44f](https://github.com/puuid-com/xml/commit/a2dc44fd9f16c7b663381713b3a7059f3b788800))
 - Fix React Doctor findings. ([a0a62f7](https://github.com/puuid-com/xml/commit/a0a62f776d4e2830ec3d4e7a6b791bf4c653127c))
 
-### Maintenance
-
-- Replace shipped features in TASKS.md with follow-ups. ([02cd952](https://github.com/puuid-com/xml/commit/02cd952cbdeec5c2f5855ecf77c634531bb73976))
-- Add TASKS.md with five ranked feature ideas. ([0d8f635](https://github.com/puuid-com/xml/commit/0d8f635c0d4dade00a5295f007867fccce6ac8dc))
-- Remove dead code and unused dependencies. ([ab50c8a](https://github.com/puuid-com/xml/commit/ab50c8a27abec3f5097fc736c382bf66648d88c4))
-- Add React Doctor scanner. ([ce103d4](https://github.com/puuid-com/xml/commit/ce103d4f656265988085345b93e6b00d293f4b3b))
-
-### Merged
-
-- Merge branch 'fix/offline-pages'. ([52c5251](https://github.com/puuid-com/xml/commit/52c52511ae04d1a63ce14dac092735f1729ed7f3))
-- Merge branch 'fix/report-failed-saves'. ([f2b061a](https://github.com/puuid-com/xml/commit/f2b061adc6379bd0330accabc1b6a443df34e3c3))
-- Merge branch 'fix/atomic-restore'. ([d0838b2](https://github.com/puuid-com/xml/commit/d0838b2011af12f8117b6d372a7db0a1d1abbb33))
-- Merge branch 'fix/backup-variables'. ([bc21d8a](https://github.com/puuid-com/xml/commit/bc21d8aba7d472e82de908f388b9326230259f6a))
-- Merge branch 'fix/sticky-notice'. ([6ab4370](https://github.com/puuid-com/xml/commit/6ab43706a7160e5aaeead83c9d3bb6f21c65ef1c))
-- Merge branch 'feat/offline-pwa'. ([9a59a77](https://github.com/puuid-com/xml/commit/9a59a774b9ec87ab574d9b9c43c1ccd8b3a3c2a3))
-- Merge branch 'feat/compare-files'. ([40216ca](https://github.com/puuid-com/xml/commit/40216ca1185496a0cfa5137187f692f699ce5efe))
-- Merge branch 'feat/share-link'. ([373dcc1](https://github.com/puuid-com/xml/commit/373dcc11e881259168a1b57b4e19337a5209ce25))
-- Merge branch 'feat/profile-variables'. ([ce0ec15](https://github.com/puuid-com/xml/commit/ce0ec15c57eb001a397a33a07794b5933a4b5107))
-- Merge branch 'feat/workspace-backup'. ([adbf9af](https://github.com/puuid-com/xml/commit/adbf9af3f58a168eec499754645feb7da8a012ce))
-
-## [history-2026-10-24] - 2026-10-24
+## [0.31.0] - 2026-10-24
 
 ### Added
 
@@ -249,14 +219,8 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - Rework tag highlights: solid chips, legend bar, Alt+H picker. ([f2be696](https://github.com/puuid-com/xml/commit/f2be696a53248c098e9019d8c1f93123fb46ef91))
 - Disable overscroll on html and body. ([4a95d70](https://github.com/puuid-com/xml/commit/4a95d700ac584495ecf60bbf4f9351de60f6d76a))
 - Use shadcn's cn package for class merging. ([4cf2143](https://github.com/puuid-com/xml/commit/4cf2143f06b33b60effe7d2925c6d6d80018c9cf))
-
-### Maintenance
-
 - Fix build warnings: split vendor chunks, SSR sourcemap. ([05e3c7d](https://github.com/puuid-com/xml/commit/05e3c7d3fed0eda0e58d5af23c2c740f6edd770a))
 - Add xml.puuid.com custom domain to wrangler. ([97a7464](https://github.com/puuid-com/xml/commit/97a7464cf3b1c29bd9c78d418f7ef1b181953b7e))
 - Keep stores alive across hot reloads; add diffChange. ([7f8acf0](https://github.com/puuid-com/xml/commit/7f8acf005160fa2cc6b111d22a739a4b1742117d))
 - Add editor dependencies and shadcn components. ([318fdde](https://github.com/puuid-com/xml/commit/318fdde06046459ad9ec156912b70134d359649b))
-
-### Merged
-
 - Merge header, tabs and highlights into a single top bar. ([24fe069](https://github.com/puuid-com/xml/commit/24fe06934d37438af915a69a9325b17e70518b38))

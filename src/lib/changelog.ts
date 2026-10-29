@@ -9,7 +9,6 @@ export function parseChangelog(markdown: string) {
   return headings.map((heading, index) => ({
     id: heading[1],
     date: heading[2],
-    historical: heading[1].startsWith('history-'),
     html: marked.parse(
       markdown.slice(
         heading.index + heading[0].length,
