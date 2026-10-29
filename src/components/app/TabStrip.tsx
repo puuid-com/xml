@@ -92,7 +92,7 @@ export function TabStrip({
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-1 items-stretch">
+    <div className="flex h-full min-w-0 flex-1 items-stretch pt-1.5">
       {overflowing && (
         <ToolbarButton
           label={m.tabs_scroll_left()}
@@ -112,7 +112,7 @@ export function TabStrip({
           ref={stripRef}
           variant="line"
           aria-label={m.tabs_label()}
-          className="relative h-full! w-full items-end justify-start gap-0 overflow-x-auto px-2 pt-1.5 pb-0 [scrollbar-width:none]"
+          className="relative h-full! w-full items-end justify-start gap-0 overflow-x-auto px-2 py-0 [scrollbar-width:none]"
         >
           {files.map((file, index) => {
             const profile = resolveProfile(profiles, file.profileId)

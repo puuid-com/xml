@@ -6,6 +6,12 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.154.1] - 2026-10-28
+
+### Fixed
+
+- The new file button and tab close buttons now line up vertically.
+
 ## [0.154.0] - 2026-10-28
 
 ### Changed
