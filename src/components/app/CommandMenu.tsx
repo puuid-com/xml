@@ -1,5 +1,7 @@
 import {
   IconArchive,
+  IconArrowBackUp,
+  IconArrowForwardUp,
   IconCheck,
   IconClipboard,
   IconCopy,
@@ -44,7 +46,10 @@ import {
   copyActive,
   downloadFile,
   highlightAtCursor,
+  historyDepth,
+  redoActive,
   resolveVarsActive,
+  undoActive,
 } from '#/components/editor/actions'
 import { saveAs } from '#/components/editor/disk'
 import {
@@ -273,6 +278,8 @@ function RootCommands({
   const profiles = useProfiles()
   const activeProfile = useActiveProfile()
   const writesDisk = useCanWriteDisk()
+  // Read as the menu opens; nothing edits the file while it is open.
+  const [depth] = useState(historyDepth)
 
   return (
     <>
@@ -357,6 +364,22 @@ function RootCommands({
         <>
           <CommandSeparator />
           <CommandGroup heading={m.palette_edit()}>
+            <CommandItem
+              disabled={depth.undo === 0}
+              onSelect={() => run(undoActive)}
+            >
+              <IconArrowBackUp />
+              {m.edit_undo()}
+              <CommandShortcut>{shortcutLabel(shortcuts.undo)}</CommandShortcut>
+            </CommandItem>
+            <CommandItem
+              disabled={depth.redo === 0}
+              onSelect={() => run(redoActive)}
+            >
+              <IconArrowForwardUp />
+              {m.edit_redo()}
+              <CommandShortcut>{shortcutLabel(shortcuts.redo)}</CommandShortcut>
+            </CommandItem>
             <CommandItem onSelect={() => run(() => void highlightAtCursor())}>
               <IconHighlight />
               {m.highlight_at_cursor()}

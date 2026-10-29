@@ -1,4 +1,4 @@
-import { history, undo, undoDepth } from '@codemirror/commands'
+import { history, redo, undo, undoDepth } from '@codemirror/commands'
 import { EditorView } from '@codemirror/view'
 import {
   createCollection,
@@ -161,5 +161,33 @@ describe('editor session', () => {
     expect(view.state.doc.toString()).toBe('<a/>')
     expect(filesCollection.get(file.id)?.content).toBe('<a/>')
     expect(onLocalChange).not.toHaveBeenCalled()
+  })
+
+  it('restores a backup as an undoable edit of the open and other files', async () => {
+    const { file, view, session, extensions, onLocalChange, onRemoteChange } =
+      await open()
+    const other = createFile('b.xml', '<b/>')
+    await settleWrites()
+    const backup = createBackup(
+      new Map([
+        [file.id, '<a>backup</a>'],
+        [other.id, '<b>backup</b>'],
+      ]),
+    )
+    await restoreBackup(backup)
+    expect(view.state.doc.toString()).toBe('<a>backup</a>')
+    expect(onRemoteChange).not.toHaveBeenCalled()
+    expect(onLocalChange).not.toHaveBeenCalled()
+    expect(undo(view)).toBe(true)
+    expect(view.state.doc.toString()).toBe('<a/>')
+    expect(onLocalChange).toHaveBeenLastCalledWith('<a/>')
+    expect(redo(view)).toBe(true)
+    expect(view.state.doc.toString()).toBe('<a>backup</a>')
+
+    // Never opened in this editor, yet its restore can be undone too.
+    session.open(other.id, extensions)
+    expect(view.state.doc.toString()).toBe('<b>backup</b>')
+    expect(undo(view)).toBe(true)
+    expect(view.state.doc.toString()).toBe('<b/>')
   })
 })

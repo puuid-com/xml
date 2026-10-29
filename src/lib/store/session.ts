@@ -7,6 +7,21 @@ export const writerId = singleton('writerId', () =>
   typeof crypto !== 'undefined' ? crypto.randomUUID() : 'server',
 )
 
+// Writer ids this page used to replace content in bulk, such as a backup
+// restore. Open editors take those changes as undoable edits of their own
+// instead of remote ones.
+const ownWriters = singleton('ownWriters', () => new Set<string>())
+
+/** Marks `id` as a writer of this page's own bulk edits. */
+export function claimWriter(id: string) {
+  ownWriters.add(id)
+  return id
+}
+
+export function isOwnWriter(id: string) {
+  return ownWriters.has(id)
+}
+
 // Per browser tab: which file is active and which tree nodes are collapsed.
 // Kept in sessionStorage so a reload restores it without leaking to other tabs.
 interface SessionState {

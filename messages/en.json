@@ -186,6 +186,8 @@
   "palette_files": "Open tabs",
   "palette_current": "Current file",
   "palette_edit": "Edit",
+  "edit_undo": "Undo",
+  "edit_redo": "Redo",
   "palette_file": "File",
   "palette_data": "Data",
   "palette_preferences": "Preferences",

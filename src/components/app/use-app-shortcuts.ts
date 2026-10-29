@@ -2,10 +2,12 @@ import { useHotkey, useHotkeys } from '@tanstack/react-hotkeys'
 
 import { newFile, newJsonFile } from './files'
 import { askRename, setPaletteOpen, setTabListOpen, uiStore } from './ui-store'
+import { redoActive, undoActive } from '#/components/editor/actions'
 import {
   switchToNextProfile,
   switchToProfileAt,
 } from '#/components/profiles/actions'
+import { isMac } from '#/lib/platform'
 import { profileShortcuts, shortcuts } from '#/lib/shortcuts'
 import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 
@@ -33,6 +35,31 @@ export function useAppShortcuts({
   useHotkey(shortcuts.newFile.hotkey, newFile)
   useHotkey(shortcuts.newJsonFile.hotkey, newJsonFile)
   useHotkey(shortcuts.togglePanel.hotkey, onTogglePanel)
+  // Undo the active file from anywhere but text fields and the editor, which
+  // keep their own history, so an edit made on a tree row or pinned field
+  // can be taken back where it was made.
+  const history = (action: () => void) => (e: KeyboardEvent) => {
+    if (e.defaultPrevented) return
+    const target = e.target
+    if (
+      target instanceof Element &&
+      target.closest('input, textarea, select, [contenteditable]')
+    )
+      return
+    e.preventDefault()
+    action()
+  }
+  const historyOptions = {
+    enabled: !!activeId,
+    ignoreInputs: false,
+    preventDefault: false,
+  }
+  useHotkey(shortcuts.undo.hotkey, history(undoActive), historyOptions)
+  useHotkey(shortcuts.redo.hotkey, history(redoActive), historyOptions)
+  useHotkey(shortcuts.redoAlt.hotkey, history(redoActive), {
+    ...historyOptions,
+    enabled: !!activeId && !isMac,
+  })
   // Profiles belong to files, so these only act with a file open.
   useHotkey(shortcuts.nextProfile.hotkey, switchToNextProfile, {
     enabled: !!activeId,

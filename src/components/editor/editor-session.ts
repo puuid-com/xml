@@ -5,7 +5,7 @@ import { fileIdField } from './extensions'
 import { docLanguage, languageCompartment, languageExtension } from './language'
 import { languageOf } from '#/lib/document'
 import { filesCollection } from '#/lib/store/files'
-import { writerId } from '#/lib/store/session'
+import { isOwnWriter, writerId } from '#/lib/store/session'
 import { diffChange } from '#/lib/xml/edit'
 import type { Extension, TransactionSpec } from '@codemirror/state'
 import type { EditorView } from '@codemirror/view'
@@ -19,6 +19,14 @@ function remoteChange(changes: TextChange): TransactionSpec {
   return {
     changes,
     annotations: [remoteSync.of(true), Transaction.addToHistory.of(false)],
+  }
+}
+
+/** Already saved, but made here, such as by a backup restore: undoable. */
+function ownChange(changes: TextChange): TransactionSpec {
+  return {
+    changes,
+    annotations: [remoteSync.of(true), Transaction.userEvent.of('input.sync')],
   }
 }
 
@@ -49,6 +57,26 @@ export function createEditorSession(
   },
 ) {
   let activeName: string | null = null
+  let fileExtensions: Extension | null = null
+
+  function createState(
+    fileId: string,
+    file: XmlFile | undefined,
+    extensions: Extension,
+  ) {
+    const content = file?.content ?? ''
+    return EditorState.create({
+      doc: content,
+      extensions: [
+        fileIdField.init(() => fileId),
+        languageCompartment.of(
+          languageExtension(languageOf(file?.name ?? '', content)),
+        ),
+        extensions,
+      ],
+    })
+  }
+
   const subscription = filesCollection.subscribeChanges(
     (changes) => {
       for (const change of changes) {
@@ -59,14 +87,23 @@ export function createEditorSession(
         const file = change.value
         const active = view.state.field(fileIdField, false) === file.id
         if (file.writer !== writerId) {
-          const state = active ? view.state : states.get(file.id)
+          const own = isOwnWriter(file.writer)
+          const previous = change.previousValue
+          // So this page's own edit can be undone in a file not opened yet.
+          const state = active
+            ? view.state
+            : (states.get(file.id) ??
+              (own && previous && fileExtensions
+                ? createState(file.id, previous, fileExtensions)
+                : undefined))
           const diff = state && diffChange(state.doc.toString(), file.content)
           if (state && diff) {
+            const spec = own ? ownChange(diff) : remoteChange(diff)
             if (active) {
-              view.dispatch(remoteChange(diff))
-              callbacks.onRemoteChange(file)
+              view.dispatch(spec)
+              if (!own) callbacks.onRemoteChange(file)
             } else {
-              states.set(file.id, state.update(remoteChange(diff)).state)
+              states.set(file.id, state.update(spec).state)
             }
           }
         }
@@ -84,6 +121,7 @@ export function createEditorSession(
   return {
     /** Returns false if this file is already open. */
     open(fileId: string, extensions: Extension) {
+      fileExtensions = extensions
       const previous = view.state.field(fileIdField, false)
       if (previous === fileId) return false
       if (previous && filesCollection.has(previous))
@@ -96,18 +134,7 @@ export function createEditorSession(
         const diff = diffChange(cached.doc.toString(), content)
         view.setState(diff ? cached.update(remoteChange(diff)).state : cached)
       } else {
-        view.setState(
-          EditorState.create({
-            doc: content,
-            extensions: [
-              fileIdField.init(() => fileId),
-              languageCompartment.of(
-                languageExtension(languageOf(file?.name ?? '', content)),
-              ),
-              extensions,
-            ],
-          }),
-        )
+        view.setState(createState(fileId, file, extensions))
       }
       activeName = file?.name ?? null
       // A file may have been renamed while its editor state was cached.

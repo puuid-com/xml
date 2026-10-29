@@ -186,6 +186,8 @@
   "palette_files": "Onglets ouverts",
   "palette_current": "Fichier actuel",
   "palette_edit": "Édition",
+  "edit_undo": "Annuler",
+  "edit_redo": "Rétablir",
   "palette_file": "Fichier",
   "palette_data": "Données",
   "palette_preferences": "Préférences",

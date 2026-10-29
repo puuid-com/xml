@@ -5,9 +5,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { newFile, newJsonFile } from './files'
 import { askRename, setPaletteOpen, setTabListOpen, uiStore } from './ui-store'
 import { useAppShortcuts } from './use-app-shortcuts'
+import { redoActive, undoActive } from '#/components/editor/actions'
 import { sessionStore, setActive, setPanelOpen } from '#/lib/store/session'
 
 vi.mock('./files', () => ({ newFile: vi.fn(), newJsonFile: vi.fn() }))
+vi.mock('#/components/editor/actions', () => ({
+  undoActive: vi.fn(),
+  redoActive: vi.fn(),
+}))
 
 const onOpenFromDisk = vi.fn()
 
@@ -126,5 +131,37 @@ describe('useAppShortcuts', () => {
       ctrlKey: true,
     })
     expect(sessionStore.state.activeId).toBeNull()
+  })
+
+  it('undoes and redoes the active file from outside the editor', () => {
+    const { getByTestId } = render(
+      <Harness>
+        <div data-testid="row" tabIndex={0} />
+      </Harness>,
+    )
+    const row = getByTestId('row')
+    fireEvent.keyDown(row, { key: 'z', code: 'KeyZ', ctrlKey: true })
+    expect(undoActive).toHaveBeenCalledOnce()
+    fireEvent.keyDown(row, {
+      key: 'Z',
+      code: 'KeyZ',
+      ctrlKey: true,
+      shiftKey: true,
+    })
+    expect(redoActive).toHaveBeenCalledOnce()
+  })
+
+  it('leaves undo to text fields and the editor', () => {
+    const { getByRole, getByTestId } = render(
+      <Harness>
+        <input />
+        <div data-testid="editor" contentEditable tabIndex={0} />
+      </Harness>,
+    )
+    const press = (target: Element) =>
+      fireEvent.keyDown(target, { key: 'z', code: 'KeyZ', ctrlKey: true })
+    press(getByRole('textbox'))
+    press(getByTestId('editor'))
+    expect(undoActive).not.toHaveBeenCalled()
   })
 })

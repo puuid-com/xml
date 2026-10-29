@@ -27,6 +27,11 @@ export const shortcuts = {
   newFile: { hotkey: 'Mod+Alt+N', keys: [alt, mod, 'N'] },
   newJsonFile: { hotkey: 'Mod+Alt+Shift+N', keys: ['⇧', alt, mod, 'N'] },
   rename: { hotkey: 'F2', keys: ['F2'] },
+  // The editor binds these itself; the page ones act elsewhere, as on a tree row.
+  undo: { hotkey: 'Mod+Z', keys: [mod, 'Z'] },
+  redo: { hotkey: 'Mod+Shift+Z', keys: ['⇧', mod, 'Z'] },
+  // Windows and Linux only: Chrome on macOS keeps ⌘Y for its history.
+  redoAlt: { hotkey: 'Mod+Y', keys: [mod, 'Y'] },
   togglePanel: { hotkey: 'Mod+B', keys: [mod, 'B'] },
   nextProfile: { hotkey: 'Mod+Alt+P', keys: [alt, mod, 'P'] },
   previousTab: { hotkey: 'Control+ArrowLeft', keys: ['⌃', '←'] },

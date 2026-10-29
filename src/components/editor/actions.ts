@@ -1,3 +1,5 @@
+import { redo, redoDepth, undo, undoDepth } from '@codemirror/commands'
+
 import {
   activeLanguage,
   editorStore,
@@ -46,6 +48,25 @@ import { m } from '#/paraglide/messages'
 import type { EditorView } from '@codemirror/view'
 
 // Commands return `true` so CodeMirror keymaps treat the key as handled.
+
+/** Undoes the active file's last change, such as a tree edit or a format. */
+export function undoActive() {
+  const view = getView()
+  if (view) undo(view)
+}
+
+export function redoActive() {
+  const view = getView()
+  if (view) redo(view)
+}
+
+/** How many steps the active file can undo and redo. */
+export function historyDepth() {
+  const view = getView()
+  return view
+    ? { undo: undoDepth(view.state), redo: redoDepth(view.state) }
+    : { undo: 0, redo: 0 }
+}
 
 export function formatActive() {
   const view = getView()

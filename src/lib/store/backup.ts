@@ -7,6 +7,7 @@ import { highlightSchema, highlightsCollection } from './highlights'
 import { newId, settleWrites } from './persist'
 import { pinSchema, pinsCollection } from './pins'
 import { profileSchema, profilesCollection } from './profiles'
+import { claimWriter } from './session'
 import { variableSchema, variablesCollection } from './variables'
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type { Collection, IndexedDBCollectionUtils } from '@tanstack/react-db'
@@ -180,8 +181,9 @@ export async function restoreBackup(backup: Backup) {
   await settleContentSave()
   // The rows to put back on failure have to include every earlier change.
   await settleWrites()
-  // A new writer makes open editors take the restored text as a remote edit.
-  const writer = newId()
+  // A new writer makes open editors take the restored text, as an edit this
+  // page can undo.
+  const writer = claimWriter(newId())
   // Only variables of restored profiles, so none points at a missing one.
   const profileIds = new Set(backup.profiles.map((p) => p.id))
   const writes = [
@@ -197,7 +199,7 @@ export async function restoreBackup(backup: Backup) {
       filesCollection,
       backup.files.map((file) => ({ ...file, writer })),
       // Again a new writer, so open editors take the old text back too.
-      (file) => ({ ...file, writer: newId() }),
+      (file) => ({ ...file, writer: claimWriter(newId()) }),
     ),
   ]
   const done: typeof writes = []
