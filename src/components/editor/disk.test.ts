@@ -137,15 +137,17 @@ describe('saving to disk', () => {
   it('does not overwrite disk when the file disappears during permission approval', async () => {
     const file = createFile('removed.xml', '<keep/>')
     const { handle } = fakeHandle('removed.xml', 1)
-    const permission = Promise.withResolvers<PermissionState>()
-    vi.mocked(handle.queryPermission).mockReturnValue(permission.promise)
+    let grant!: (state: PermissionState) => void
+    vi.mocked(handle.queryPermission).mockReturnValue(
+      new Promise<PermissionState>((resolve) => (grant = resolve)),
+    )
     diskStore.setState(() => ({
       [file.id]: { handle, saved: '<keep/>', modified: 1 },
     }))
 
     const saving = saveToDisk(file.id)
     await filesCollection.delete(file.id).isPersisted.promise
-    permission.resolve('granted')
+    grant('granted')
     await saving
 
     expect(handle.createWritable).not.toHaveBeenCalled()

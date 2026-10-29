@@ -22,7 +22,7 @@
     "cf-typegen": "wrangler types",
     "icons": "bun scripts/icons.ts",
     "i18n:compile": "paraglide-js compile --strategy url baseLocale --silent",
-    "prepare": "bun run i18n:compile && bun run cf-typegen",
+    "prepare": "git config core.hooksPath .githooks; bun run i18n:compile && bun run cf-typegen",
     "doctor": "react-doctor"
   },
   "dependencies": {
@@ -83,6 +83,7 @@
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
+    "@types/bun": "^1.4.4",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

@@ -19,4 +19,4 @@ Before committing, run `bun run check`, `bun run lint`, `bun run typecheck` and 
 
 ## Git
 
-After each task, commit and push to `main` without waiting to be asked. Pushing `main` runs a local `pre-push` hook that deploys with `bun run deploy`; if the deploy fails the push is aborted, so fix the failure and push again. Don't use `--no-verify` unless told to.
+After each task, commit and push to `main` without waiting to be asked. Pushing `main` runs the versioned `.githooks/pre-push` hook (installed by `bun install`), which runs the CI checks and then deploys with `bun run deploy`; if either fails the push is aborted, so fix the failure and push again. Don't use `--no-verify` unless told to.

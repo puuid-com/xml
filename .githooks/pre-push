@@ -1,0 +1,27 @@
+#!/bin/sh
+# Run the CI checks, then deploy to Cloudflare from this machine when pushing main.
+# Installed by `bun install` (the `prepare` script sets core.hooksPath).
+# Skip with: git push --no-verify
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$remote_ref" = "refs/heads/main" ] || continue
+  [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+
+  if [ "$local_sha" != "$(git rev-parse HEAD)" ]; then
+    echo "pre-push: pushing main but HEAD isn't main; check out main to deploy." >&2
+    exit 1
+  fi
+  if ! git diff --quiet HEAD; then
+    echo "pre-push: uncommitted changes would end up in the deploy; commit or stash first." >&2
+    exit 1
+  fi
+
+  echo "pre-push: running CI checks..."
+  for task in check lint typecheck test; do
+    bun run "$task" || { echo "pre-push: $task failed, push aborted." >&2; exit 1; }
+  done
+
+  echo "pre-push: deploying $local_sha..."
+  bun run deploy || { echo "pre-push: deploy failed, push aborted." >&2; exit 1; }
+done
+exit 0
