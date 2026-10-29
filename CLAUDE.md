@@ -13,6 +13,13 @@ Website template: TanStack Start on Cloudflare Workers, shadcn/ui, Tailwind v4, 
 - Server-only code lives in `*.server.ts` files. Read env through `#/env.server`.
 - Don't edit generated files: `src/routeTree.gen.ts`, `src/paraglide/`, `worker-configuration.d.ts`.
 
+## Versioning
+
+- Every commit bumps `version` in `package.json` and adds an entry at the top of `CHANGELOG.md` in the same commit: `## [x.y.z] - YYYY-MM-DD`, then `### Added`, `### Changed` or `### Fixed` with short user-facing bullets.
+- Major for breaking changes to stored data, share links or file formats; minor for new features and visible behavior changes; patch for fixes, refactors, docs and tooling.
+- If several commits go out together, each still gets its own version and entry.
+- `src/lib/version.test.ts` fails if the newest changelog entry doesn't match `package.json`.
+
 ## Checks
 
 Before committing, run `bun run check`, `bun run lint`, `bun run typecheck` and `bun run test`. CI runs the same checks plus `bun run build`.

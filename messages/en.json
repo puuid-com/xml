@@ -13,6 +13,8 @@
   "try_again": "Try again",
   "go_home": "Go to the home page",
   "footer_rights": "© {year} {name}",
+  "app_version": "v{version}",
+  "app_version_label": "Version {version}",
   "nav_editor": "Editor",
   "file_new": "New XML file",
   "file_new_json": "New JSON file",

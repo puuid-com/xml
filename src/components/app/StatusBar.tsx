@@ -20,9 +20,10 @@ import {
 import { Separator } from '#/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useActiveProfile } from '#/hooks/use-profiles'
+import { appVersion } from '#/lib/version'
 import { m } from '#/paraglide/messages'
 
-/** Bottom bar: highlight chips on the left; the file's setup and actions, search and the theme toggle on the right. */
+/** Bottom bar: highlight chips on the left; the file's setup and actions, search, the theme toggle and the app version on the right. */
 export function StatusBar() {
   const fileId = useSelector(editorStore, (s) => s.fileId)
 
@@ -42,6 +43,12 @@ export function StatusBar() {
       )}
       <CommandMenuButton />
       <ThemeToggle />
+      <span
+        title={m.app_version_label({ version: appVersion })}
+        className="px-1.5 font-mono tabular-nums max-md:hidden"
+      >
+        {m.app_version({ version: appVersion })}
+      </span>
     </footer>
   )
 }
