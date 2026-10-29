@@ -4,7 +4,6 @@ import { useSelector } from '@tanstack/react-store'
 import { ActionBar } from './ActionBar'
 import { CommandMenuButton } from './CommandMenu'
 import { FormatOptions } from './FormatControls'
-import { StatusNotice } from './StatusNotice'
 import { ThemeToggle } from './ThemeToggle'
 import { editorStore } from '#/components/editor/editor-store'
 import { DefaultsRules } from '#/components/defaults/DefaultsControls'
@@ -23,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useActiveProfile } from '#/hooks/use-profiles'
 import { m } from '#/paraglide/messages'
 
-/** Bottom bar: highlight chips on the left; the file's setup and actions, search, the theme toggle and a fixed notice slot on the right. */
+/** Bottom bar: highlight chips on the left; the file's setup and actions, search and the theme toggle on the right. */
 export function StatusBar() {
   const fileId = useSelector(editorStore, (s) => s.fileId)
 
@@ -43,11 +42,6 @@ export function StatusBar() {
       )}
       <CommandMenuButton />
       <ThemeToggle />
-      <Separator
-        orientation="vertical"
-        className="mx-1 data-vertical:h-4 data-vertical:self-center"
-      />
-      <StatusNotice />
     </footer>
   )
 }

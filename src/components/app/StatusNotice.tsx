@@ -8,8 +8,8 @@ import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
 
 /**
- * Latest notice, at the right end of the status bar. Its slot has a fixed
- * width and stays mounted as a live region, so notices never move the bar.
+ * Latest notice, at the right of the top bar. Its slot has a fixed width
+ * and stays mounted as a live region, so notices never move the bar.
  */
 export function StatusNotice() {
   const notice = useSelector(noticeStore, (n) => n)
@@ -19,7 +19,7 @@ export function StatusNotice() {
     <div
       role="status"
       aria-live="polite"
-      className="flex w-40 shrink-0 items-center justify-end overflow-hidden md:w-72"
+      className="flex w-40 shrink-0 items-center justify-end overflow-hidden text-[11px] whitespace-nowrap text-muted-foreground md:w-72"
     >
       {notice && (
         <>
