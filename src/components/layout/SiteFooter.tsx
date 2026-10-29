@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router'
+
 import { appVersion } from '#/lib/version'
 import { m } from '#/paraglide/messages'
 import { site } from '#/site'
@@ -9,9 +11,13 @@ export function SiteFooter() {
         <span>
           {m.footer_rights({ year: new Date().getFullYear(), name: site.name })}
         </span>
-        <span className="font-mono tabular-nums">
+        <Link
+          to="/changelog"
+          aria-label={m.app_version_label({ version: appVersion })}
+          className="font-mono tabular-nums transition-colors hover:text-foreground"
+        >
           {m.app_version({ version: appVersion })}
-        </span>
+        </Link>
       </div>
     </footer>
   )

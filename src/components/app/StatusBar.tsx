@@ -1,4 +1,5 @@
 import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
+import { Link } from '@tanstack/react-router'
 import { useSelector } from '@tanstack/react-store'
 
 import { ActionBar } from './ActionBar'
@@ -43,12 +44,19 @@ export function StatusBar() {
       )}
       <CommandMenuButton />
       <ThemeToggle />
-      <span
-        title={m.app_version_label({ version: appVersion })}
-        className="px-1.5 font-mono tabular-nums max-md:hidden"
+      <Button
+        asChild
+        variant="ghost"
+        size="xs"
+        className="px-1.5 font-mono text-[11px] font-normal tabular-nums max-md:hidden"
       >
-        {m.app_version({ version: appVersion })}
-      </span>
+        <Link
+          to="/changelog"
+          aria-label={m.app_version_label({ version: appVersion })}
+        >
+          {m.app_version({ version: appVersion })}
+        </Link>
+      </Button>
     </footer>
   )
 }

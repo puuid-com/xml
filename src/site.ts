@@ -22,5 +22,5 @@ export const site: Site = {
   twitter: '',
   themeColor: '#0a0a0a',
   /** Unlocalized paths listed in sitemap.xml. Add new public pages here. */
-  sitemapPaths: ['/', '/about'],
+  sitemapPaths: ['/', '/about', '/changelog'],
 }
