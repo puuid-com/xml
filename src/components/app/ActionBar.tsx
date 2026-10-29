@@ -55,6 +55,7 @@ export function ActionBar() {
   const doc = useSelector(editorStore, (s) => s.doc)
   const vars = useSelector(editorStore, (s) => varsAt(s.revision))
   const rules = useEnabledDefaults()
+  const formatError = doc.errors.at(0)
   const defaults = useMemo(
     () =>
       defaultSummary(doc.nodes, rules).reduce((n, rule) => n + rule.count, 0),
@@ -75,7 +76,9 @@ export function ActionBar() {
       <div className="flex items-center text-foreground">
         <ActionButton
           label={m.action_format()}
+          detail={formatError ? formatError.message : null}
           shortcut={shortcuts.format}
+          disabled={formatError !== undefined}
           onClick={formatActive}
         >
           <IconWand />
@@ -84,9 +87,14 @@ export function ActionBar() {
         <ActionButton
           label={m.defaults_apply()}
           detail={
-            defaults > 0 ? m.status_defaults_count({ count: defaults }) : null
+            defaults > 0
+              ? m.status_defaults_count({ count: defaults })
+              : rules.length === 0
+                ? m.defaults_none()
+                : m.defaults_unchanged()
           }
           shortcut={shortcuts.applyDefaults}
+          disabled={defaults === 0}
           onClick={applyDefaultsActive}
         >
           <IconReplace />
@@ -96,9 +104,12 @@ export function ActionBar() {
         <ActionButton
           label={m.vars_resolve()}
           detail={
-            vars.count > 0 ? m.status_vars_count({ count: vars.count }) : null
+            vars.count > 0
+              ? m.status_vars_count({ count: vars.count })
+              : m.vars_resolve_none()
           }
           shortcut={shortcuts.resolveVars}
+          disabled={vars.count === 0}
           onClick={resolveVarsActive}
         >
           <IconVariable />
@@ -235,11 +246,15 @@ function Count({ value }: { value: number }) {
   )
 }
 
-/** Icon and text button whose tooltip spells out the action and its shortcut. */
+/**
+ * Icon and text button whose tooltip spells out the action and its shortcut.
+ * A disabled one still shows its tooltip, which says why it can't run.
+ */
 function ActionButton({
   label,
   detail,
   shortcut,
+  disabled,
   ...props
 }: React.ComponentProps<typeof Button> & {
   label: string
@@ -248,13 +263,17 @@ function ActionButton({
 }) {
   return (
     <Tooltip>
+      {/* Disabled buttons get no pointer events, so the span holds the tooltip. */}
       <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="xs"
-          className="gap-1 px-1.5 text-[11px] font-normal max-md:h-11"
-          {...props}
-        />
+        <span tabIndex={disabled ? 0 : undefined} className="inline-flex">
+          <Button
+            variant="ghost"
+            size="xs"
+            className="gap-1 px-1.5 text-[11px] font-normal max-md:h-11"
+            disabled={disabled}
+            {...props}
+          />
+        </span>
       </TooltipTrigger>
       <TooltipContent className="flex items-center gap-2">
         <span className="flex flex-col">
