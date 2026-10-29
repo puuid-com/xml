@@ -1,12 +1,12 @@
 import { splitVars } from './vars'
 
-const NAMED: Record<string, string> = {
-  lt: '<',
-  gt: '>',
-  amp: '&',
-  quot: '"',
-  apos: "'",
-}
+const NAMED = new Map([
+  ['lt', '<'],
+  ['gt', '>'],
+  ['amp', '&'],
+  ['quot', '"'],
+  ['apos', "'"],
+])
 
 /** Decodes the five predefined entities and character references. */
 export function decodeEntities(raw: string): string {
@@ -18,7 +18,7 @@ export function decodeEntities(raw: string): string {
         return safeCodePoint(parseInt(ref.slice(2), 16), whole)
       if (ref.startsWith('#'))
         return safeCodePoint(parseInt(ref.slice(1), 10), whole)
-      return NAMED[ref] ?? whole
+      return NAMED.get(ref) ?? whole
     },
   )
 }

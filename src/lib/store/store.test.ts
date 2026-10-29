@@ -14,8 +14,11 @@ import {
   isStorageFull,
   onSaveFailed,
   reorderFile,
+  renameFile,
+  reassignProfile,
   restoreFile,
   saveContent,
+  setFileProfile,
   uniqueName,
 } from './files'
 import {
@@ -142,6 +145,139 @@ describe('files', () => {
     expect(archivedFiles()[0].content).toBe('<latest/>')
     expect(await stored(filesCollection)).toContain('<latest/>')
   })
+
+  it('keeps a rename made before a debounced content save completes', async () => {
+    const file = createFile('before.xml', '<old/>')
+    const pending = saveContent({ id: file.id, content: '<latest/>' })
+    await renameFile(file.id, 'after.xml')!.isPersisted.promise
+    await pending.isPersisted.promise
+    expect(filesCollection.get(file.id)).toMatchObject({
+      name: 'after.xml',
+      content: '<latest/>',
+    })
+    expect(await filesCollection.utils.exportData()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: file.id,
+          name: 'after.xml',
+          content: '<latest/>',
+        }),
+      ]),
+    )
+  })
+
+  it('keeps tab ordering changed before a debounced content save completes', async () => {
+    const a = createFile('a.xml', '<old/>')
+    const b = createFile('b.xml')
+    const pending = saveContent({ id: a.id, content: '<latest/>' })
+    reorderFile(b.id, a.id)
+    await pending.isPersisted.promise
+    expect(openOrder()).toEqual(['b.xml', 'a.xml'])
+    const saved = await filesCollection.utils.exportData()
+    expect(saved.find((file) => file.id === a.id)?.order).toBe(2)
+  })
+
+  it('keeps renames and further typing while an earlier content write is in flight', async () => {
+    const file = createFile('before.xml', '<old/>')
+    const accept = filesCollection.utils.acceptMutations
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const write = vi
+      .spyOn(filesCollection.utils, 'acceptMutations')
+      .mockImplementationOnce(async (transaction) => {
+        await gate
+        await accept(transaction)
+      })
+    try {
+      const first = saveContent({ id: file.id, content: '<first/>' })
+      await vi.waitFor(() => expect(write).toHaveBeenCalledOnce())
+      const rename = renameFile(file.id, 'after.xml')!
+      const latest = saveContent({ id: file.id, content: '<latest/>' })
+      release()
+      await Promise.all([
+        first.isPersisted.promise,
+        rename.isPersisted.promise,
+        latest.isPersisted.promise,
+      ])
+      expect(filesCollection.get(file.id)).toMatchObject({
+        name: 'after.xml',
+        content: '<latest/>',
+      })
+      expect(await filesCollection.utils.exportData()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: file.id,
+            name: 'after.xml',
+            content: '<latest/>',
+          }),
+        ]),
+      )
+    } finally {
+      release()
+      write.mockRestore()
+    }
+  })
+
+  it.each([
+    {
+      action: 'closing',
+      run: closeFile,
+      expected: { deletedAt: expect.any(Number) },
+    },
+    {
+      action: 'switching profiles',
+      run: (id: string) => setFileProfile(id, 'other'),
+      expected: { profileId: 'other' },
+    },
+    {
+      action: 'reassigning profiles',
+      run: () => reassignProfile('default', 'other'),
+      expected: { profileId: 'other' },
+    },
+  ])(
+    'waits for edits queued while $action waits on an earlier save',
+    async ({ run, expected }) => {
+      const file = createFile('before.xml', '<old/>')
+      const accept = filesCollection.utils.acceptMutations
+      let release!: () => void
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      const write = vi
+        .spyOn(filesCollection.utils, 'acceptMutations')
+        .mockImplementationOnce(async (transaction) => {
+          await gate
+          await accept(transaction)
+        })
+      try {
+        const first = saveContent({ id: file.id, content: '<latest/>' })
+        await vi.waitFor(() => expect(write).toHaveBeenCalledOnce())
+        const action = run(file.id)
+        const rename = renameFile(file.id, 'after.xml')!
+        release()
+        await Promise.all([
+          first.isPersisted.promise,
+          action,
+          rename.isPersisted.promise,
+        ])
+        const row = {
+          id: file.id,
+          name: 'after.xml',
+          content: '<latest/>',
+          ...expected,
+        }
+        expect(filesCollection.get(file.id)).toMatchObject(row)
+        expect(await filesCollection.utils.exportData()).toEqual(
+          expect.arrayContaining([expect.objectContaining(row)]),
+        )
+      } finally {
+        release()
+        write.mockRestore()
+      }
+    },
+  )
 
   it('reports a content save the browser refuses, once', async () => {
     const file = createFile('full.xml', '<old/>')

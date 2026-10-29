@@ -50,25 +50,59 @@ function lineage(nodes: Array<XmlNode>, path: string): Array<Step> {
 }
 
 /**
- * `/root/item[2]/name`. The position is only added when siblings share the
- * name, like browser dev tools do. An unprefixed name in a default namespace
- * matches nothing in XPath 1.0, so it is selected by `local-name()` instead.
+ * `/root/item[2]/name`. Positions count siblings with the same expanded name.
+ * Namespaced elements use their URI so the path needs no namespace resolver,
+ * including when a prefix is rebound or several prefixes name the same URI.
  */
 function xpath(steps: Array<Step>) {
-  let defaultNs = ''
+  const namespaces = new Map([['xml', 'http://www.w3.org/XML/1998/namespace']])
   return steps
     .map(({ el, siblings }) => {
-      const xmlns = el.attrs.find((attr) => attr.name === 'xmlns')
-      if (xmlns) defaultNs = xmlns.value
-      let step =
-        defaultNs && !el.name.includes(':')
-          ? `*[local-name()='${el.name}']`
-          : el.name
-      const same = siblings.filter((s) => s.name === el.name)
+      const name = localName(el)
+      const namespace = namespaceOf(el, namespaces)
+      const same = siblings.filter(
+        (s) =>
+          localName(s) === name && namespaceOf(s, namespaces) === namespace,
+      )
+      let step = namespace
+        ? `*[local-name()='${name}' and namespace-uri()=${xpathString(namespace)}]`
+        : el.name
       if (same.length > 1) step += `[${same.indexOf(el) + 1}]`
+
+      for (const attr of el.attrs) {
+        if (attr.name === 'xmlns') namespaces.set('', attr.value)
+        else if (attr.name.startsWith('xmlns:')) {
+          namespaces.set(attr.name.slice(6), attr.value)
+        }
+      }
       return '/' + step
     })
     .join('')
+}
+
+function localName(el: XmlElement) {
+  return el.name.slice(el.name.indexOf(':') + 1)
+}
+
+function namespaceOf(el: XmlElement, inherited: ReadonlyMap<string, string>) {
+  const colon = el.name.indexOf(':')
+  const prefix = colon < 0 ? '' : el.name.slice(0, colon)
+  const declaration = prefix ? `xmlns:${prefix}` : 'xmlns'
+  return (
+    el.attrs.find((attr) => attr.name === declaration)?.value ??
+    inherited.get(prefix) ??
+    ''
+  )
+}
+
+/** XPath 1.0 strings have no backslash escapes. */
+function xpathString(value: string) {
+  if (!value.includes("'")) return `'${value}'`
+  if (!value.includes('"')) return `"${value}"`
+  return `concat(${value
+    .split("'")
+    .map((part) => `'${part}'`)
+    .join(`, "'", `)})`
 }
 
 /** `/root/0/name`, with `~` and `/` escaped as `~0` and `~1`. */

@@ -1,5 +1,5 @@
 import { downloadFile, formatActive } from './actions'
-import { editorStore, getText } from './editor-store'
+import { editorStore, getText, getView } from './editor-store'
 import { notify } from '#/components/app/notice-store'
 import { canWriteDisk, diskStore, setDiskLink } from '#/lib/store/disk'
 import { filesCollection, renameFile } from '#/lib/store/files'
@@ -11,9 +11,9 @@ import { m } from '#/paraglide/messages'
 
 /** The text to write: what the editor shows, for the file it shows. */
 function textOf(id: string) {
-  return editorStore.state.fileId === id
-    ? getText()
-    : (filesCollection.get(id)?.content ?? '')
+  const file = filesCollection.get(id)
+  if (!file) return
+  return editorStore.state.fileId === id && getView() ? getText() : file.content
 }
 
 function isAbort(error: unknown) {
@@ -29,12 +29,22 @@ async function canWrite(handle: FileSystemFileHandle) {
 
 async function write(id: string, handle: FileSystemFileHandle) {
   const text = textOf(id)
+  // The file can disappear while a picker or permission prompt is open.
+  if (text === undefined) return false
   const stream = await handle.createWritable()
-  await stream.write(text)
-  await stream.close()
+  try {
+    await stream.write(text)
+    await stream.close()
+  } catch (error) {
+    // Discard the temporary write without hiding the original failure if the
+    // stream has already errored and aborting also rejects.
+    await stream.abort(error).catch(() => undefined)
+    throw error
+  }
   const { lastModified } = await handle.getFile()
   await setDiskLink(id, { handle, saved: text, modified: lastModified })
   notify.success(m.saved_to_disk({ name: handle.name }))
+  return true
 }
 
 /**
@@ -94,8 +104,8 @@ export async function saveAs(id: string) {
     return
   }
   try {
-    await write(id, handle)
-    if (handle.name !== file.name) renameFile(id, handle.name)
+    const saved = await write(id, handle)
+    if (saved && handle.name !== file.name) renameFile(id, handle.name)
   } catch (error) {
     notify.error(m.disk_save_failed({ name: handle.name }), {
       detail: error instanceof Error ? error.message : undefined,

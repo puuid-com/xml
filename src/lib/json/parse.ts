@@ -58,7 +58,7 @@ const WHITESPACE = new Set([' ', '\t', '\n', '\r'])
 
 /**
  * Parses JSON into values with positions. Error tolerant: it always returns
- * what it could read, plus the problems found. `<<var>>` and `{{var}}`
+ * what it could read, plus the problems found. `<<var>>`, `{{var}}` and `${var}`
  * placeholders are allowed wherever a value is, and inside strings.
  */
 export function parseJsonAst(text: string): JsonAst {
@@ -106,7 +106,7 @@ class Reader {
       this.error(Math.max(0, start - 1), start, 'Expected a value')
       return null
     }
-    if (c === '<' || (c === '{' && this.text[start + 1] === '{')) {
+    if (c === '<' || c === '{' || c === '$') {
       VAR_RE.lastIndex = start
       const match = VAR_RE.exec(this.text)
       if (match) return this.literal('var', start + match[0].length)

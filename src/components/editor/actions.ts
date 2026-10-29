@@ -233,7 +233,7 @@ export function downloadFile(id: string) {
   const file = filesCollection.get(id)
   if (!file) return
   // The editor holds edits that may not be saved yet.
-  const active = editorStore.state.fileId === id
+  const active = editorStore.state.fileId === id && getView() !== null
   const content = active ? getText() : file.content
   const language = active ? activeLanguage() : languageOf(file.name, content)
   const blob = new Blob([content], { type: MIME_TYPES[language] })

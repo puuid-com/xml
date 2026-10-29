@@ -90,6 +90,14 @@ describe('entities', () => {
     )
   })
 
+  it('preserves unknown entities that share Object prototype names', () => {
+    const entities = '&constructor;&toString;&__proto__;&hasOwnProperty;'
+    expect(decodeEntities(entities)).toBe(entities)
+    const doc = parseXml('<!DOCTYPE a SYSTEM "custom.dtd"><a>&constructor;</a>')
+    expect(doc.errors).toEqual([])
+    expect(leafValue(doc.root!)).toBe('&constructor;')
+  })
+
   it('escapes text but keeps variables', () => {
     expect(escapeText('a < b & <<v>>')).toBe('a &lt; b &amp; <<v>>')
   })

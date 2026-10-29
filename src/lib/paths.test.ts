@@ -28,22 +28,71 @@ describe('xpath', () => {
     )
   })
 
-  it('selects names in a default namespace by local name', () => {
+  it('selects namespaced elements without a namespace resolver', () => {
     const ns = parseXml(
       '<p:root xmlns="urn:a" xmlns:p="urn:p"><a/><a/><p:b/></p:root>',
     )
     expect(pathOf(ns, '/p:root[1]/a[2]', 'xpath')).toBe(
-      "/p:root/*[local-name()='a'][2]",
+      "/*[local-name()='root' and namespace-uri()='urn:p']/*[local-name()='a' and namespace-uri()='urn:a'][2]",
     )
-    expect(pathOf(ns, '/p:root[1]/p:b[1]', 'xpath')).toBe('/p:root/p:b')
+    expect(pathOf(ns, '/p:root[1]/p:b[1]', 'xpath')).toBe(
+      "/*[local-name()='root' and namespace-uri()='urn:p']/*[local-name()='b' and namespace-uri()='urn:p']",
+    )
     const reset = parseXml('<r xmlns="urn:a"><s xmlns=""><t/></s></r>')
     expect(pathOf(reset, '/r[1]/s[1]/t[1]', 'xpath')).toBe(
-      "/*[local-name()='r']/s/t",
+      "/*[local-name()='r' and namespace-uri()='urn:a']/s/t",
     )
   })
 
   it('is the only format for XML', () => {
     expect(pathFormats(doc.root!)).toEqual(['xpath'])
+  })
+
+  it('selects the intended element when sibling prefixes and namespaces differ', () => {
+    const text =
+      '<root xmlns="urn:a" xmlns:p="urn:a" xmlns:q="urn:b">' +
+      '<q:item id="other"/><p:item id="alias"/><item id="first"/>' +
+      '<item xmlns="" id="reset"/><item id="last"/>' +
+      '</root>'
+    const parsed = parseXml(text)
+    const root = "/*[local-name()='root' and namespace-uri()='urn:a']"
+    for (const [path, step] of [
+      [
+        '/root[1]/q:item[1]',
+        "*[local-name()='item' and namespace-uri()='urn:b']",
+      ],
+      [
+        '/root[1]/p:item[1]',
+        "*[local-name()='item' and namespace-uri()='urn:a'][1]",
+      ],
+      [
+        '/root[1]/item[1]',
+        "*[local-name()='item' and namespace-uri()='urn:a'][2]",
+      ],
+      ['/root[1]/item[2]', 'item'],
+      [
+        '/root[1]/item[3]',
+        "*[local-name()='item' and namespace-uri()='urn:a'][3]",
+      ],
+    ]) {
+      expect(pathOf(parsed, path, 'xpath')).toBe(`${root}/${step}`)
+    }
+  })
+
+  it('handles locally rebound prefixes and quotes in namespace URIs', () => {
+    const rebound = parseXml(
+      '<r xmlns:p="urn:a"><p:item/><p:item xmlns:p="urn:b"/><p:item/></r>',
+    )
+    expect(pathOf(rebound, '/r[1]/p:item[2]', 'xpath')).toBe(
+      "/r/*[local-name()='item' and namespace-uri()='urn:b']",
+    )
+    expect(pathOf(rebound, '/r[1]/p:item[3]', 'xpath')).toBe(
+      "/r/*[local-name()='item' and namespace-uri()='urn:a'][2]",
+    )
+    const quoted = parseXml('<r xmlns="urn:a&apos;b&quot;c"/>')
+    expect(pathOf(quoted, '/r[1]', 'xpath')).toBe(
+      `/*[local-name()='r' and namespace-uri()=concat('urn:a', "'", 'b"c')]`,
+    )
   })
 })
 

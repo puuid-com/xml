@@ -78,6 +78,21 @@ describe('parseJson', () => {
     expect(leafValue(qty)).toBe('{{qty}}')
   })
 
+  it('allows dollar variables at the root and inside objects and arrays', () => {
+    const text = '{"qty": ${qty}, "nested": [${ $randomInt }, {"a": ${b}}]}'
+    const doc = parse(text)
+    const qty = elementByPath(doc.nodes, '/qty[1]')!
+    expect(qty.json?.type).toBe('var')
+    expect(leafValue(qty)).toBe('${qty}')
+    expect(text.slice(qty.json!.valueFrom, qty.json!.valueTo)).toBe('${qty}')
+    expect(leafValue(at(text, '/nested[1]/0[1]'))).toBe('${ $randomInt }')
+    expect(leafValue(at(text, '/nested[1]/1[1]/a[1]'))).toBe('${b}')
+    expect(parseJsonAst('${qty}')).toEqual({
+      value: { type: 'var', from: 0, to: 6, raw: '${qty}', value: '${qty}' },
+      errors: [],
+    })
+  })
+
   it('names the key range without quotes', () => {
     const text = '{"key": 1}'
     const el = at(text, '/key[1]')
@@ -193,6 +208,17 @@ describe('formatJson', () => {
       '{\n  "q": <<qty>>,\n  "u": "<<base>>"\n}\n',
     )
   })
+
+  it('formats dollar variables without quoting their values', () => {
+    expect(
+      formatJson('{"q":${ qty },"items":[${$randomInt}]}', {
+        trimVars: true,
+      }),
+    ).toEqual({
+      ok: true,
+      text: '{\n  "q": ${qty},\n  "items": [\n    ${$randomInt}\n  ]\n}\n',
+    })
+  })
 })
 
 describe('JSON edits', () => {
@@ -215,6 +241,19 @@ describe('JSON edits', () => {
 
   it('does not set values on containers', () => {
     expect(setJsonValue(at('{"o": {}}', '/o[1]'), 'x')).toEqual([])
+  })
+
+  it('keeps dollar variables valid after tree edits and default application', () => {
+    const text = '{"qty": 1}'
+    const edited = apply(text, setJsonValue(at(text, '/qty[1]'), '${qty}'))
+    expect(edited).toBe('{"qty": ${qty}}')
+    expect(leafValue(at(edited, '/qty[1]'))).toBe('${qty}')
+    const restored = apply(
+      edited,
+      documentDefaults(parse(edited), [{ key: 'qty', value: '2' }]),
+    )
+    expect(restored).toBe('{"qty": 2}')
+    expect(parseJson(restored).errors).toEqual([])
   })
 
   it('adds children to objects and arrays', () => {

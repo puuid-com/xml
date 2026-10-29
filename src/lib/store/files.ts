@@ -88,7 +88,7 @@ export function createFile(
 export async function closeFile(id: string) {
   // A paced save carries a full record snapshot. Let it settle first so it
   // cannot overwrite deletedAt and reopen this file after the archive write.
-  await pendingContentSave
+  await drainContentSaves()
   const file = filesCollection.get(id)
   if (!file || file.deletedAt !== null) return
   const archived = archivedFiles()
@@ -127,15 +127,17 @@ export async function restoreFile(id: string) {
 export function renameFile(id: string, name: string) {
   const trimmed = name.trim()
   if (!trimmed || !filesCollection.has(id)) return
-  return filesCollection.update(id, (draft) => {
-    draft.name = trimmed
-  })
+  return updateMetadata(() =>
+    filesCollection.update(id, (draft) => {
+      draft.name = trimmed
+    }),
+  )
 }
 
 /** Switches the profile, and so the settings, a file uses. */
 export async function setFileProfile(id: string, profileId: string) {
   // Like closeFile: a pending content save would write the old profile back.
-  await pendingContentSave
+  await drainContentSaves()
   const file = filesCollection.get(id)
   if (!file || file.profileId === profileId) return
   await filesCollection.update(id, (draft) => {
@@ -145,7 +147,7 @@ export async function setFileProfile(id: string, profileId: string) {
 
 /** Moves every file of one profile, archived ones included, to another. */
 export async function reassignProfile(fromId: string, toId: string) {
-  await pendingContentSave
+  await drainContentSaves()
   const ids = [...filesCollection.values()]
     .filter((file) => file.profileId === fromId)
     .map((file) => file.id)
@@ -164,31 +166,24 @@ export function reorderFile(id: string, beforeId: string | null) {
   const moving = filesCollection.get(id)
   if (!moving || moving.deletedAt !== null) return
   open.splice(index < 0 ? open.length : index, 0, moving)
-  filesCollection.update(
-    open.map((f) => f.id),
-    (drafts) => {
-      drafts.forEach((draft, i) => {
-        draft.order = i + 1
-      })
-    },
+  return updateMetadata(() =>
+    filesCollection.update(
+      open.map((f) => f.id),
+      (drafts) => {
+        drafts.forEach((draft, i) => {
+          draft.order = i + 1
+        })
+      },
+    ),
   )
 }
 
 /**
- * Debounced content save: the collection updates optimistically right away
- * and the write to IndexedDB happens once typing pauses.
+ * Debounced file edits: metadata changes join any pending content save, so
+ * its full-record snapshot cannot undo a rename or tab reorder.
  */
-const pacedSaveContent = createPacedMutations<{
-  id: string
-  content: string
-}>({
-  onMutate: ({ id, content }) => {
-    if (filesCollection.get(id)?.deletedAt !== null) return
-    filesCollection.update(id, (draft) => {
-      draft.content = content
-      draft.writer = writerId
-    })
-  },
+const pacedSaveFile = createPacedMutations<() => void>({
+  onMutate: (mutate) => mutate(),
   mutationFn: async ({ transaction }) => {
     await filesCollection.utils.acceptMutations(transaction)
   },
@@ -197,9 +192,19 @@ const pacedSaveContent = createPacedMutations<{
 
 let pendingContentSave: Promise<unknown> | undefined
 
-/** Resolves once the debounced content save, if any, has been written. */
-export async function settleContentSave() {
-  await pendingContentSave?.catch(() => undefined)
+/** New edits can queue another paced transaction while an earlier one writes. */
+async function drainContentSaves(ignoreFailures = false) {
+  while (pendingContentSave) {
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop
+    await pendingContentSave.catch((error: unknown) => {
+      if (!ignoreFailures) throw error
+    })
+  }
+}
+
+/** Resolves once every pending file edit has finished or failed. */
+export function settleContentSave() {
+  return drainContentSaves(true)
 }
 
 /** Whether a failed write hit the browser's storage quota. */
@@ -218,8 +223,8 @@ export function isStorageFull(error: unknown): boolean {
 /** Calls `listener` when a save fails, such as on a full storage quota. */
 export { onSaveFailed } from './persist'
 
-export function saveContent(variables: { id: string; content: string }) {
-  const transaction = pacedSaveContent(variables)
+function saveFile(mutate: () => void) {
+  const transaction = pacedSaveFile(mutate)
   const pending = transaction.isPersisted.promise
   pendingContentSave = pending
   const clear = () => {
@@ -228,4 +233,21 @@ export function saveContent(variables: { id: string; content: string }) {
   // Failures reach `onSaveFailed` through the collection's storage.
   void pending.then(clear, clear)
   return transaction
+}
+
+/** Metadata still persists immediately when there is no paced save to join. */
+function updateMetadata(
+  mutate: () => ReturnType<typeof filesCollection.update>,
+) {
+  return pendingContentSave ? saveFile(mutate) : mutate()
+}
+
+export function saveContent({ id, content }: { id: string; content: string }) {
+  return saveFile(() => {
+    if (filesCollection.get(id)?.deletedAt !== null) return
+    filesCollection.update(id, (draft) => {
+      draft.content = content
+      draft.writer = writerId
+    })
+  })
 }
