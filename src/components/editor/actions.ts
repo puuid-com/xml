@@ -19,7 +19,7 @@ import {
 import type { VarsPreview } from '#/components/app/ui-store'
 import { sameName } from '#/lib/names'
 import { encodeShare, ShareError } from '#/lib/share'
-import { createFile, filesCollection } from '#/lib/store/files'
+import { filesCollection } from '#/lib/store/files'
 import { enabledDefaults } from '#/lib/store/defaults'
 import { profileHighlights } from '#/lib/store/highlights'
 import {
@@ -28,14 +28,12 @@ import {
   resolveProfile,
 } from '#/lib/store/profiles'
 import { snapshotProfile } from '#/lib/store/shared-profile'
-import { setActive } from '#/lib/store/session'
 import { variableValues } from '#/lib/store/variables'
 import {
   MIME_TYPES,
   documentDefaults,
   formatDocument,
   languageOf,
-  parseDocument,
 } from '#/lib/document'
 import { defaultSummary } from '#/lib/xml/defaults'
 import { resolveVars } from '#/lib/xml/dynamic-vars'
@@ -146,7 +144,7 @@ export function commitDefaultsActive() {
 /**
  * Fills in the active file's variables: plain ones from the file's profile,
  * dynamic ones such as `<<$randomInt>>` with generated values. Asks to
- * confirm before the result opens as a new file; the original stays as is.
+ * confirm before the file is changed.
  */
 export function resolveVarsActive() {
   if (!getView()) return true
@@ -175,7 +173,7 @@ export function resolveVarsActive() {
   return true
 }
 
-/** Opens the confirmed copy with its variables filled in. */
+/** Writes the confirmed values into the file, as one undo step. */
 export function commitVarsPreview({
   fileId,
   text,
@@ -183,30 +181,25 @@ export function commitVarsPreview({
   unresolved,
   wasValid,
 }: VarsPreview) {
-  const file = filesCollection.get(fileId)
-  if (!file) return
-  const dot = file.name.lastIndexOf('.')
-  const name = m.vars_file_name({
-    stem: dot > 0 ? file.name.slice(0, dot) : file.name,
-    ext: dot > 0 ? file.name.slice(dot) : '',
-  })
-  const copy = createFile(name, text, file.profileId)
-  setActive(copy.id)
+  const view = getView()
+  // The preview was made from this file's text, so it only applies there.
+  if (!view || editorStore.state.fileId !== fileId) return
+  const current = view.state.doc.toString()
+  const change = diffChange(current, text)
+  if (change) view.dispatch({ changes: change, userEvent: 'input.vars' })
   // Values are written as is, so one with `<` or `&` can break the markup.
-  const error = wasValid
-    ? parseDocument(text, languageOf(copy.name, text)).errors.at(0)
-    : undefined
+  const error = wasValid ? parseActive(text).errors.at(0) : undefined
   const message =
     unresolved > 0
-      ? m.vars_resolved_partly({ count, name: copy.name, unresolved })
-      : m.vars_resolved({ count, name: copy.name })
+      ? m.vars_resolved_partly({ count, unresolved })
+      : m.vars_resolved({ count })
   if (error) {
     notify.error(m.vars_resolved_invalid({ message }), {
       detail: error.message,
       action: {
         label: m.notice_go_to(),
         run: () => {
-          if (editorStore.state.fileId === copy.id)
+          if (editorStore.state.fileId === fileId)
             revealRange(error.from, error.to)
         },
       },
