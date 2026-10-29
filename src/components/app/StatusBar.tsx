@@ -1,3 +1,4 @@
+import { IconAdjustmentsHorizontal } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 
 import { ActionBar } from './ActionBar'
@@ -63,8 +64,9 @@ function SettingsPopover() {
         <Button
           variant="ghost"
           size="xs"
-          className="px-1.5 text-[11px] font-normal text-foreground max-md:h-11"
+          className="gap-1 px-1.5 text-[11px] font-normal text-foreground max-md:h-11"
         >
+          <IconAdjustmentsHorizontal />
           {m.editor_settings()}
         </Button>
       </PopoverTrigger>

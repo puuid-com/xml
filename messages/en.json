@@ -353,13 +353,9 @@
   "vars_convert_none": "No variables to switch.",
   "vars_converted": "Variables switched: {count}",
   "status_profile": "Profile",
-  "status_profile_hint": "Click for the next profile",
-  "status_vars_as": "variables as",
   "status_vars_switch": "Write every variable as {style}",
-  "status_format_on_save": "format on save",
-  "status_on": "on",
-  "status_off": "off",
   "vars_resolve_short": "Replace variables",
   "status_vars_count": "Variables in this file: {count}",
-  "status_defaults_count": "Values that would change: {count}"
+  "status_defaults_count": "Values that would change: {count}",
+  "status_profile_edit_hint": "Double-click to edit"
 }
