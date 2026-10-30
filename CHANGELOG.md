@@ -6,6 +6,13 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.157.0] - 2026-10-29
+
+### Added
+
+- Open pipe-delimited flat files, such as shipment exports with `SH|…` and `PC|…` lines. The side panel shows their records as a table, with one tab per record type that follows the cursor; click a cell to select that field in the editor.
+- The open dialog accepts `.txt` and `.dat` files.
+
 ## [0.156.1] - 2026-10-29
 
 ### Fixed

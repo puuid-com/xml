@@ -1,6 +1,7 @@
 // One entry point for language-specific work, so the editor, tree and
 // actions treat XML and JSON files the same way.
 
+import { isFlatFile, parseFlat } from './flat/parse'
 import { addJsonChild, removeJsonNode, setJsonValue } from './json/edit'
 import { formatJson } from './json/format'
 import { parseJson } from './json/parse'
@@ -23,12 +24,26 @@ const XML_EXT =
 
 /** By extension, else by the first character of the content. */
 export function languageOf(name: string, content: string): DocLanguage {
+  // A flat file is never valid XML or JSON, so its content beats the name.
+  if (isFlatFile(content)) return 'flat'
   if (JSON_EXT.test(name)) return 'json'
   if (XML_EXT.test(name)) return 'xml'
   return /^\s*[[{]/.test(content) ? 'json' : 'xml'
 }
 
-export function parseDocument(text: string, language: DocLanguage) {
+export function parseDocument(
+  text: string,
+  language: DocLanguage,
+): XmlDocument {
+  if (language === 'flat') {
+    return {
+      language,
+      nodes: [],
+      root: null,
+      errors: [],
+      flat: parseFlat(text),
+    }
+  }
   return language === 'json' ? parseJson(text) : parseXml(text)
 }
 
@@ -37,6 +52,8 @@ export function formatDocument(
   language: DocLanguage,
   options: FormatOptions,
 ): FormatResult {
+  // Fixed-width fields are already aligned.
+  if (language === 'flat') return { ok: true, text }
   return language === 'json'
     ? formatJson(text, options)
     : formatXml(text, options)
@@ -82,4 +99,5 @@ export function documentDefaults(
 export const MIME_TYPES: Record<DocLanguage, string> = {
   xml: 'application/xml',
   json: 'application/json',
+  flat: 'text/plain',
 }

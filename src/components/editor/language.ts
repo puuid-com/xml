@@ -90,6 +90,6 @@ export const languageCompartment = new Compartment()
 export function languageExtension(language: DocLanguage) {
   return [
     docLanguage.of(language),
-    language === 'json' ? jsonSupport : xmlSupport,
+    language === 'json' ? jsonSupport : language === 'xml' ? xmlSupport : [],
   ]
 }

@@ -33,6 +33,7 @@ const JSON_EXTENSIONS = [
   '.webmanifest',
   '.har',
 ] as const
+const FLAT_EXTENSIONS = ['.txt', '.dat'] as const
 
 export const ACCEPTED_TYPES = [
   ...XML_EXTENSIONS,
@@ -40,15 +41,18 @@ export const ACCEPTED_TYPES = [
   'application/xml',
   ...JSON_EXTENSIONS,
   'application/json',
+  ...FLAT_EXTENSIONS,
+  'text/plain',
 ].join(',')
 
 /** File types for the open picker, as the File System Access API wants them. */
 const PICKER_TYPES: Array<FilePickerAcceptType> = [
   {
-    description: 'XML, JSON',
+    description: 'XML, JSON, TXT',
     accept: {
       'application/xml': [...XML_EXTENSIONS],
       'application/json': [...JSON_EXTENSIONS],
+      'text/plain': [...FLAT_EXTENSIONS],
     },
   },
 ]

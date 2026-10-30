@@ -1,8 +1,10 @@
+import type { FlatFile } from '../flat/parse'
+
 // Positions are offsets into the document text (UTF-16 code units), matching
 // CodeMirror's. `from` is inclusive, `to` exclusive. JSON documents use the
 // same model: each property or array item is an element (see `JsonInfo`).
 
-export type DocLanguage = 'xml' | 'json'
+export type DocLanguage = 'xml' | 'json' | 'flat'
 
 export type JsonType =
   | 'object'
@@ -94,6 +96,8 @@ export interface XmlDocument {
   /** The first top-level element, if any. */
   root: XmlElement | null
   errors: Array<XmlError>
+  /** Records of a flat file, which has no element tree. */
+  flat?: FlatFile
 }
 
 export function isElement(node: XmlNode): node is XmlElement {

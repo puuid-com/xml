@@ -56,7 +56,6 @@ export function createEditorSession(
     onLanguageChange: (fileId: string) => void
   },
 ) {
-  let activeName: string | null = null
   let fileExtensions: Extension | null = null
 
   function createState(
@@ -107,10 +106,10 @@ export function createEditorSession(
             }
           }
         }
-        if (active && file.name !== activeName) {
-          activeName = file.name
-          if (syncLanguage(view, file.name)) callbacks.onLanguageChange(file.id)
-        }
+        // Renames and edits can both change the language, such as pasting
+        // a flat file into an XML one.
+        if (active && syncLanguage(view, file.name))
+          callbacks.onLanguageChange(file.id)
       }
     },
     // open() reads the initial row. Explicit false preserves subsequent
@@ -136,9 +135,8 @@ export function createEditorSession(
       } else {
         view.setState(createState(fileId, file, extensions))
       }
-      activeName = file?.name ?? null
       // A file may have been renamed while its editor state was cached.
-      if (activeName) syncLanguage(view, activeName)
+      if (file) syncLanguage(view, file.name)
       return true
     },
     dispose() {
