@@ -6,6 +6,12 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.158.1] - 2026-10-29
+
+### Fixed
+
+- Pasting into a file that still holds only the starter template, such as tabs made before files started empty or a new JSON file, now replaces the template and asks for the file type and profile, instead of pasting inside it.
+
 ## [0.158.0] - 2026-10-29
 
 ### Added

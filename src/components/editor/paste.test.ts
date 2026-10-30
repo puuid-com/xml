@@ -1,7 +1,7 @@
 import { EditorSelection, EditorState } from '@codemirror/state'
 import { describe, expect, it } from 'vitest'
 
-import { pastedWhole } from './paste'
+import { pasteOverStarter, pastedWhole } from './paste'
 
 function paste(doc: string, text: string, from = 0, to = doc.length) {
   const state = EditorState.create({
@@ -38,5 +38,31 @@ describe('pastedWhole', () => {
     })
     expect(pastedWhole(typed)).toBeNull()
     expect(pastedWhole(paste('', '  '))).toBeNull()
+  })
+
+  it('replaces an untouched starter template', () => {
+    const doc = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n  \n</root>\n'
+    const state = EditorState.create({
+      doc,
+      selection: EditorSelection.single(52),
+      extensions: pasteOverStarter,
+    })
+    const tr = state.update(state.replaceSelection('SH|1|x'), {
+      userEvent: 'input.paste',
+    })
+    expect(tr.newDoc.toString()).toBe('SH|1|x')
+    expect(pastedWhole(tr)).toBe('SH|1|x')
+  })
+
+  it('pastes into written content as usual', () => {
+    const state = EditorState.create({
+      doc: '<root><a/></root>',
+      selection: EditorSelection.single(6),
+      extensions: pasteOverStarter,
+    })
+    const tr = state.update(state.replaceSelection('<b/>'), {
+      userEvent: 'input.paste',
+    })
+    expect(tr.newDoc.toString()).toBe('<root><b/><a/></root>')
   })
 })

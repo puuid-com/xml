@@ -56,7 +56,7 @@ import {
 import { docLanguage } from './language'
 import { shortenLongValues } from './long-values'
 import { zplLinks } from './zpl-links'
-import { pastedWhole } from './paste'
+import { pasteOverStarter, pastedWhole } from './paste'
 import { searchNoAutofill } from './search'
 import { namesParent, treeChanged } from './syntax'
 import { tagHighlights } from './tag-highlights'
@@ -276,6 +276,7 @@ export function editorExtensions(
     highlightActiveLine(),
     highlightSelectionMatches(),
     placeholder(m.editor_placeholder()),
+    pasteOverStarter,
     editorTheme,
     parentTags,
     varHighlighter,
