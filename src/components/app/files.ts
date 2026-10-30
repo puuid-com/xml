@@ -5,9 +5,6 @@ import { activeProfileId, profileGuesser } from '#/lib/store/profiles'
 import { setActive } from '#/lib/store/session'
 import { m } from '#/paraglide/messages'
 
-const NEW_FILE_CONTENT =
-  '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n  \n</root>\n'
-
 const NEW_JSON_CONTENT = '{\n  \n}\n'
 
 const XML_EXTENSIONS = [
@@ -75,12 +72,9 @@ export function survivor(
 // New files take the profile of the file in the editor. Opened files take
 // the profile whose files they are shaped like, else that one too.
 
+/** An empty file, typed by what is first pasted into it. */
 export function newFile() {
-  const file = createFile(
-    m.file_untitled(),
-    NEW_FILE_CONTENT,
-    activeProfileId(),
-  )
+  const file = createFile(m.file_untitled(), '', activeProfileId())
   setActive(file.id)
 }
 

@@ -9,6 +9,7 @@ import {
   askDeleteProfile,
   setProfileDialog,
   uiStore,
+  updatePasteChoice,
 } from '#/components/app/ui-store'
 import { ColorSwatches } from '#/components/highlights/ColorSwatches'
 import {
@@ -100,7 +101,12 @@ function ProfileForm({
           : (state.mode === 'clone'
               ? cloneProfile(state.profileId, value)
               : createProfile(value)
-            ).then((profile) => profile && switchProfile(profile.id))
+            ).then((profile) => {
+              if (!profile) return
+              // A profile made from the paste dialog is the one to pick there.
+              updatePasteChoice({ profileId: profile.id })
+              return switchProfile(profile.id)
+            })
       return saved?.then(
         () => setProfileDialog(null),
         () => {

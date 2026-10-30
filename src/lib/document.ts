@@ -31,6 +31,40 @@ export function languageOf(name: string, content: string): DocLanguage {
   return /^\s*[[{]/.test(content) ? 'json' : 'xml'
 }
 
+/** The language `content` reads as on its own, or null when nothing gives it away. */
+export function detectLanguage(content: string): DocLanguage | null {
+  if (isFlatFile(content)) return 'flat'
+  if (/^\s*[[{]/.test(content)) return 'json'
+  if (/^\s*</.test(content)) return 'xml'
+  return null
+}
+
+const FLAT_EXT = /\.(txt|dat)$/i
+
+/** A file name without the extension that gives its type. */
+export function untypedName(name: string) {
+  for (const ext of [JSON_EXT, XML_EXT, FLAT_EXT]) {
+    const stem = name.replace(ext, '')
+    if (stem !== name) return stem || name
+  }
+  return name
+}
+
+const EXTENSIONS: Record<DocLanguage, string> = {
+  xml: '.xml',
+  json: '.json',
+  flat: '.txt',
+}
+
+/** `name` with the extension of `language`, unless it already reads as one. */
+export function typedName(name: string, language: DocLanguage) {
+  const keep =
+    (language === 'json' && JSON_EXT.test(name)) ||
+    (language === 'xml' && XML_EXT.test(name)) ||
+    (language === 'flat' && FLAT_EXT.test(name))
+  return keep ? name : untypedName(name) + EXTENSIONS[language]
+}
+
 export function parseDocument(
   text: string,
   language: DocLanguage,

@@ -1,4 +1,4 @@
-import { eq, isNull, not, useLiveQuery } from '@tanstack/react-db'
+import { eq, isNull, length, not, useLiveQuery } from '@tanstack/react-db'
 
 import { filesCollection } from '#/lib/store/files'
 
@@ -14,9 +14,24 @@ export function useOpenFiles() {
         name: file.name,
         order: file.order,
         profileId: file.profileId,
+        // An empty file has no type until something is pasted or typed.
+        empty: eq(length(file.content), 0),
       })),
   )
   return data
+}
+
+/** Whether a file has no content, and so no type or structure yet. */
+export function useFileEmpty(id: string | null) {
+  const { data } = useLiveQuery(
+    (q) =>
+      q
+        .from({ file: filesCollection })
+        .where(({ file }) => eq(file.id, id ?? ''))
+        .select(({ file }) => ({ empty: eq(length(file.content), 0) })),
+    [id],
+  )
+  return data.at(0)?.empty ?? false
 }
 
 /** Recently deleted files, newest first; content stays out of the rendered list. */

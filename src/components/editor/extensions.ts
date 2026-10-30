@@ -41,6 +41,7 @@ import {
   highlightSpecialChars,
   keymap,
   lineNumbers,
+  placeholder,
   rectangularSelection,
   tooltips,
 } from '@codemirror/view'
@@ -55,6 +56,7 @@ import {
 import { docLanguage } from './language'
 import { shortenLongValues } from './long-values'
 import { zplLinks } from './zpl-links'
+import { pastedWhole } from './paste'
 import { searchNoAutofill } from './search'
 import { namesParent, treeChanged } from './syntax'
 import { tagHighlights } from './tag-highlights'
@@ -229,6 +231,8 @@ export interface EditorCallbacks {
   onParse: (fileId: string, doc: XmlDocument) => void
   onChange: (fileId: string, update: ViewUpdate) => void
   onCursor: (update: ViewUpdate) => void
+  /** Content pasted into an empty file, or over all of one. */
+  onPasteWhole: (fileId: string, text: string) => void
   keys: ReadonlyArray<KeyBinding>
 }
 
@@ -271,6 +275,7 @@ export function editorExtensions(
     crosshairCursor(),
     highlightActiveLine(),
     highlightSelectionMatches(),
+    placeholder(m.editor_placeholder()),
     editorTheme,
     parentTags,
     varHighlighter,
@@ -303,15 +308,24 @@ export function editorExtensions(
       },
       {
         delay: 150,
-        // New rules need a fresh parse to mark matching values.
+        // New rules need a fresh parse to mark matching values, and a new
+        // language one to drop errors only the old language had.
         needsRefresh: (update) =>
           update.startState.facet(defaultRulesFacet) !==
-          update.state.facet(defaultRulesFacet),
+            update.state.facet(defaultRulesFacet) ||
+          update.startState.facet(docLanguage) !==
+            update.state.facet(docLanguage),
       },
     ),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
-        callbacks.onChange(update.state.field(fileIdField), update)
+        const fileId = update.state.field(fileIdField)
+        callbacks.onChange(fileId, update)
+        const pasted = update.transactions
+          .map(pastedWhole)
+          .filter(Boolean)
+          .at(-1)
+        if (pasted) callbacks.onPasteWhole(fileId, pasted)
       }
       if (update.docChanged || update.selectionSet) callbacks.onCursor(update)
     }),

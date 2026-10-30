@@ -1,5 +1,6 @@
 import { Store } from '@tanstack/store'
 
+import type { DocLanguage } from '#/lib/document'
 import type { Backup } from '#/lib/store/backup'
 import type { DefaultSummary } from '#/lib/xml/defaults'
 import type { ResolvedVar } from '#/lib/xml/dynamic-vars'
@@ -23,6 +24,8 @@ interface UiState {
   /** Variables waiting for confirmation before a filled-in copy is opened. */
   varsPreview: VarsPreview | null
   profileDialog: ProfileDialog | null
+  /** Choosing the type and profile of content pasted into an empty file. */
+  pasteChoice: PasteChoice | null
   deleteProfileId: string | null
   /** A backup waiting for confirmation before it replaces the workspace. */
   restorePreview: RestorePreview | null
@@ -51,6 +54,15 @@ export interface RestorePreview {
   date: string
 }
 
+/** The pasted file and what the dialog has picked for it so far. */
+export interface PasteChoice {
+  fileId: string
+  language: DocLanguage
+  profileId: string
+  /** What the content gave away, to mark the guesses as such. */
+  detected: { language: boolean; profileId: string | null }
+}
+
 /** Creating a profile, or cloning or editing the one with `profileId`. */
 export type ProfileDialog =
   { mode: 'create' } | { mode: 'clone' | 'edit'; profileId: string }
@@ -74,6 +86,7 @@ export const uiStore = new Store<UiState>({
   defaultsPreview: null,
   varsPreview: null,
   profileDialog: null,
+  pasteChoice: null,
   deleteProfileId: null,
   restorePreview: null,
   variableName: null,
@@ -127,6 +140,19 @@ export function setVarsPreview(varsPreview: VarsPreview | null) {
 
 export function setProfileDialog(profileDialog: ProfileDialog | null) {
   uiStore.setState((s) => ({ ...s, profileDialog }))
+}
+
+export function setPasteChoice(pasteChoice: PasteChoice | null) {
+  uiStore.setState((s) => ({ ...s, pasteChoice }))
+}
+
+/** Changes what the open paste dialog has picked. */
+export function updatePasteChoice(
+  changes: Partial<Pick<PasteChoice, 'language' | 'profileId'>>,
+) {
+  uiStore.setState((s) =>
+    s.pasteChoice ? { ...s, pasteChoice: { ...s.pasteChoice, ...changes } } : s,
+  )
 }
 
 export function askDeleteProfile(deleteProfileId: string | null) {

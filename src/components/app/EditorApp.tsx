@@ -29,6 +29,7 @@ import {
   newJsonFile,
   pickFromDisk,
 } from './files'
+import { PasteDialog } from './PasteDialog'
 import { OpenSharedDialog, ShareLinkDialog } from './ShareDialog'
 import { SidePanel } from './SidePanel'
 import { StatusBar } from './StatusBar'
@@ -57,7 +58,7 @@ import {
   ResizablePanelGroup,
 } from '#/components/ui/resizable'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
-import { useOpenFiles } from '#/hooks/use-files'
+import { useFileEmpty, useOpenFiles } from '#/hooks/use-files'
 import { useMediaQuery } from '#/hooks/use-media-query'
 import { shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import { onSaveFailed } from '#/lib/store/files'
@@ -189,6 +190,7 @@ export function EditorApp() {
       <VarsConfirmDialog />
       <RestoreDialog />
       <VariableValueDialog />
+      <PasteDialog />
       <ProfileDialog />
       <DeleteProfileDialog />
       <QuickHighlight />
@@ -241,7 +243,9 @@ function EditorOrCompare({
 }
 
 function DesktopWorkspace({ fileId, compareId }: WorkspaceProps) {
-  const panelOpen = useSelector(sessionStore, (s) => s.panelOpen)
+  // An empty file has no structure to show.
+  const empty = useFileEmpty(fileId)
+  const panelOpen = useSelector(sessionStore, (s) => s.panelOpen) && !empty
   const layout = useDefaultLayout({
     id: 'xml-main-h',
     panelIds: panelOpen ? ['editor', 'side'] : ['editor'],
@@ -274,7 +278,8 @@ function DesktopWorkspace({ fileId, compareId }: WorkspaceProps) {
 }
 
 export function MobileWorkspace({ fileId, compareId }: WorkspaceProps) {
-  const view = useSelector(uiStore, (s) => s.mobileView)
+  const empty = useFileEmpty(fileId)
+  const view = useSelector(uiStore, (s) => (empty ? 'editor' : s.mobileView))
   useEffect(() => setMobileView('editor'), [fileId])
 
   return (
@@ -288,7 +293,7 @@ export function MobileWorkspace({ fileId, compareId }: WorkspaceProps) {
       <TabsList
         variant="line"
         aria-label={m.workspace_views()}
-        className="h-11! w-full shrink-0 border-b p-0"
+        className={cn('h-11! w-full shrink-0 border-b p-0', empty && 'hidden')}
       >
         <TabsTrigger value="editor" className="h-full! text-sm after:bottom-0!">
           {m.nav_editor()}

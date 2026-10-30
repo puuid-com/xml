@@ -3,6 +3,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconFileCode,
+  IconFileDots,
   IconJson,
   IconPlus,
   IconX,
@@ -38,7 +39,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { useFileContent } from '#/hooks/use-files'
 import { useProfiles } from '#/hooks/use-profiles'
-import { languageOf } from '#/lib/document'
+import { languageOf, untypedName } from '#/lib/document'
 import { shortcuts } from '#/lib/shortcuts'
 import { diskStore } from '#/lib/store/disk'
 import { reorderFile } from '#/lib/store/files'
@@ -51,6 +52,8 @@ interface TabFile {
   id: string
   name: string
   profileId: string
+  /** No content, so no type or profile to show yet. */
+  empty: boolean
 }
 
 // Tabs fit their name, within bounds, however many are open. When they don't
@@ -168,8 +171,14 @@ export function TabStrip({
                       }}
                       className="h-full! min-w-0 flex-1 justify-start gap-2 rounded-t-lg pr-11 pl-3 font-normal after:hidden md:pr-8"
                     >
-                      <IconFileCode className="size-3.5! text-muted-foreground" />
-                      {profile ? (
+                      {file.empty ? (
+                        <IconFileDots className="size-3.5! text-muted-foreground" />
+                      ) : (
+                        <IconFileCode className="size-3.5! text-muted-foreground" />
+                      )}
+                      {file.empty ? (
+                        <span className="truncate">{tabName(file)}</span>
+                      ) : profile ? (
                         <span
                           style={hlStyle(profileCss(profile))}
                           className="hl-tag hl-ink min-w-0 truncate px-1 leading-5"
@@ -354,13 +363,9 @@ function TabList({
                     setTabListOpen(false)
                   }}
                 >
-                  {languageOf(file.name, '') === 'json' ? (
-                    <IconJson />
-                  ) : (
-                    <IconFileCode />
-                  )}
+                  <FileIcon file={file} />
                   <span className="min-w-0 flex-1 truncate font-mono">
-                    {file.name}
+                    {tabName(file)}
                   </span>
                   <UnsavedMark fileId={file.id} />
                   <button
@@ -425,4 +430,14 @@ function UnsavedDot({ fileId, saved }: { fileId: string; saved: string }) {
       className="size-1.5 shrink-0 rounded-full bg-foreground"
     />
   )
+}
+
+/** A tab's name, without the extension while the file is empty and untyped. */
+export function tabName(file: Pick<TabFile, 'name' | 'empty'>) {
+  return file.empty ? untypedName(file.name) : file.name
+}
+
+export function FileIcon({ file }: { file: Pick<TabFile, 'name' | 'empty'> }) {
+  if (file.empty) return <IconFileDots />
+  return languageOf(file.name, '') === 'json' ? <IconJson /> : <IconFileCode />
 }

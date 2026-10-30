@@ -9,12 +9,10 @@ import {
   IconDatabaseImport,
   IconDeviceFloppy,
   IconDownload,
-  IconFileCode,
   IconFilePlus,
   IconFolderOpen,
   IconGitCompare,
   IconHighlight,
-  IconJson,
   IconLink,
   IconMoon,
   IconPencil,
@@ -30,6 +28,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { downloadBackup, pickBackup } from './backup'
 import { newFile, newJsonFile } from './files'
+import { FileIcon, tabName } from './TabStrip'
 import { readLastCommand, saveLastCommand } from './last-command'
 import {
   askDeleteProfile,
@@ -79,7 +78,6 @@ import { Kbd } from '#/components/ui/kbd'
 import { useCanWriteDisk } from '#/hooks/use-can-write-disk'
 import { useOpenFiles } from '#/hooks/use-files'
 import { useActiveProfile, useProfiles } from '#/hooks/use-profiles'
-import { languageOf } from '#/lib/document'
 import { profileShortcuts, shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import { setActive } from '#/lib/store/session'
 import { toggleTheme } from '#/lib/theme'
@@ -290,12 +288,8 @@ function RootCommands({
               value={`${file.name} ${file.id}`}
               onSelect={() => run(() => setActive(file.id))}
             >
-              {languageOf(file.name, '') === 'json' ? (
-                <IconJson />
-              ) : (
-                <IconFileCode />
-              )}
-              <span className="truncate font-mono">{file.name}</span>
+              <FileIcon file={file} />
+              <span className="truncate font-mono">{tabName(file)}</span>
               {file.id === activeId && (
                 <IconCheck className="size-3 text-muted-foreground" />
               )}

@@ -2,6 +2,7 @@ import { EditorView } from '@codemirror/view'
 import { useEffect, useRef } from 'react'
 
 import { notify } from '#/components/app/notice-store'
+import { askPasteChoice } from '#/components/app/paste'
 import {
   applyDefaultsActive,
   formatActive,
@@ -54,6 +55,7 @@ function sharedExtensions(
         saveContent({ id: fileId, content: update.state.doc.toString() })
       },
       onCursor: (update) => publishCursorFrom(update.state),
+      onPasteWhole: askPasteChoice,
       keys: [
         { key: shortcuts.format.key, run: formatActive, preventDefault: true },
         { key: shortcuts.save.key, run: saveActive, preventDefault: true },

@@ -20,19 +20,23 @@ import {
 } from '#/components/ui/popover'
 import { Separator } from '#/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
+import { useFileEmpty } from '#/hooks/use-files'
 import { useActiveProfile } from '#/hooks/use-profiles'
 import { appVersion } from '#/lib/version'
 import { m } from '#/paraglide/messages'
 
 /** Bottom bar: highlight chips on the left; the file's setup and actions, search, the theme toggle and the app version on the right. */
 export function StatusBar() {
-  const fileId = useSelector(editorStore, (s) => s.fileId)
+  const activeId = useSelector(editorStore, (s) => s.fileId)
+  // An empty file has no type yet, so nothing to highlight, format or set up.
+  const empty = useFileEmpty(activeId)
+  const typed = !!activeId && !empty
 
   return (
     <footer className="flex h-12 shrink-0 items-center gap-1 border-t px-1.5 text-[11px] whitespace-nowrap text-muted-foreground md:h-8">
-      {fileId && <HighlightsBar />}
+      {typed && <HighlightsBar />}
       <div className="flex-1" />
-      {fileId && (
+      {typed && (
         <>
           <ActionBar />
           <SettingsPopover />

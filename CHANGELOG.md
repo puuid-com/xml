@@ -6,6 +6,20 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.158.0] - 2026-10-29
+
+### Added
+
+- Pasting into an empty file, or over all of one, asks which file type and profile it is, with what the content gives away already picked. Press Enter to accept, clone any profile or make a new one from the same dialog.
+
+### Changed
+
+- New files start empty. An empty file has no type: its tab drops the extension, the structure panel and file actions hide, and the editor invites you to paste or type.
+
+### Fixed
+
+- Errors from a file's old type no longer linger in the editor after it changes type.
+
 ## [0.157.0] - 2026-10-29
 
 ### Added

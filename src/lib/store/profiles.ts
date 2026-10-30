@@ -226,14 +226,16 @@ export function learnSample(profileId: string, name: string, content: string) {
 /**
  * Picks profiles for incoming files by their structure: each profile is
  * compared through its learned samples and the files it holds now. Built
- * once per batch, so files opened together don't sway one another.
+ * once per batch, so files opened together don't sway one another. The
+ * file being guessed for, if already open, is left out.
  */
-export function profileGuesser() {
+export function profileGuesser(exceptFileId?: string) {
   const examples = new Map<string, Array<Fingerprint>>(
     profilesList().map((p) => [p.id, [...p.samples]]),
   )
   if (examples.size < 2) return () => null
   for (const file of filesCollection.values()) {
+    if (file.id === exceptFileId) continue
     examples.get(file.profileId)?.push(fingerprint(file.name, file.content))
   }
   const match = profileMatcher(
