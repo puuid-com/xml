@@ -398,5 +398,8 @@
   "paste_type_xml": "XML",
   "paste_type_json": "JSON",
   "paste_type_flat": "Largeur fixe",
-  "paste_open": "Ouvrir en {type}"
+  "paste_open": "Ouvrir en {type}",
+  "file_change_type": "Changer le type",
+  "file_type_placeholder": "Choisir un type de fichier…",
+  "file_type_heading": "Type de {name}"
 }

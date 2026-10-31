@@ -1,3 +1,4 @@
+import { setFileType } from './file-type'
 import { setPasteChoice } from './ui-store'
 import {
   detectLanguage,
@@ -5,12 +6,7 @@ import {
   typedName,
   untypedName,
 } from '#/lib/document'
-import {
-  filesCollection,
-  renameFile,
-  setFileProfile,
-  uniqueName,
-} from '#/lib/store/files'
+import { filesCollection, setFileProfile } from '#/lib/store/files'
 import { learnSample, profileGuesser } from '#/lib/store/profiles'
 import type { PasteChoice } from './ui-store'
 
@@ -40,9 +36,8 @@ export async function applyPasteChoice({
 }: Pick<PasteChoice, 'fileId' | 'language' | 'profileId'>) {
   const file = filesCollection.get(fileId)
   if (!file) return
-  const name = typedName(file.name, language)
-  if (name !== file.name)
-    await renameFile(fileId, uniqueName(name))?.isPersisted.promise
+  await setFileType(fileId, language)
   await setFileProfile(fileId, profileId)
-  learnSample(profileId, name, filesCollection.get(fileId)?.content ?? '')
+  const typed = filesCollection.get(fileId)
+  learnSample(profileId, typed?.name ?? '', typed?.content ?? '')
 }

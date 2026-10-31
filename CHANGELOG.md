@@ -6,6 +6,12 @@ Every change bumps `version` in `package.json` and adds an entry here, newest fi
 - **Minor**: new features and visible behavior changes.
 - **Patch**: fixes, refactors, docs and tooling.
 
+## [0.159.0] - 2026-10-31
+
+### Added
+
+- Change a file's type (XML, JSON, fixed-width) from the command menu or by right-clicking its tab. Types the content can't be read as are disabled.
+
 ## [0.158.1] - 2026-10-29
 
 ### Fixed

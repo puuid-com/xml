@@ -10,6 +10,7 @@ import {
   IconDeviceFloppy,
   IconDownload,
   IconFilePlus,
+  IconFileSettings,
   IconFolderOpen,
   IconGitCompare,
   IconHighlight,
@@ -27,6 +28,7 @@ import { useSelector } from '@tanstack/react-store'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { downloadBackup, pickBackup } from './backup'
+import { FILE_TYPES, canReadAs, setFileType, useFileType } from './file-type'
 import { newFile, newJsonFile } from './files'
 import { FileIcon, tabName } from './TabStrip'
 import { readLastCommand, saveLastCommand } from './last-command'
@@ -82,6 +84,7 @@ import { profileShortcuts, shortcutLabel, shortcuts } from '#/lib/shortcuts'
 import { setActive } from '#/lib/store/session'
 import { toggleTheme } from '#/lib/theme'
 import { m } from '#/paraglide/messages'
+import type { DocLanguage } from '#/lib/document'
 
 /** Centered palette of files and actions, opened with ⌘K or the logo. */
 export function CommandMenu({
@@ -152,8 +155,8 @@ function FileCommands({
 }) {
   const files = useOpenFiles()
   const [search, setSearch] = useState('')
-  // "Compare with…" opens a second page listing the other tabs.
-  const [page, setPage] = useState<'root' | 'compare'>('root')
+  // "Compare with…" and "Change type" open a second page of choices.
+  const [page, setPage] = useState<Page>('root')
   const comparing = useSelector(uiStore, (s) => s.compareId !== null)
   const activeFile = files.find((f) => f.id === activeId)
   // Opens on the command run last, so repeating it is just ↵.
@@ -179,7 +182,7 @@ function FileCommands({
     requestAnimationFrame(fn)
   }
 
-  const openPage = (next: 'root' | 'compare') => {
+  const openPage = (next: Page) => {
     setPage(next)
     setSearch('')
   }
@@ -199,7 +202,11 @@ function FileCommands({
     >
       <CommandInput
         placeholder={
-          page === 'compare' ? m.compare_placeholder() : m.palette_placeholder()
+          page === 'compare'
+            ? m.compare_placeholder()
+            : page === 'type'
+              ? m.file_type_placeholder()
+              : m.palette_placeholder()
         }
         value={search}
         onValueChange={setSearch}
@@ -224,6 +231,14 @@ function FileCommands({
               ))}
           </CommandGroup>
         )}
+        {page === 'type' && activeFile && (
+          <TypeCommands
+            file={activeFile}
+            onSelect={(language) =>
+              run(() => void setFileType(activeFile.id, language))
+            }
+          />
+        )}
         {page === 'root' && (
           <RootCommands
             files={files}
@@ -233,6 +248,10 @@ function FileCommands({
             onCompare={() => {
               saveLastCommand(value)
               openPage('compare')
+            }}
+            onChangeType={() => {
+              saveLastCommand(value)
+              openPage('type')
             }}
             onOpenFromDisk={onOpenFromDisk}
           />
@@ -257,12 +276,45 @@ function FileCommands({
   )
 }
 
+type Page = 'root' | 'compare' | 'type'
+
+/** The types the active file can be read as, its current one checked. */
+function TypeCommands({
+  file,
+  onSelect,
+}: {
+  file: { id: string; name: string }
+  onSelect: (language: DocLanguage) => void
+}) {
+  const type = useFileType(file.id)
+  if (!type) return null
+  return (
+    <CommandGroup heading={m.file_type_heading({ name: file.name })}>
+      {FILE_TYPES.map((option) => (
+        <CommandItem
+          key={option.value}
+          value={`type ${option.value} ${option.label()}`}
+          disabled={!canReadAs(type.content, option.value)}
+          onSelect={() => onSelect(option.value)}
+        >
+          <IconFileSettings />
+          {option.label()}
+          {option.value === type.language && (
+            <IconCheck className="size-3 text-muted-foreground" />
+          )}
+        </CommandItem>
+      ))}
+    </CommandGroup>
+  )
+}
+
 function RootCommands({
   files,
   activeId,
   comparing,
   run,
   onCompare,
+  onChangeType,
   onOpenFromDisk,
 }: {
   files: ReturnType<typeof useOpenFiles>
@@ -270,6 +322,7 @@ function RootCommands({
   comparing: boolean
   run: (fn: () => void) => void
   onCompare: () => void
+  onChangeType: () => void
   onOpenFromDisk: () => void
 }) {
   const profiles = useProfiles()
@@ -277,6 +330,7 @@ function RootCommands({
   const writesDisk = useCanWriteDisk()
   // Read as the menu opens; nothing edits the file while it is open.
   const [depth] = useState(historyDepth)
+  const activeFile = files.find((f) => f.id === activeId)
 
   return (
     <>
@@ -308,6 +362,12 @@ function RootCommands({
                 {shortcutLabel(shortcuts.rename)}
               </CommandShortcut>
             </CommandItem>
+            {activeFile && !activeFile.empty && (
+              <CommandItem onSelect={onChangeType}>
+                <IconFileSettings />
+                {m.file_change_type()}
+              </CommandItem>
+            )}
             <CommandItem onSelect={() => run(() => downloadFile(activeId))}>
               <IconDownload />
               {m.file_download()}

@@ -11,6 +11,7 @@ import {
 import { useSelector } from '@tanstack/react-store'
 import { useEffect, useRef, useState } from 'react'
 
+import { FILE_TYPES, canReadAs, setFileType, useFileType } from './file-type'
 import { newFile } from './files'
 import { ToolbarButton } from './ToolbarButton'
 import { askClose, askRename, setTabListOpen, uiStore } from './ui-store'
@@ -28,7 +29,12 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '#/components/ui/context-menu'
 import {
@@ -47,6 +53,7 @@ import { profileCss, resolveProfile } from '#/lib/store/profiles'
 import { setActive } from '#/lib/store/session'
 import { cn } from '#/lib/utils'
 import { m } from '#/paraglide/messages'
+import type { DocLanguage } from '#/lib/document'
 
 interface TabFile {
   id: string
@@ -300,6 +307,7 @@ function TabContextMenu({
       <ContextMenuItem onSelect={() => askRename(file.id)}>
         {m.file_rename()}
       </ContextMenuItem>
+      <TypeSubMenu file={file} />
       <ContextMenuSeparator />
       <ContextMenuItem onSelect={() => askClose(file.id)}>
         {m.tabs_close()}
@@ -320,6 +328,36 @@ function TabContextMenu({
         {m.tabs_close_all()}
       </ContextMenuItem>
     </ContextMenuContent>
+  )
+}
+
+/** Picks the file's type; an empty file gets one when something is pasted. */
+function TypeSubMenu({ file }: { file: TabFile }) {
+  const type = useFileType(file.id)
+  return (
+    <ContextMenuSub>
+      <ContextMenuSubTrigger disabled={file.empty || !type}>
+        {m.file_change_type()}
+      </ContextMenuSubTrigger>
+      <ContextMenuSubContent className="w-40">
+        <ContextMenuRadioGroup
+          value={type?.language ?? ''}
+          onValueChange={(value) =>
+            void setFileType(file.id, value as DocLanguage)
+          }
+        >
+          {FILE_TYPES.map((option) => (
+            <ContextMenuRadioItem
+              key={option.value}
+              value={option.value}
+              disabled={!type || !canReadAs(type.content, option.value)}
+            >
+              {option.label()}
+            </ContextMenuRadioItem>
+          ))}
+        </ContextMenuRadioGroup>
+      </ContextMenuSubContent>
+    </ContextMenuSub>
   )
 }
 

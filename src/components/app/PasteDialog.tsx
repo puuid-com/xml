@@ -2,6 +2,7 @@ import { IconCopy, IconPlus } from '@tabler/icons-react'
 import { useSelector } from '@tanstack/react-store'
 import { useRef, useState } from 'react'
 
+import { FILE_TYPES, canReadAs } from './file-type'
 import { applyPasteChoice } from './paste'
 import {
   setPasteChoice,
@@ -24,16 +25,9 @@ import { Label } from '#/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '#/components/ui/radio-group'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { useProfiles } from '#/hooks/use-profiles'
-import { isFlatFile } from '#/lib/flat/parse'
 import { filesCollection } from '#/lib/store/files'
 import { m } from '#/paraglide/messages'
 import type { DocLanguage } from '#/lib/document'
-
-const TYPES: Array<{ value: DocLanguage; label: () => string }> = [
-  { value: 'xml', label: m.paste_type_xml },
-  { value: 'json', label: m.paste_type_json },
-  { value: 'flat', label: m.paste_type_flat },
-]
 
 /** Asks for the type and profile of content pasted into an empty file. */
 export function PasteDialog() {
@@ -43,10 +37,9 @@ export function PasteDialog() {
   const submitRef = useRef<HTMLButtonElement>(null)
   const file = choice ? filesCollection.get(choice.fileId) : undefined
   const open = !!choice && !!file
-  // Fixed-width records read as such whatever the name says, and nothing
-  // else does.
-  const flat = file ? isFlatFile(file.content) : false
-  const label = TYPES.find((t) => t.value === choice?.language)?.label() ?? ''
+  const content = file?.content ?? ''
+  const label =
+    FILE_TYPES.find((t) => t.value === choice?.language)?.label() ?? ''
 
   const confirm = async () => {
     if (!choice || saving) return
@@ -102,11 +95,11 @@ export function PasteDialog() {
               }}
               className="w-full"
             >
-              {TYPES.map((type) => (
+              {FILE_TYPES.map((type) => (
                 <ToggleGroupItem
                   key={type.value}
                   value={type.value}
-                  disabled={flat !== (type.value === 'flat')}
+                  disabled={!canReadAs(content, type.value)}
                   className="flex-1"
                 >
                   {type.label()}
